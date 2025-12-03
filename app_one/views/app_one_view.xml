@@ -48,6 +48,7 @@
 <!--                menulist-->
         <menuitem id="wb_app_one_root_menu"
                   name="App One"
+                  web_icon="app_one,static/description/icon.png"
         />
         <menuitem id="wb_app_one_menu_Sales"
                   action="wb_app_one_action_Sales"
