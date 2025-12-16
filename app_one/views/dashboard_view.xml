@@ -1,0 +1,111 @@
+<odoo>
+    <record id="wb_sales_dashboard_kanban" model="ir.ui.view">
+        <field name="name">wb.sales.dashboard.kanban</field>
+        <field name="model">wb.sales.dashboard</field>
+        <field name="arch" type="xml">
+            <kanban create="false" class="o_kanban_dashboard">
+                <field name="name"/>
+                <field name="total_sales"/>
+                <field name="orders_count"/>
+                <field name="average_order_value"/> <field name="total_invoiced"/>      <field name="currency_id"/>
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-3">
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <h1 style="color: #714B67; font-weight: bold;">
+                                        <field name="name"/>
+                                    </h1>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="alert alert-info text-center">
+                                        <h3>Total Revenue</h3>
+                                        <h2>
+                                            <field name="total_sales" widget="monetary"/>
+                                        </h2>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="alert alert-success text-center">
+                                        <h3>Orders Count</h3>
+                                        <h2>
+                                            <field name="orders_count"/>
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3">
+                                <div class="col-6">
+                                    <div class="alert alert-warning text-center">
+                                        <h3>AOV (Avg)</h3>
+                                        <h2>
+                                            <field name="average_order_value" widget="monetary"/>
+                                        </h2>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="alert alert-danger text-center">
+                                        <h3>Invoiced</h3>
+                                        <h2>
+                                            <field name="total_invoiced" widget="monetary"/>
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_sales_dashboard" model="ir.actions.act_window">
+        <field name="name">Sales Dashboard</field>
+        <field name="res_model">wb.sales.dashboard</field>
+        <field name="view_mode">kanban</field>
+        <field name="res_id" ref="app_one.wb_sales_dashboard_rec_v2"/>
+    </record>
+
+    <menuitem id="menu_sales_dashboard"
+              name="Sales Dashboard"
+              parent="wb_app_one_root_menu"
+              action="action_sales_dashboard"
+              sequence="0"/>
+
+    <record id="wb_app_one_sales_graph_view" model="ir.ui.view">
+        <field name="name">wb.app.one.sales.graph</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <graph string="Sales Analysis" type="bar" sample="1">
+                <field name="partner_id"/>
+                <field name="amount_total" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_app_one_sales_graph" model="ir.actions.act_window">
+        <field name="name">Sales Analysis</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">graph,tree,form</field>
+        <field name="view_id" ref="wb_app_one_sales_graph_view"/>
+        <field name="domain">[('state', 'in', ['sale', 'done'])]</field>
+    </record>
+
+    <menuitem id="menu_app_one_reports"
+              name="Reports"
+              parent="wb_app_one_root_menu"
+              sequence="10"/>
+
+    <menuitem id="menu_app_one_sales_graph"
+              name="Sales Graph"
+              parent="menu_app_one_reports"
+              action="action_app_one_sales_graph"
+              sequence="1"/>
+
+</odoo>

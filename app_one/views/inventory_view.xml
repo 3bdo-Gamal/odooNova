@@ -1,0 +1,67 @@
+
+<!---->
+<odoo>
+    <record id="wb_inventory_dashboard_kanban" model="ir.ui.view">
+        <field name="name">wb.inventory.dashboard.kanban</field>
+        <field name="model">wb.inventory.dashboard</field>
+        <field name="arch" type="xml">
+            <kanban create="false" class="o_kanban_dashboard">
+                <field name="name"/>
+                <field name="total_products"/>
+                <field name="stock_value"/>
+                <field name="low_stock_count"/>
+                <field name="currency_id"/>
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click p-3">
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <h2 style="color: #2E86C1; font-weight: bold;">
+                                        <field name="name"/>
+                                    </h2>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="alert alert-primary text-center">
+                                        <h4>Stock Value</h4>
+                                        <h3><field name="stock_value" widget="monetary"/></h3>
+                                    </div>
+                                </div>
+
+                                <div class="col-4">
+                                    <div class="alert alert-success text-center">
+                                        <h4>Products</h4>
+                                        <h3><field name="total_products"/></h3>
+                                    </div>
+                                </div>
+
+                                <div class="col-4">
+                                    <div class="alert alert-danger text-center">
+                                        <h4>Low Stock (&lt; 5)</h4>
+                                        <h3><field name="low_stock_count"/></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_inventory_dashboard" model="ir.actions.act_window">
+        <field name="name">Inventory Dashboard</field>
+        <field name="res_model">wb.inventory.dashboard</field>
+        <field name="view_mode">kanban</field>
+        <field name="res_id" ref="app_one.wb_inventory_dashboard_rec"/>
+    </record>
+
+    <menuitem id="menu_inventory_dashboard"
+              name="Inventory Dashboard"
+              parent="wb_app_one_root_menu"
+              action="action_inventory_dashboard"
+              sequence="2"/>
+</odoo>

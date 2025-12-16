@@ -18,6 +18,7 @@
             </field>
         </record>
 <!--        actions-->
+
         <record id="wb_app_one_action_Sales" model="ir.actions.act_window">
             <field name="name">App one</field>
             <field name="res_model">wb.app_one</field>
@@ -50,18 +51,10 @@
                   name="App One"
                   web_icon="app_one,static/description/icon.png"
         />
-        <menuitem id="wb_app_one_menu_Sales"
-                  action="wb_app_one_action_Sales"
-                  name="Sales"
-                  sequence="1"
-                  parent="wb_app_one_root_menu"
-        />
-        <menuitem id="wb_app_one_menu_Inventory"
-                  action="wb_app_one_action_Inventory"
-                  name="Inventory"
-                  sequence="2"
-                  parent="wb_app_one_root_menu"
-        />
+
+
+
+
         <menuitem id="wb_app_one_menu_Purchase"
                   action="wb_app_one_action_Purchase"
                   name="Purchase"
