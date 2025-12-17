@@ -1,6 +1,26 @@
-
-<!---->
 <odoo>
+
+    <record id="wb_app_one_inventory_graph_view" model="ir.ui.view">
+        <field name="name">wb.app.one.inventory.graph</field>
+        <field name="model">stock.quant</field>
+        <field name="arch" type="xml">
+            <graph string="Inventory Quantities" type="bar" sample="1">
+                <field name="product_id"/>
+                <field name="quantity" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_app_one_inventory_graph" model="ir.actions.act_window">
+        <field name="name">Inventory Analysis</field>
+        <field name="res_model">stock.quant</field>
+        <field name="view_mode">graph,pivot,tree,form</field>
+        <field name="view_id" ref="wb_app_one_inventory_graph_view"/>
+        <field name="domain">[('location_id.usage', '=', 'internal')]</field>
+        <field name="context">{'search_default_internal_loc': 1}</field>
+    </record>
+
+
     <record id="wb_inventory_dashboard_kanban" model="ir.ui.view">
         <field name="name">wb.inventory.dashboard.kanban</field>
         <field name="model">wb.inventory.dashboard</field>
@@ -14,43 +34,85 @@
 
                 <templates>
                     <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click p-3">
-                            <div class="row mb-4">
-                                <div class="col-12 text-center">
-                                    <h2 style="color: #2E86C1; font-weight: bold;">
-                                        <field name="name"/>
-                                    </h2>
+                        <div class="container-fluid p-3">
+
+                            <div class="row mb-4 align-items-center">
+                                <div class="col d-flex align-items-center">
+                                    <div style="width: 5px; height: 35px; background-color: #5C6BC0; margin-right: 15px; border-radius: 2px;"></div>
+                                    <h3 style="color: #34495E; font-weight: 800; margin: 0; font-size: 1.5rem;">Inventory Dashboard</h3>
+                                </div>
+                                <div class="col-auto">
+                                     <button name="%(action_app_one_inventory_graph)d" type="action" class="btn btn-sm btn-outline-primary shadow-sm" style="border-radius: 5px;">
+                                        <i class="fa fa-bar-chart mr-1"/> View Charts
+                                    </button>
                                 </div>
                             </div>
 
                             <div class="row">
-                                <div class="col-4">
-                                    <div class="alert alert-primary text-center">
-                                        <h4>Stock Value</h4>
-                                        <h3><field name="stock_value" widget="monetary"/></h3>
+
+                               <div class="col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm" style="background-color: #EDE7F6; border-radius: 10px; min-height: 100px; overflow: hidden;">
+                                        <div class="card-body position-relative p-3">
+
+                                            <div style="position: relative; z-index: 2;">
+                                                <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: 600; color: #512DA8; opacity: 0.8;">Total Asset Value</span>
+                                                <h3 class="mb-0 font-weight-bold" style="color: #311B92;">
+                                                    <field name="stock_value" widget="monetary"/>
+                                                </h3>
+                                            </div>
+
+                                            <div style="position: absolute; right: -5px; bottom: -5px; opacity: 0.1; transform: rotate(-10deg);">
+                                                <i class="fa fa-usd" style="font-size: 90px; color: #512DA8;"></i>
+                                            </div>
+
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="col-4">
-                                    <div class="alert alert-success text-center">
-                                        <h4>Products</h4>
-                                        <h3><field name="total_products"/></h3>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm" style="background-color: #E0F2F1; border-radius: 10px; min-height: 100px;">
+                                        <div class="card-body d-flex justify-content-between align-items-center p-3">
+                                            <div>
+                                                <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: 600; color: #00695C; opacity: 0.8;">Total Products</span>
+                                                <h3 class="mb-0 font-weight-bold" style="color: #004D40;">
+                                                    <field name="total_products"/>
+                                                </h3>
+                                            </div>
+                                            <i class="fa fa-cubes fa-3x" style="color: #00695C; opacity: 0.2;"></i>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="col-4">
-                                    <div class="alert alert-danger text-center">
-                                        <h4>Low Stock (&lt; 5)</h4>
-                                        <h3><field name="low_stock_count"/></h3>
-                                    </div>
-                                </div>
                             </div>
+
+                            <div class="row">
+
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 shadow-sm" style="background-color: #FFEBEE; border-radius: 10px; min-height: 100px;">
+                                        <div class="card-body d-flex justify-content-between align-items-center p-3">
+                                            <div>
+                                                <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: 600; color: #C62828; opacity: 0.8;">Low Stock Alert</span>
+                                                <h3 class="mb-0 font-weight-bold" style="color: #B71C1C;">
+                                                    <field name="low_stock_count"/>
+                                                </h3>
+                                            </div>
+                                            <i class="fa fa-exclamation-triangle fa-3x" style="color: #C62828; opacity: 0.2;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                </div>
+
+                            </div>
+
                         </div>
                     </t>
                 </templates>
             </kanban>
         </field>
     </record>
+
 
     <record id="action_inventory_dashboard" model="ir.actions.act_window">
         <field name="name">Inventory Dashboard</field>
@@ -64,4 +126,5 @@
               parent="wb_app_one_root_menu"
               action="action_inventory_dashboard"
               sequence="2"/>
+
 </odoo>
