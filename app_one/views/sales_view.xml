@@ -1,0 +1,133 @@
+<odoo>
+
+    <record id="wb_app_one_sales_graph_view" model="ir.ui.view">
+        <field name="name">wb.app.one.sales.graph</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <graph string="Sales Analysis" type="bar" sample="1" stacked="0">
+                <field name="date_order" interval="month"/>
+                <field name="partner_id"/>
+                <field name="amount_total" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_app_one_sales_graph" model="ir.actions.act_window">
+        <field name="name">Sales Analysis</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">graph,pivot,tree,form</field>
+        <field name="view_id" ref="wb_app_one_sales_graph_view"/>
+        <field name="domain">[('state', 'in', ['sale', 'done'])]</field>
+        <field name="context">{'search_default_date_order': 1}</field>
+    </record>
+
+    <record id="wb_sales_dashboard_kanban" model="ir.ui.view">
+        <field name="name">wb.sales.dashboard.kanban</field>
+        <field name="model">wb.sales.dashboard</field>
+        <field name="arch" type="xml">
+            <kanban create="false" class="o_kanban_dashboard">
+                <field name="name"/>
+                <field name="total_sales"/>
+                <field name="orders_count"/>
+                <field name="average_order_value"/>
+                <field name="total_invoiced"/>
+                <field name="currency_id"/>
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="container o_kanban_card_content p-3">
+
+                            <div class="row mb-3">
+                                <div class="col-12 d-flex justify-content-between align-items-center">
+                                    <h3 style="color: #2E2E2E; font-weight: 800; border-left: 6px solid #667eea; padding-left: 12px; margin: 0;">
+                                        <field name="name"/>
+                                    </h3>
+                                    <button name="%(action_app_one_sales_graph)d" type="action" class="btn btn-sm btn-outline-primary">
+                                        <i class="fa fa-bar-chart"/> View Charts
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <div class="card border-0 shadow-sm" style="background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%); color: white; border-radius: 10px; overflow: hidden;">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.8;">Total Revenue</span>
+                                                    <h4 class="mb-0 font-weight-bold"><field name="total_sales" widget="monetary"/></h4>
+                                                </div>
+                                                <i class="fa fa-usd fa-2x" style="opacity: 0.4;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-6 mb-3">
+                                    <div class="card border-0 shadow-sm" style="background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%); color: white; border-radius: 10px; overflow: hidden;">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.8;">Orders</span>
+                                                    <h4 class="mb-0 font-weight-bold"><field name="orders_count"/></h4>
+                                                </div>
+                                                <i class="fa fa-shopping-cart fa-2x" style="opacity: 0.4;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="card border-0 shadow-sm" style="background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%); color: #555; border-radius: 10px; overflow: hidden;">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.8;">Avg Value</span>
+                                                    <h4 class="mb-0 font-weight-bold" style="color: #d63384;"><field name="average_order_value" widget="monetary"/></h4>
+                                                </div>
+                                                <i class="fa fa-line-chart fa-2x" style="opacity: 0.3;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-6">
+                                    <div class="card border-0 shadow-sm" style="background: linear-gradient(45deg, #fbc2eb 0%, #a6c1ee 100%); color: #555; border-radius: 10px; overflow: hidden;">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span style="font-size: 0.8rem; text-transform: uppercase; opacity: 0.8;">Invoiced</span>
+                                                    <h4 class="mb-0 font-weight-bold" style="color: #4a4a4a;"><field name="total_invoiced" widget="monetary"/></h4>
+                                                </div>
+                                                <i class="fa fa-file-text-o fa-2x" style="opacity: 0.3;"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_sales_dashboard" model="ir.actions.act_window">
+        <field name="name">Sales Dashboard</field>
+        <field name="res_model">wb.sales.dashboard</field>
+        <field name="view_mode">kanban</field>
+        <field name="res_id" ref="app_one.wb_sales_dashboard_rec_v2"/>
+    </record>
+
+    <menuitem id="menu_sales_dashboard"
+              name="Sales Dashboard"
+              parent="wb_app_one_root_menu"
+              action="action_sales_dashboard"
+              sequence="0"/>
+
+
+
+</odoo>
