@@ -39,7 +39,8 @@
                             <div class="row mb-4 align-items-center">
                                 <div class="col d-flex align-items-center">
                                     <div style="width: 5px; height: 35px; background-color: #5C6BC0; margin-right: 15px; border-radius: 2px;"></div>
-                                    <h3 style="color: #34495E; font-weight: 800; margin: 0; font-size: 1.5rem;">Inventory Dashboard</h3>
+                                 <h3 style="color: #34495E; font-weight: 800; margin: 0; font-size: 1.5rem;">
+                                       <field name="name"/>  </h3>
                                 </div>
                                 <div class="col-auto">
                                      <button name="%(action_app_one_inventory_graph)d" type="action" class="btn btn-sm btn-outline-primary shadow-sm" style="border-radius: 5px;">

@@ -1,7 +1,6 @@
 <odoo>
-    <data noupdate="0"> <record id="wb_sales_dashboard_rec_v2" model="wb.sales.dashboard">
+    <data noupdate="0">
+        <record id="wb_sales_dashboard_rec_v2" model="wb.sales.dashboard">
             <field name="name">Sales Dashboard</field> </record>
     </data>
-
-
 </odoo>

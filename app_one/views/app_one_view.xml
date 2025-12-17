@@ -50,7 +50,8 @@
         <menuitem id="wb_app_one_root_menu"
                   name="odooNova"
                   web_icon="app_one,static/description/icon.png"
-        />
+                  sequence="1" />
+
 
 
 
