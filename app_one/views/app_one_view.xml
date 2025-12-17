@@ -20,35 +20,35 @@
 <!--        actions-->
 
         <record id="wb_app_one_action_Sales" model="ir.actions.act_window">
-            <field name="name">App one</field>
+            <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
           <record id="wb_app_one_action_Inventory" model="ir.actions.act_window">
-            <field name="name">App one</field>
+            <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
          <record id="wb_app_one_action_Purchase" model="ir.actions.act_window">
-            <field name="name">App one</field>
+            <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
          <record id="wb_app_one_action_CRM" model="ir.actions.act_window">
-            <field name="name">App one</field>
+            <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
   <record id="wb_app_one_action_HR" model="ir.actions.act_window">
-            <field name="name">App one</field>
+            <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
 
-<!--        App one =>-->
+<!--        odooNova =>-->
 <!--                menulist-->
         <menuitem id="wb_app_one_root_menu"
-                  name="App One"
+                  name="odooNova"
                   web_icon="app_one,static/description/icon.png"
         />
 
