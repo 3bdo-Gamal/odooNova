@@ -68,12 +68,6 @@
                   sequence="4"
                   parent="wb_app_one_root_menu"
         />
-        <menuitem id="wb_app_one_menu_HR"
-                  action="wb_app_one_action_HR"
-                  name="HR"
-                  sequence="5"
-                  parent="wb_app_one_root_menu"
-        />
 
     </data>
 </odoo>
