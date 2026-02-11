@@ -1,23 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="HRdashboard" owl="1">
-        <div class="o_dashboard_container"
-             style="padding:20px; height:100%; background-color:FFFCFCE8;">
+        <div class="o_dashboard_container" style="padding:20px; height:100%; background-color:FFFCFCE8;">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="text-primary" style="font-weight:bold">
                     HR Dashboard
                 </h1>
+                <select class="form_select" t-model="state.period" t-on-change="onChangePeriod" style="width:10%;height:70%;border:bold 3 px solid purple !important;border-radius:10px;text-align:center;background-color:purple;color:white; ">
+                    <option value="0" style="color:black;">Select Period</option>
+                          <option value="7" style="color:black;"> last Week</option>
+                          <option value="30" style="color:black;">last Month</option>
+                          <option value="90" style="color:black;">last 3 Months</option>
+                          <option value="180" style="color:black;">last 6 Months</option>
+                          <option value="270" style="color:black;">last 9 Months</option>
+                          <option value="365" style="color:black;"> last year</option>
+                          <option value="730" style="color:black;">last 2 years</option>
+                </select>
             </div>
-            <!--KPI cards-->
+                 <!-- filter -->
+            <!-- KPI cards -->
             <div class="row">
+                <!-- Employees count -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm h-100 border-0"
-                         style="border-left:7px solid blue!important;">
+                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid blue!important;">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-muted text-uppercase mb-2"
-                                        style="font-size:12px">
+                                    <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">
                                         Total Employees
                                     </h6>
                                     <h2 class="mb-0" style="font-weight:bold">
@@ -33,10 +42,9 @@
                     </div>
                 </div>
 
-                <!--5.Workload hours-->
+                <!-- 5.Workload hours -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 h-100"
-                         style="border-left:7px solid red!important;">
+                    <div class="card shadow-sm border-0 h-100" style="border-left:7px solid red!important;">
                         <div class="card-body">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -45,8 +53,7 @@
                                         Total Workload
                                     </h6>
 
-                                    <h2 class="mb-0"
-                                        style="font-weight:bold;color:#2c3e50">
+                                    <h2 class="mb-0" style="font-weight:bold;">
                                         <t t-esc="state.workload_hours"/>
                                         <span style="font-size:14px">Hrs</span>
                                     </h2>
@@ -61,12 +68,10 @@
                     </div>
                 </div>
 
-                <!--1.Completed tasks-->
+                <!-- 1.Completed tasks -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm h-100 border-0"
-                         style="border-left:7px solid green!important;">
+                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid green!important;">
                         <div class="card-body">
-
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-muted text-uppercase mb-2"
@@ -75,7 +80,7 @@
                                     </h6>
 
                                     <h2 class="mb-0"
-                                        style="font-weight:bold;color:#2c3e50">
+                                        style="font-weight:bold;">
                                         <t t-esc="state.tasks_complete"/>
                                     </h2>
                                 </div>
@@ -89,10 +94,9 @@
                     </div>
                 </div>
 
-                <!--3.Productivity KPI-->
+                <!-- 3.Productivity KPI -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 h-100"
-                         style="border-left:7px solid orange!important;">
+                    <div class="card shadow-sm border-0 h-100" style="border-left:7px solid orange!important;">
                         <div class="card-body">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -102,9 +106,9 @@
                                         Productivity
                                     </h6>
 
-                                    <h2 class="mb-0"
-                                        style="font-weight:bold;color:#2c3e50">
+                                    <h2 class="mb-0" style="font-weight:bold;">
                                         <t t-esc="state.production_kpi"/>
+                                         <span style="font-size:14px">%</span>
                                     </h2>
                                 </div>
 
@@ -118,8 +122,61 @@
                 </div>
 
             </div>
+            <div class="row">
+                  <!--6.emp_turnover-->
+            <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm border-0 h-100" style="border-left:7px solid purple !important;">
+                        <div class="card-body">
 
-            <!--chart-->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">
+                                        Employee Turnover
+                                    </h6>
+
+                                    <h2 class="mb-0" style="font-weight:bold;">
+                                        <t t-esc="state.emp_turnover"/>
+                                         <span style="font-size:14px">%</span>
+                                    </h2>
+                                </div>
+
+                                <div class="icon-shape bg-light p-3 rounded-circle text-danger">
+                                     <i class="fa fa-user-times fa-2x"></i>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            <!--2.employee attendance-->
+    <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid yellow !important;">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">
+                                        Employee Attendances
+                                    </h6>
+
+                                    <h2 class="mb-0" style="font-weight:bold;">
+                                        <t t-esc="state.attendance"/>
+                                         <span style="font-size:14px">%</span>
+                                    </h2>
+                                </div>
+
+                                <div class="icon-shape bg-light p-3 rounded-circle text-success">
+                                   <i class="fa fa-calendar-check-o fa-2x"></i>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                </div>
+            <!-- chart -->
             <div class="row">
                 <div class="col-lg-12">
                     <div class="card shadow-sm border-0">
@@ -129,8 +186,10 @@
                                 Workload Analysis
                             </h4>
                         </div>
+
                         <div class="card-body">
-                            <div style="height:400px; position:relative">
+                            <!-- chart wrapper -->
+                            <div style="height:300px; position:relative">
                                 <canvas class="my_dashboard_chart"></canvas>
                             </div>
                         </div>
