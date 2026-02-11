@@ -33,8 +33,8 @@ export class HrDashboard extends Component {
                         this.state.tasks_complete = data.tasks_complete;
                         this.state.production_kpi = data.production_kpi;
                         this.state.attendance=data.attendance;
-                        this.state.emp_turnover=data.emp_turnover
-
+                        this.state.emp_turnover=data.emp_turnover;
+                        this.state.sales_per_emp=data.sales_per_emp;
                         this.chartLabels = data.chart_labels;
                         this.chartData = data.chart_data;
                     }
