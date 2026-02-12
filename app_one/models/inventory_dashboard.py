@@ -28,5 +28,5 @@ class InventoryDashboard(models.Model):
             record.stock_value = sum(p.qty_available * p.standard_price for p in products)
 
 
-            low_stock_items = products.filtered(lambda p: p.qty_available < 5)
+            low_stock_items = products.filtered(lambda p: p.qty_available < p.ROP)
             record.low_stock_count = len(low_stock_items)
