@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="PurchaseDashboardMain" owl="1">
+        <div class="o_dashboard_container" style="padding:20px; height:100%; background-color:FFFCFCE8;">
+            <t t-if="state.stats">
+            </t>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="text-primary" style="font-weight:bold">
+                   PO Dashboard
+                </h1>
+                <select class="form_select" t-model="state.period" t-on-change="onChangePeriod" style="width:10%;height:70%;border:bold 3 px solid purple !important;border-radius:10px;text-align:center;background-color:purple;color:white; ">
+                    <option value="0" style="color:black;">Select Period</option>
+                          <option value="7" style="color:black;"> last Week</option>
+                          <option value="30" style="color:black;">last Month</option>
+                          <option value="90" style="color:black;">last 3 Months</option>
+                          <option value="180" style="color:black;">last 6 Months</option>
+                          <option value="270" style="color:black;">last 9 Months</option>
+                          <option value="365" style="color:black;"> last year</option>
+                          <option value="730" style="color:black;">last 2 years</option>
+                </select>
+            </div>
+
+   <!--Savings-->
+        <div class="row container my-5 mx-auto">
+  <div class="col-sm-3">
+    <div class="card">
+      <div class="card-body bg-success text-light shadow-lg p-3">
+       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">Average price savings</h6>
+         <h2 class="mb-0" style="font-weight:bold">
+             <t t-esc="state.stats.avg_savings"/>
+
+         </h2>
+      </div>
+    </div>
+  </div>
+
+ <!--Efficiency-->
+              <div class="col-sm-3">
+    <div class="card">
+      <div class="card-body bg-danger shadow-lg text-light p-3">
+       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">Average invoice issuance time</h6>
+         <h2 class="mb-0" style="font-weight:bold">
+             <t t-esc="state.stats.avg_lag"/>
+
+         </h2>
+      </div>
+    </div>
+  </div>
+
+ <!--Urgency-->
+              <div class="col-sm-3">
+    <div class="card">
+      <div class="card-body bg-warning shadow-lg text-light p-3">
+       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">number of urgent requests</h6>
+         <h2 class="mb-0" style="font-weight:bold">
+             <t t-esc="state.stats.emergency_count"/>
+
+         </h2>
+      </div>
+    </div>
+  </div>
+
+<!--Stability-->
+              <div class="col-sm-3">
+    <div class="card">
+      <div class="card-body bg-info text-light shadow-lg p-3">
+       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">Confirmed order modification rate</h6>
+         <h2 class="mb-0" style="font-weight:bold">
+             <t t-esc="state.stats.stability_rate"/>
+
+         </h2>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+          <div class="row">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0">
+
+                        <div class="card-header bg-white border-0 pt-4 pb-2">
+                            <h4 class="card-title mb-0">
+                                Vendor Performance
+                            </h4>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- chart wrapper -->
+                            <div style="height:300px; width:100%; position:relative">
+                                <canvas t-ref="vendor_chart_container"></canvas>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+               <div class="col-lg-6">
+                    <div class="card shadow-sm border-0">
+
+                        <div class="card-header bg-white border-0 pt-4 pb-2">
+                            <h4 class="card-title mb-0">
+                                Department Workload
+                            </h4>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- chart wrapper -->
+                            <div style="height:300px;width:100%; position:relative">
+                                <canvas t-ref="workload_chart_container"></canvas>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+    </templates>

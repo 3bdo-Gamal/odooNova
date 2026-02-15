@@ -2,7 +2,7 @@
     'name': 'odooNova',
     'version': '1.0',
     'author': '3bdo',
-'depends': ['base', 'sale', 'board'],
+'depends': ['base', 'sale', 'board','hr','hr_attendance','project','hr_holidays','purchase','account','purchase_requisition'],
 
 'data': [
     'security/ir.model.access.csv',
@@ -13,11 +13,14 @@
     'views/sales_view.xml',
     "views/inventory_view.xml",
     "views/hr_view.xml",
+    'views/PO.xml',
 ],
  "assets":{
 "web.assets_backend":[
     "app_one/static/src/js/dashboard.js",
-    "app_one/static/src/xml/dashboard.xml"]
+    "app_one/static/src/xml/dashboard.xml",
+    "app_one/static/src/xml/po_dashboard.xml",
+    "app_one/static/src/js/po_dashboard.js"]
  },
 
 
