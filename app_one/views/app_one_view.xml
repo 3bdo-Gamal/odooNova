@@ -56,12 +56,12 @@
 
 
 
-        <menuitem id="wb_app_one_menu_Purchase"
-                  action="wb_app_one_action_Purchase"
-                  name="Purchase"
-                  sequence="3"
-                  parent="wb_app_one_root_menu"
-        />
+<!--        <menuitem id="wb_app_one_menu_Purchase"-->
+<!--                  action="wb_app_one_action_Purchase"-->
+<!--                  name="Purchase Analysis"-->
+<!--                  sequence="3"-->
+<!--                  parent="wb_app_one_root_menu"-->
+<!--        />-->
         <menuitem id="wb_app_one_menu_CRM"
                   action="wb_app_one_action_CRM"
                   name="CRM"

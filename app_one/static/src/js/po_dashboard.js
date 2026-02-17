@@ -100,6 +100,8 @@ console.log(data)
         }
     }}
 }
+// تغيير اسم التمبلت
+PurchaseDashboard.template = "purchase_orders_dashboard_template";
 
-PurchaseDashboard.template = "PurchaseDashboardMain";
-registry.category("actions").add("purchase_dashboard_client_tag", PurchaseDashboard);
+// تغيير اسم التاج (هذا هو سبب الخطأ الرئيسي!)
+registry.category("actions").add("purchase_orders_dashboard_tag", PurchaseDashboard);

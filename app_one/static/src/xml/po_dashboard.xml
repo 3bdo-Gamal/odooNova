@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-  <t t-name="PurchaseDashboardMain" owl="1">
+  <t t-name="purchase_orders_dashboard_template" owl="1">
         <div class="o_dashboard_container" style="padding:20px; height:100%; background-color:FFFCFCE8;">
             <t t-if="state.stats">
             </t>

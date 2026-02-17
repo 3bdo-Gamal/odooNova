@@ -13,7 +13,6 @@ class HR_Dashboard(models.Model):
     attendance = fields.Float(string=' Employee Attendance ')
     emp_turnover=fields.Float(string=' Employee TurnOver ')
     sales_per_emp=fields.Integer(string=" Sales of Employees")
-
     datajson = fields.Text()
     @api.model
     def compute_kpis(self,period=7):

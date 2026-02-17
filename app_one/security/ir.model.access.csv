@@ -3,3 +3,5 @@ access_wb_app_one,wb.app_one,model_wb_app_one,base.group_user,1,0,1,0
 access_wb_sales_dashboard,wb.sales.dashboard,model_wb_sales_dashboard,base.group_user,1,1,1,1
 access_wb_inventory_dashboard,wb.inventory.dashboard,model_wb_inventory_dashboard,base.group_user,1,1,1,1
 access_wb_hr_dashboard,access.wb.hr.dashboard,model_wb_hr_dashboard,base.group_user,1,1,1,1
+access_wb_purchase_bills_dashboard,wb.purchase.bills.dashboard,model_wb_purchase_bills_dashboard,base.group_user,1,0,1,0
+access_wb_po_dashboard,wb.po.dashboard,model_wb_po_dashboard,base.group_user,1,1,1,1
