@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="purchase_bills_dashboard_template" owl="1">
+        <div class="o_dashboard_container h-100 overflow-auto"
+             style="background-color: #f8f9fa; padding: 25px;
+                    --kpi-red: #E74C3C;
+                    --kpi-blue: #3498DB;
+                    --kpi-orange: #F39C12;
+                    --kpi-purple: #9B59B6;
+                    --text-dark: #2C3E50;">
+
+            <div class="d-flex justify-content-between align-items-center mb-5 bg-white p-4 shadow-sm rounded-3">
+                <div>
+                    <h3 class="m-0 fw-bolder" style="color: var(--text-dark);">
+                        Purchase Executive Overview
+                    </h3>
+                    <small class="text-muted">Monitor spending, liquidity, and vendor performance.</small>
+                </div>
+
+                <div class="d-flex align-items-center">
+                     <div class="input-group shadow-sm rounded-3 me-3" style="width: fit-content;">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa fa-calendar text-muted"></i></span>
+                        <select class="form-select border-start-0 bg-white fw-bold" style="color: var(--text-dark); cursor: pointer; box-shadow: none;" t-on-change="onChangeFilter">
+                            <option value="this_week">This Week</option>
+                            <option value="last_week">Last Week</option>
+                            <option value="this_month">This Month</option>
+                            <option value="last_month">Last Month</option>
+                            <option value="last_3_months">Last 3 Months</option>
+                            <option value="last_6_months">Last 6 Months</option>
+                            <option value="this_year" selected="1">This Year</option>
+                            <option value="last_year">Last Year</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-5">
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
+                         style="border-left: 6px solid var(--kpi-red) !important;">
+                        <div class="card-body d-flex align-items-center p-4">
+                            <div class="flex-grow-1">
+                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Upcoming Payables (30d)</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                    <t t-esc="state.kpi_data.cards.upcoming_payables"/>
+                                </h2>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
+                                 style="background-color: rgba(231, 76, 60, 0.15); color: var(--kpi-red); width: 70px; height: 70px;">
+                                <i class="fa fa-money fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
+                         style="border-left: 6px solid var(--kpi-blue) !important;">
+                        <div class="card-body d-flex align-items-center p-4">
+                            <div class="flex-grow-1">
+                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Avg DPO Efficiency</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                    <t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small>
+                                </h2>
+                            </div>
+                             <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
+                                 style="background-color: rgba(52, 152, 219, 0.15); color: var(--kpi-blue); width: 70px; height: 70px;">
+                                <i class="fa fa-calendar-check-o fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
+                         style="border-left: 6px solid var(--kpi-orange) !important;">
+                        <div class="card-body d-flex align-items-center p-4">
+                            <div class="flex-grow-1">
+                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Late Bills Ratio</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                    <t t-esc="state.kpi_data.cards.late_bills_ratio"/>%
+                                </h2>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
+                                 style="background-color: rgba(243, 156, 18, 0.15); color: var(--kpi-orange); width: 70px; height: 70px;">
+                                <i class="fa fa-exclamation-triangle fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
+                         style="border-left: 6px solid var(--kpi-purple) !important;">
+                        <div class="card-body d-flex align-items-center p-4">
+                            <div class="flex-grow-1">
+                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Maverick Spend (No-PO)</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                    <t t-esc="state.kpi_data.cards.wo_po_ratio"/>%
+                                </h2>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
+                                 style="background-color: rgba(155, 89, 182, 0.15); color: var(--kpi-purple); width: 70px; height: 70px;">
+                                <i class="fa fa-file-text-o fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm border-0 p-4 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-line-chart me-2 text-primary"/>Spend Trend Analysis</h5>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 400px;">
+                            <canvas t-ref="chart_trend"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 p-4 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                             <h5 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-users me-2 text-success"/>Top 10 Vendors</h5>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 400px;">
+                            <canvas t-ref="chart_vendor"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </t>
+</templates>

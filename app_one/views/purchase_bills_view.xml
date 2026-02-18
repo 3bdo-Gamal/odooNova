@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_purchase_bills_dashboard_unique" model="ir.actions.client">
+            <field name="name">Bills Analysis</field>
+            <field name="tag">purchase_bills_dashboard_tag</field>
+        </record>
+
+        <menuitem id="menu_purchase_dashboards_container"
+                  name="Purchase Dashboards"
+                  parent="wb_app_one_root_menu"
+                  sequence="4"/>
+
+        <menuitem id="menu_purchase_bills_dashboard_unique"
+                  name="Bills Dashboard"
+                  parent="menu_purchase_dashboards_container"
+                  action="action_purchase_bills_dashboard_unique"
+                  sequence="2"/>
+    </data>
+</odoo>
