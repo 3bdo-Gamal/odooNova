@@ -3,3 +3,4 @@ from .import models
 from . import sales_dashboard
 from . import inventory_dashboard
 from . import hr_dashboard
+from . import purchase_order
