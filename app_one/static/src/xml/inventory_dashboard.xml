@@ -1,0 +1,46 @@
+<templates xml:space="preserve">
+    <t t-name="app_one.InventoryDashboard" owl="1">
+        <div class="o_dashboard_container p-4" style="background-color: #f8f9fa; min-height: 100vh;">
+            <h1 class="mb-4 fw-bold text-dark">Inventory Advanced Analysis</h1>
+
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 h-100">
+                        <h6 class="text-muted text-uppercase small fw-bold">Total Stock Value</h6>
+                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.stock_value"/> <small class="fs-6">EGP</small></h3>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card shadow-sm border-0 border-start border-success border-4 p-3 h-100">
+                        <h6 class="text-muted text-uppercase small fw-bold">Inventory Turnover</h6>
+                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.inventory_turnover"/>x</h3>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card shadow-sm border-0 border-start border-warning border-4 p-3 h-100">
+                        <h6 class="text-muted text-uppercase small fw-bold">DIO (Days Inventory)</h6>
+                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.dio"/> <small class="fs-6">Days</small></h3>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card shadow-sm border-0 border-start border-danger border-4 p-3 h-100">
+                        <h6 class="text-muted text-uppercase small fw-bold">Low Stock Alerts</h6>
+                        <h3 class="text-danger fw-bold mb-0"><t t-esc="state.kpis.low_stock_count"/> Items</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-0 p-3" style="min-height: 400px; max-height: 450px; overflow: hidden;">
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">ABC Analysis</h5>
+
+                        <div class="chart-container" style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="abcChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
