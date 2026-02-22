@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="purchase_bills_dashboard_template" owl="1">
-        <div class="o_dashboard_container h-100 overflow-auto"
-             style="background-color: #f8f9fa; padding: 25px;
+        <div class="o_dashboard_container w-100 h-100 overflow-auto"
+             style="background-color: #f8f9fa; padding: 20px;
                     --kpi-red: #E74C3C;
                     --kpi-blue: #3498DB;
                     --kpi-orange: #F39C12;
                     --kpi-purple: #9B59B6;
                     --text-dark: #2C3E50;">
 
-            <div class="d-flex justify-content-between align-items-center mb-5 bg-white p-4 shadow-sm rounded-3">
+            <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 shadow-sm rounded-3">
                 <div>
-                    <h3 class="m-0 fw-bolder" style="color: var(--text-dark);">
+                    <h4 class="m-0 fw-bolder" style="color: var(--text-dark);">
                         Purchase Executive Overview
-                    </h3>
+                    </h4>
                     <small class="text-muted">Monitor spending, liquidity, and vendor performance.</small>
                 </div>
 
                 <div class="d-flex align-items-center">
                      <div class="input-group shadow-sm rounded-3 me-3" style="width: fit-content;">
-                        <span class="input-group-text bg-white border-end-0"><i class="fa fa-calendar text-muted"></i></span>
-                        <select class="form-select border-start-0 bg-white fw-bold" style="color: var(--text-dark); cursor: pointer; box-shadow: none;" t-on-change="onChangeFilter">
+                        <span class="input-group-text bg-white border-end-0 py-1"><i class="fa fa-calendar text-muted"></i></span>
+                        <select class="form-select border-start-0 bg-white fw-bold py-1" style="color: var(--text-dark); cursor: pointer; box-shadow: none;" t-on-change="onChangeFilter">
                             <option value="this_week">This Week</option>
                             <option value="last_week">Last Week</option>
                             <option value="this_month">This Month</option>
@@ -34,21 +34,21 @@
                 </div>
             </div>
 
-            <div class="row g-4 mb-5">
-
+            <div class="row g-3 mb-3">
                 <div class="col-lg-3 col-md-6">
                     <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 6px solid var(--kpi-red) !important;">
-                        <div class="card-body d-flex align-items-center p-4">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Upcoming Payables (30d)</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                         style="border-left: 4px solid var(--kpi-red) !important; cursor: pointer;"
+                         t-on-click="() => this.openAction('upcoming')">
+                        <div class="card-body d-flex align-items-center p-3">
+                            <div class="flex-grow-1" >
+                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Upcoming Payables</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
                                     <t t-esc="state.kpi_data.cards.upcoming_payables"/>
                                 </h2>
                             </div>
-                            <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
-                                 style="background-color: rgba(231, 76, 60, 0.15); color: var(--kpi-red); width: 70px; height: 70px;">
-                                <i class="fa fa-money fa-2x"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                 style="background-color: rgba(231, 76, 60, 0.15); color: var(--kpi-red); width: 55px; height: 55px;">
+                                <i class="fa fa-money fa-lg"></i>
                             </div>
                         </div>
                     </div>
@@ -56,17 +56,18 @@
 
                 <div class="col-lg-3 col-md-6">
                     <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 6px solid var(--kpi-blue) !important;">
-                        <div class="card-body d-flex align-items-center p-4">
+                         style="border-left: 4px solid var(--kpi-blue) !important; cursor: pointer;"
+                         t-on-click="() => this.openAction('dpo')">
+                        <div class="card-body d-flex align-items-center p-3">
                             <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Avg DPO Efficiency</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Avg DPO</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
                                     <t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small>
                                 </h2>
                             </div>
-                             <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
-                                 style="background-color: rgba(52, 152, 219, 0.15); color: var(--kpi-blue); width: 70px; height: 70px;">
-                                <i class="fa fa-calendar-check-o fa-2x"></i>
+                             <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                 style="background-color: rgba(52, 152, 219, 0.15); color: var(--kpi-blue); width: 55px; height: 55px;">
+                                <i class="fa fa-calendar-check-o fa-lg"></i>
                             </div>
                         </div>
                     </div>
@@ -74,17 +75,18 @@
 
                 <div class="col-lg-3 col-md-6">
                     <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 6px solid var(--kpi-orange) !important;">
-                        <div class="card-body d-flex align-items-center p-4">
+                         style="border-left: 4px solid var(--kpi-orange) !important; cursor: pointer;"
+                         t-on-click="() => this.openAction('late_bills')">
+                        <div class="card-body d-flex align-items-center p-3">
                             <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Late Bills Ratio</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Late Bills Ratio</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
                                     <t t-esc="state.kpi_data.cards.late_bills_ratio"/>%
                                 </h2>
                             </div>
-                            <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
-                                 style="background-color: rgba(243, 156, 18, 0.15); color: var(--kpi-orange); width: 70px; height: 70px;">
-                                <i class="fa fa-exclamation-triangle fa-2x"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                 style="background-color: rgba(243, 156, 18, 0.15); color: var(--kpi-orange); width: 55px; height: 55px;">
+                                <i class="fa fa-exclamation-triangle fa-lg"></i>
                             </div>
                         </div>
                     </div>
@@ -92,42 +94,149 @@
 
                 <div class="col-lg-3 col-md-6">
                     <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 6px solid var(--kpi-purple) !important;">
-                        <div class="card-body d-flex align-items-center p-4">
+                         style="background-color: #fff3cd; border-left: 4px solid #fd7e14 !important; cursor: pointer;"
+                         t-on-click="() => this.openAction('wo_po')">
+                        <div class="card-body d-flex align-items-center p-3">
                             <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">Maverick Spend (No-PO)</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 2.2rem;">
+                                <h6 class="text-dark text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Bill Without PO</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: #2C3E50; font-size: 1.8rem;">
                                     <t t-esc="state.kpi_data.cards.wo_po_ratio"/>%
                                 </h2>
                             </div>
-                            <div class="d-flex align-items-center justify-content-center p-4 rounded-circle"
-                                 style="background-color: rgba(155, 89, 182, 0.15); color: var(--kpi-purple); width: 70px; height: 70px;">
-                                <i class="fa fa-file-text-o fa-2x"></i>
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                 style="background-color: rgba(253, 126, 20, 0.2); color: #fd7e14; width: 55px; height: 55px;">
+                                <i class="fa fa-link fa-lg"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-lg-8">
-                    <div class="card shadow-sm border-0 p-4 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-line-chart me-2 text-primary"/>Spend Trend Analysis</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
+                         style="border-left: 4px solid var(--kpi-purple) !important; cursor: pointer;"
+                         t-on-click="() => this.openAction('wo_po')">
+                        <div class="card-body d-flex align-items-center p-3">
+                            <div class="flex-grow-1">
+                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Maverick Spend (No-PO)</h6>
+                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
+                                    <t t-esc="state.kpi_data.cards.wo_po_ratio"/>%
+                                </h2>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                 style="background-color: rgba(155, 89, 182, 0.15); color: var(--kpi-purple); width: 55px; height: 55px;">
+                                <i class="fa fa-file-text-o fa-lg"></i>
+                            </div>
                         </div>
-                        <div class="chart-container" style="position: relative; height: 400px;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                <h5 class="fw-bolder m-0" style="color: var(--text-dark);">
+                    <i class="fa fa-shield me-2 text-secondary"></i>Invoice Accuracy &amp; Control
+                </h5>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-7">
+                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold m-0" style="color: var(--text-dark);">
+                                <i class="fa fa-balance-scale me-2 text-danger"/>Price Variance (PO vs Bill)
+                            </h6>
+                            <small class="text-muted fw-bold" style="font-size: 0.75rem;">
+                                <span class="text-danger">■</span> Overbilled <span class="text-success ms-2">■</span> Underbilled
+                            </small>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 280px; cursor: pointer;"
+                             t-on-click="() => this.openAction('price_var')">
+                            <canvas t-ref="chart_price_var"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card shadow-sm border-0 p-0 h-100 rounded-3 overflow-hidden">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background-color: #ffffff;">
+                            <h6 class="fw-bold m-0" style="color: var(--text-dark);">
+                                <i class="fa fa-cubes me-2 text-info"/>Invoice Quantity Variance
+                            </h6>
+                            <button class="btn btn-sm btn-outline-secondary fw-bold py-1" style="font-size: 0.75rem;" t-on-click="() => this.openAction('qty_variance_pivot')">
+                                <i class="fa fa-table me-1"></i> Full Pivot
+                            </button>
+                        </div>
+                        <div class="table-responsive" style="max-height: 280px; cursor: pointer;" t-on-click="() => this.openAction('qty_variance_pivot')">
+                            <table class="table table-hover table-borderless align-middle mb-0">
+                                <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                                    <tr>
+                                        <th class="px-3 py-2 text-uppercase text-muted" style="font-size: 0.75rem;">Product</th>
+                                        <th class="px-3 py-2 text-uppercase text-muted text-end" style="font-size: 0.75rem;">Variance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.kpi_data.tables?.qty_variance_pivot || []" t-as="row" t-key="row.product">
+                                        <td class="px-3 py-2 fw-bold text-dark" style="font-size: 0.85rem;"><t t-esc="row.product"/></td>
+                                        <td class="px-3 py-2 fw-bolder text-end">
+                                            <span t-attf-class="badge rounded-pill {{ row.qty_variance &gt; 0 ? 'bg-danger' : (row.qty_variance &lt; 0 ? 'bg-success' : 'bg-secondary') }}">
+                                                <t t-esc="row.qty_variance"/>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-line-chart me-2 text-primary"/>Spend Trend Analysis</h6>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 300px; cursor: pointer;"
+                             t-on-click="() => this.openAction('trend')">
                             <canvas t-ref="chart_trend"/>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-4">
-                    <div class="card shadow-sm border-0 p-4 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                             <h5 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-users me-2 text-success"/>Top 10 Vendors</h5>
+                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                             <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-pie-chart me-2 text-warning"/>Paid vs Unpaid Bills</h6>
                         </div>
-                        <div class="chart-container" style="position: relative; height: 400px;">
+                        <div class="chart-container" style="position: relative; height: 300px; cursor: pointer;"
+                             t-on-click="() => this.openAction('status')">
+                            <canvas t-ref="chart_status"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                             <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-users me-2 text-success"/>Top 10 Vendors</h6>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 300px; cursor: pointer;"
+                             t-on-click="() => this.openAction('vendor')">
                             <canvas t-ref="chart_vendor"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                             <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-clock-o me-2 text-info"/>Vendor Payment Lead Time</h6>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 300px;">
+                            <canvas t-ref="chart_lead_time"/>
                         </div>
                     </div>
                 </div>

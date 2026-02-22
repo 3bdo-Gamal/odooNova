@@ -7,10 +7,11 @@
 'data': [
     'security/ir.model.access.csv',
     'data/dashboard_sales.xml',
-"data/dashboard_inventory.xml",
-'data/dashboard_hr.xml',
+    "data/dashboard_inventory.xml",
+    'data/dashboard_hr.xml',
     'views/app_one_view.xml',
     'views/sales_view.xml',
+    "views/purchase_bills_view.xml",
     "views/inventory_view.xml",
     "views/hr_view.xml",
     'views/PO.xml',
@@ -22,9 +23,9 @@
          "app_one/static/src/js/dashboard.js",
          "app_one/static/src/xml/dashboard.xml",
          "app_one/static/src/xml/po_dashboard.xml",
-         "app_one/static/src/js/po_dashboard.js"
+         "app_one/static/src/js/po_dashboard.js",
          "app_one/static/src/js/inventory_dashboard.js",
-         "app_one/static/src/xml/inventory_dashboard.xml"
+        "app_one/static/src/xml/inventory_dashboard.xml"
 
 ]
  },
