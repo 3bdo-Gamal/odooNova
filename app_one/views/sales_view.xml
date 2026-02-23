@@ -7,11 +7,38 @@
             <field name="tag">sales_dashboard_client_tag</field>
         </record>
 
-        <menuitem id="menu_sales_dashboard"
-                  name="Sales Dashboard"
+        <record id="action_pos_dashboard_client" model="ir.actions.client">
+            <field name="name">POS Dashboard</field>
+            <field name="tag">pos_dashboard_client_tag</field>
+        </record>
+
+        <record id="action_invoicing_dashboard_client" model="ir.actions.client">
+            <field name="name">Invoicing Dashboard</field>
+            <field name="tag">invoicing_dashboard_client_tag</field>
+        </record>
+
+        <menuitem id="menu_analytics_root"
+                  name="Sales Dashboards"
                   parent="wb_app_one_root_menu"
-                  action="action_sales_dashboard_client"
                   sequence="0"/>
 
-        </data>
+        <menuitem id="menu_sales_dashboard_child"
+                  name="Sales Performance"
+                  parent="menu_analytics_root"
+                  action="action_sales_dashboard_client"
+                  sequence="1"/>
+
+        <menuitem id="menu_pos_dashboard_child"
+                  name="Point of Sale"
+                  parent="menu_analytics_root"
+                  action="action_pos_dashboard_client"
+                  sequence="2"/>
+
+        <menuitem id="menu_invoicing_dashboard_child"
+                  name="Invoicing"
+                  parent="menu_analytics_root"
+                  action="action_invoicing_dashboard_client"
+                  sequence="3"/>
+
+    </data>
 </odoo>

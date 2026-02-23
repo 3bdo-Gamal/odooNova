@@ -1,66 +1,28 @@
 <templates xml:space="preserve">
     <t t-name="app_one.InventoryDashboard" owl="1">
         <div class="o_dashboard_container p-4" style="background-color: #f8f9fa; min-height: 100vh;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="fw-bold text-dark">Inventory Advanced Analysis</h1>
-                <button class="btn btn-outline-danger btn-sm shadow-sm" t-on-click="resetFilters">
-                    <i class="fa fa-refresh me-1"></i> Clear Filters
-                </button>
-            </div>
+            <h1 class="mb-4 fw-bold text-dark">Inventory Advanced Analysis</h1>
 
-            <div class="row mb-4 g-3">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-2">
-                        <label class="small fw-bold text-muted mb-1">Warehouse</label>
-                        <select class="form-select border-0 bg-light" t-model="state.filters.warehouse_id" t-on-change="(ev) => this.onFilterChange(ev, 'warehouse_id')">
-                            <option value="">All Warehouses</option>
-                            <t t-foreach="state.kpis.warehouses || []" t-as="wh" t-key="wh.id">
-                                <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
-                            </t>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-2">
-                        <label class="small fw-bold text-muted mb-1">Product</label>
-                        <select class="form-select border-0 bg-light" t-model="state.filters.product_id" t-on-change="(ev) => this.onFilterChange(ev, 'product_id')">
-                            <option value="">All Products</option>
-                            <t t-foreach="state.kpis.products_list || []" t-as="p" t-key="p.id">
-                                <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
-                            </t>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-2 bg-primary text-white h-100 justify-content-center">
-                        <div class="d-flex justify-content-between align-items-center px-2">
-                            <span class="small fw-bold text-uppercase">Stock On Hand</span>
-                            <h4 class="mb-0 fw-bold"><t t-esc="state.kpis.stock_on_hand"/></h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-md-3">
+            <div class="row">
+                <div class="col-md-3 mb-3">
                     <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 h-100">
                         <h6 class="text-muted text-uppercase small fw-bold">Total Stock Value</h6>
                         <h3 class="fw-bold mb-0"><t t-esc="state.kpis.stock_value"/> <small class="fs-6">EGP</small></h3>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-3">
                     <div class="card shadow-sm border-0 border-start border-success border-4 p-3 h-100">
                         <h6 class="text-muted text-uppercase small fw-bold">Inventory Turnover</h6>
-                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.inventory_turnover"/></h3>
+                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.inventory_turnover"/>x</h3>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-3">
                     <div class="card shadow-sm border-0 border-start border-warning border-4 p-3 h-100">
                         <h6 class="text-muted text-uppercase small fw-bold">DIO (Days Inventory)</h6>
-                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.dio"/></h3>
+                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.dio"/> <small class="fs-6">Days</small></h3>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-3">
                     <div class="card shadow-sm border-0 border-start border-danger border-4 p-3 h-100">
                         <h6 class="text-muted text-uppercase small fw-bold">Low Stock Alerts</h6>
                         <h3 class="text-danger fw-bold mb-0"><t t-esc="state.kpis.low_stock_count"/> Items</h3>
@@ -70,9 +32,10 @@
 
             <div class="row mt-4">
                 <div class="col-md-6">
-                    <div class="card shadow-sm border-0 p-3" style="height: 400px;">
-                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">ABC Analysis (By Category)</h5>
-                        <div class="chart-container" style="position: relative; height: 300px;">
+                    <div class="card shadow-sm border-0 p-3" style="min-height: 400px; max-height: 450px; overflow: hidden;">
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">ABC Analysis</h5>
+
+                        <div class="chart-container" style="position: relative; height: 320px; width: 100%;">
                             <canvas id="abcChart"></canvas>
                         </div>
                     </div>
