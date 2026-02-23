@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="SalesDashboardClientTemplate">
+        <div class="o_dashboard_container" style="padding:20px; height:100%; overflow-y:auto; background-color: #f9f9f9;">
+
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                <h2 class="text-primary fw-bold">📊 Sales Analytics Dashboard</h2>
+
+                <div class="d-flex gap-2">
+                    <select class="form-select shadow-sm" t-model="state.customer_type" t-on-change="onChangeType" style="width:180px; border-radius: 10px; border: 2px solid #4e73df; font-weight:bold;">
+                        <option value="all">🏢 All Business</option>
+                        <option value="wholesale">📦 Wholesale Only</option>
+                        <option value="retail">👤 Retail Only</option>
+                    </select>
+
+                    <select class="form-select shadow-sm" t-model="state.period" t-on-change="onChangePeriod" style="width:180px; border-radius: 10px;">
+                        <option value="7">📅 Last 7 Days</option>
+                        <option value="30">📅 Last 30 Days</option>
+                        <option value="90">📅 Last Quarter</option>
+                        <option value="365">📅 Last Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #4e73df !important;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                <t t-if="state.customer_type == 'wholesale'">Wholesale Revenue</t>
+                                <t t-elif="state.customer_type == 'retail'">Retail Revenue</t>
+                                <t t-else="">Total Revenue</t>
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.total_revenue"/> <small>EGP</small></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #1cc88a !important;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Growth</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                <t t-esc="state.sales_growth"/>%
+                                <span t-if="state.sales_growth > 0">⬆️</span>
+                                <span t-if="state.sales_growth &lt; 0">⬇️</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #36b9cc !important;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Orders Count</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.total_orders"/></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #f6c23e !important;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Avg Order Value</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.aov"/></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #e74a3b !important;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Gross Profit</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.gross_profit"/></div>
+                        </div>
+                    </div>
+                </div>
+           <div class="col-md-3">
+               <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #000000 !important;">
+                   <div class="card-body">
+                       <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">Profit Margin</div>
+                       <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.profit_margin"/>%</div>
+                   </div>
+              </div>
+           </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #6f42c1 !important;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color:#6f42c1">Total Discounts</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.total_discount"/></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #20c997 !important; background-color: #e6fffa;">
+                        <div class="card-body">
+                            <div class="text-xs font-weight-bold text-uppercase mb-1" style="color:#20c997">Outstanding (Debt)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.outstanding_receivables"/></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-8 mb-4">
+                    <div class="card shadow mb-4 h-100">
+                        <div class="card-header py-3 bg-white">
+                            <h6 class="m-0 font-weight-bold text-primary">Top Customers (Revenue)</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 350px;">
+                                <canvas t-ref="customer_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow mb-4 h-100">
+                        <div class="card-header py-3 bg-white">
+                            <h6 class="m-0 font-weight-bold text-primary">Top Products (Qty)</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 350px;">
+                                <canvas t-ref="product_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow mb-4 h-100">
+                        <div class="card-header py-3 bg-white">
+                            <h6 class="m-0 font-weight-bold text-primary">Top Salespeople</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas t-ref="salesperson_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow mb-4 h-100">
+                        <div class="card-header py-3 bg-white">
+                            <h6 class="m-0 font-weight-bold text-primary">Sales by Category</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas t-ref="category_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white d-flex align-items-center">
+                             <i class="fa fa-line-chart text-primary me-2"></i>
+                            <h6 class="m-0 font-weight-bold text-primary">Sales Trend (Daily)</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas t-ref="trend_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>
