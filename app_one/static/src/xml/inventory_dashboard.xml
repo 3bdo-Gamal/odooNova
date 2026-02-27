@@ -1,67 +1,70 @@
 <templates xml:space="preserve">
     <t t-name="app_one.InventoryDashboard" owl="1">
-        <div class="o_dashboard_container p-4" style="background-color: #f8f9fa; min-height: 100vh;">
+        <div class="o_dashboard_container p-4" style="background-color: #f4f7f6; min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="fw-bold text-dark">Inventory Advanced Analysis</h1>
-                <button class="btn btn-outline-danger btn-sm shadow-sm" t-on-click="resetFilters">
-                    <i class="fa fa-refresh me-1"></i> Clear Filters
+                <h2 class="fw-bold text-dark m-0">Inventory KPI Dashboard</h2>
+                <button class="btn btn-danger shadow-sm" t-on-click="resetFilters">
+                    <i class="fa fa-refresh me-1"></i> Clear All Filters
                 </button>
             </div>
 
-            <div class="row mb-4 g-3">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-2">
-                        <label class="small fw-bold text-muted mb-1">Warehouse</label>
-                        <select class="form-select border-0 bg-light" t-model="state.filters.warehouse_id" t-on-change="(ev) => this.onFilterChange(ev, 'warehouse_id')">
-                            <option value="">All Warehouses</option>
-                            <t t-foreach="state.kpis.warehouses || []" t-as="wh" t-key="wh.id">
-                                <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
-                            </t>
-                        </select>
-                    </div>
+            <div class="row mb-4 g-3 bg-white shadow-sm p-3 rounded-3 border-0">
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted mb-1">Date From</label>
+                    <input type="date" class="form-control border-1" t-model="state.filters.date_from" t-on-change="(ev) => this.onFilterChange(ev, 'date_from')"/>
                 </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-2">
-                        <label class="small fw-bold text-muted mb-1">Product</label>
-                        <select class="form-select border-0 bg-light" t-model="state.filters.product_id" t-on-change="(ev) => this.onFilterChange(ev, 'product_id')">
-                            <option value="">All Products</option>
-                            <t t-foreach="state.kpis.products_list || []" t-as="p" t-key="p.id">
-                                <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
-                            </t>
-                        </select>
-                    </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted mb-1">Date To</label>
+                    <input type="date" class="form-control border-1" t-model="state.filters.date_to" t-on-change="(ev) => this.onFilterChange(ev, 'date_to')"/>
                 </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-2 bg-primary text-white h-100 justify-content-center">
-                        <div class="d-flex justify-content-between align-items-center px-2">
-                            <span class="small fw-bold text-uppercase">Stock On Hand</span>
-                            <h4 class="mb-0 fw-bold"><t t-esc="state.kpis.stock_on_hand"/></h4>
-                        </div>
-                    </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted mb-1">Warehouse</label>
+                    <select class="form-select border-1" t-model="state.filters.warehouse_id" t-on-change="(ev) => this.onFilterChange(ev, 'warehouse_id')">
+                        <option value="">All Warehouses</option>
+                        <t t-foreach="state.kpis.warehouses || []" t-as="wh" t-key="wh.id">
+                            <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold text-muted mb-1">Product</label>
+                    <select class="form-select border-1" t-model="state.filters.product_id" t-on-change="(ev) => this.onFilterChange(ev, 'product_id')">
+                        <option value="">All Products</option>
+                        <t t-foreach="state.kpis.products_list || []" t-as="p" t-key="p.id">
+                            <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
+                        </t>
+                    </select>
                 </div>
             </div>
 
             <div class="row g-3">
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 h-100">
-                        <h6 class="text-muted text-uppercase small fw-bold">Total Stock Value</h6>
-                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.stock_value"/> <small class="fs-6">EGP</small></h3>
+                    <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 h-100"
+                         style="cursor: pointer; transition: 0.3s;"
+                         t-on-click="() => this.openView('stock.quant', [['location_id.usage', '=', 'internal']], 'Stock Details')">
+                        <h6 class="text-muted text-uppercase small fw-bold">Stock On Hand (Click)</h6>
+                        <h3 class="fw-bold mb-0 text-primary"><t t-esc="state.kpis.stock_on_hand"/></h3>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-success border-4 p-3 h-100">
-                        <h6 class="text-muted text-uppercase small fw-bold">Inventory Turnover</h6>
-                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.inventory_turnover"/></h3>
+                    <div class="card shadow-sm border-0 border-start border-success border-4 p-3 h-100"
+                         style="cursor: pointer;"
+                         t-on-click="() => this.openView('product.product', [['detailed_type', '=', 'product']], 'Product Costs')">
+                        <h6 class="text-muted text-uppercase small fw-bold">Total Stock Value</h6>
+                        <h3 class="fw-bold mb-0 text-success"><t t-esc="state.kpis.stock_value"/> <small class="fs-6">EGP</small></h3>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card shadow-sm border-0 border-start border-warning border-4 p-3 h-100">
-                        <h6 class="text-muted text-uppercase small fw-bold">DIO (Days Inventory)</h6>
-                        <h3 class="fw-bold mb-0"><t t-esc="state.kpis.dio"/></h3>
+                        <h6 class="text-muted text-uppercase small fw-bold">DIO (Inventory Days)</h6>
+                        <h3 class="fw-bold mb-0 text-warning"><t t-esc="state.kpis.dio"/></h3>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-danger border-4 p-3 h-100">
+                    <div class="card shadow-sm border-0 border-start border-danger border-4 p-3 h-100"
+                         style="cursor: pointer;"
+                         t-on-click="() => this.openView('product.product', [['qty_available', '&lt;=', 0]], 'Low Stock Products')">
                         <h6 class="text-muted text-uppercase small fw-bold">Low Stock Alerts</h6>
                         <h3 class="text-danger fw-bold mb-0"><t t-esc="state.kpis.low_stock_count"/> Items</h3>
                     </div>
@@ -70,7 +73,7 @@
 
             <div class="row mt-4">
                 <div class="col-md-6">
-                    <div class="card shadow-sm border-0 p-3" style="height: 400px;">
+                    <div class="card shadow-sm border-0 p-4" style="height: 400px;">
                         <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">ABC Analysis (By Category)</h5>
                         <div class="chart-container" style="position: relative; height: 300px;">
                             <canvas id="abcChart"></canvas>

@@ -7,9 +7,15 @@ const { Component, onWillStart, onMounted, useState } = owl;
 export class InventoryDashboard extends Component {
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
         this.state = useState({
             kpis: {},
-            filters: { product_id: "", warehouse_id: "" }
+            filters: {
+                product_id: "",
+                warehouse_id: "",
+                date_from: "",
+                date_to: ""
+            }
         });
 
         onWillStart(async () => {
@@ -24,6 +30,18 @@ export class InventoryDashboard extends Component {
         this.state.kpis = await this.orm.call("wb.inventory.dashboard", "get_inventory_kpis", [this.state.filters]);
     }
 
+    // الدالة المسؤولة عن فتح القوائم عند الضغط (Drill-down)
+    openView(res_model, domain, name) {
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: name,
+            res_model: res_model,
+            views: [[false, 'list'], [false, 'form']],
+            domain: domain,
+            target: 'current',
+        });
+    }
+
     async onFilterChange(ev, type) {
         this.state.filters[type] = ev.target.value;
         await this.loadData();
@@ -31,8 +49,7 @@ export class InventoryDashboard extends Component {
     }
 
     async resetFilters() {
-        this.state.filters.product_id = "";
-        this.state.filters.warehouse_id = "";
+        this.state.filters = { product_id: "", warehouse_id: "", date_from: "", date_to: "" };
         await this.loadData();
         this.renderCharts();
     }
