@@ -3,26 +3,56 @@
     <t t-name="HRdashboard" owl="1">
         <div class="o_dashboard_container" style="padding:20px; height:100%; background-color:FFFCFCE8;">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="text-primary" style="font-weight:bold">
+                <h1 class="text-primary">
                     HR Dashboard
+                      <span style="color:black;font-size:15px;"><i class="fa fa-cog me-2" data-bs-toggle="dropdown" aria-expanded="false" />
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="#" t-on-click.prevent="excelsheet">
+                                <i class="fa fa-file-excel-o text-success me-2"/> Export to Excel
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" t-on-click.prevent="downloadPdf">
+                                <i class="fa fa-file-pdf-o text-danger me-2"/> Download PDF
+                            </a>
+                        </li>
+                    </ul>
+                    </span>
                 </h1>
-                <select class="form_select" t-model="state.period" t-on-change="onChangePeriod" style="width:10%;height:70%;border:bold 3 px solid purple !important;border-radius:10px;text-align:center;background-color:purple;color:white; ">
-                    <option value="0" style="color:black;">Select Period</option>
-                          <option value="7" style="color:black;"> last Week</option>
-                          <option value="30" style="color:black;">last Month</option>
-                          <option value="90" style="color:black;">last 3 Months</option>
-                          <option value="180" style="color:black;">last 6 Months</option>
-                          <option value="270" style="color:black;">last 9 Months</option>
-                          <option value="365" style="color:black;"> last year</option>
-                          <option value="730" style="color:black;">last 2 years</option>
+                <!-- filter -->
+                <select class="form-select border-0 bg-light"
+                        t-model="state.filters.department_id"
+                        t-on-change="onDepartmentChange"
+                        style="width:15%;height:70%;border:1px solid black !important;border-radius:5px;text-align:center;">
+                    <option value="">All Departments</option>
+                    <t t-foreach="state.departments || []" t-as="dept" t-key="dept.id">
+                        <option t-att-value="dept.id">
+                            <t t-esc="dept.name"/>
+                        </option>
+                    </t>
                 </select>
+               <div class="d-flex align-items-center" style="width:30%;">
+                    <label class="fw-bold mx-2">From</label>
+                    <input type="date" class="form-control"
+                           t-model="state.start_date"
+                           t-on-change="(ev) => this.onChangeStartDate(ev)"
+                           t-att-max="state.today_date"
+                           style="border:1px solid ; border-radius:5px; text-align:center;font-weight:bold;width:35%;"/>
+
+                    <label class="fw-bold mx-2">To</label>
+                    <input type="date" class="form-control"
+                           t-model="state.end_date"
+                           t-on-change="(ev) => this.onChangeEndDate(ev)"
+                           t-att-max="state.today_date"
+                           style="border:1px solid ; border-radius:5px; text-align:center;font-weight:bold;width:35%;"/>
+                </div>
             </div>
-                 <!-- filter -->
             <!-- KPI cards -->
             <div class="row">
                 <!-- Employees count -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid blue!important;">
+                    <div class="card shadow-sm h-100 border-0" t-on-click="showEmployees" style="cursor: pointer; transition: 0.2s;border-left:7px solid blue!important;">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -44,7 +74,7 @@
 
                 <!-- 5.Workload hours -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 h-100" style="border-left:7px solid red!important;">
+                    <div class="card shadow-sm border-0 h-100"  t-on-click="showWorkloadTasks" style="cursor: pointer; transition: 0.2s;border-left:7px solid red!important;">
                         <div class="card-body">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -70,7 +100,7 @@
 
                 <!-- 1.Completed tasks -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid green!important;">
+                    <div class="card shadow-sm h-100 border-0" t-on-click="showCompletedTasks" style="cursor: pointer; transition: 0.2s;border-left:7px solid green!important;">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -96,7 +126,7 @@
 
                 <!-- 3.Productivity KPI -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 h-100" style="border-left:7px solid orange!important;">
+                    <div class="card shadow-sm border-0 h-100" t-on-click="showAllTasks" style="cursor: pointer; transition: 0.2s;border-left:7px solid orange!important;">
                         <div class="card-body">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -125,7 +155,7 @@
             <div class="row">
                   <!--6.emp_turnover-->
             <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm border-0 h-100" style="border-left:7px solid purple !important;">
+                    <div class="card shadow-sm border-0 h-100" t-on-click="showTurnover" style="cursor: pointer; transition: 0.2s;border-left:7px solid purple!important;">
                         <div class="card-body">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -151,7 +181,7 @@
                 </div>
             <!--2.employee attendance-->
     <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid yellow !important;">
+                    <div class="card shadow-sm h-100 border-0" t-on-click="showAttendances" style="cursor: pointer; transition: 0.2s;border-left:7px solid yellow!important;">
                         <div class="card-body">
 
                             <div class="d-flex justify-content-between align-items-center">
@@ -177,7 +207,7 @@
                 </div>
                  <!-- 4.sales per emp -->
                 <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm h-100 border-0" style="border-left:7px solid #b31c85 !important;">
+                    <div class="card shadow-sm h-100 border-0" t-on-click="showSales" style="cursor: pointer; transition: 0.2s;border-left:7px solid #36b9cc!important;">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
