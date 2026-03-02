@@ -6,38 +6,55 @@ class PurchaseBillsDashboard(models.AbstractModel):
     _description = 'Purchase Bills Dashboard Logic'
 
     @api.model
-    def get_dashboard_data(self, period='this_year'):
+    def get_dashboard_data(self, date_from=None, date_to=None, vendor_name=None, active_filters=None):
         today = fields.Date.context_today(self)
-        start_date = today
-        end_date = today
 
-        # 1. Date Range Logic (الفلاتر الزمنية)
-        if period == 'this_week':
-            start_date = today - relativedelta(days=today.weekday())
-        elif period == 'last_week':
-            start_date = today - relativedelta(weeks=1, days=today.weekday())
-            end_date = start_date + relativedelta(days=6)
-        elif period == 'this_month':
-            start_date = today.replace(day=1)
-        elif period == 'last_month':
-            start_date = (today - relativedelta(months=1)).replace(day=1)
-            end_date = start_date + relativedelta(months=1, days=-1)
-        elif period == 'last_3_months':
-            start_date = today - relativedelta(months=3)
-        elif period == 'last_6_months':
-            start_date = today - relativedelta(months=6)
-        elif period == 'this_year':
-            start_date = today.replace(month=1, day=1)
-        elif period == 'last_year':
-            start_date = (today - relativedelta(years=1)).replace(month=1, day=1)
-            end_date = start_date + relativedelta(years=1, days=-1)
+        # تحويل التواريخ النصية القادمة من الواجهة إلى تواريخ حقيقية يفهمها أودو
+        if date_from:
+            date_from = fields.Date.to_date(date_from)
+        else:
+            date_from = today.replace(month=1, day=1)
 
+        if date_to:
+            date_to = fields.Date.to_date(date_to)
+        else:
+            date_to = today
+
+        # 1. الفلتر الأساسي (التاريخ والنوع)
         domain = [
             ('move_type', '=', 'in_invoice'),
-            ('state', '=', 'posted'),
-            ('invoice_date', '>=', start_date),
-            ('invoice_date', '<=', end_date)
+            ('invoice_date', '>=', date_from),
+            ('invoice_date', '<=', date_to)
         ]
+
+        # 2. فلتر البحث باسم المورد
+        if vendor_name:
+            domain.append(('partner_id.name', 'ilike', vendor_name))
+
+        # 3. تطبيق الفلاتر المتقدمة (القائمة المنسدلة)
+        if active_filters:
+            states = []
+            if active_filters.get('state_posted'): states.append('posted')
+            if active_filters.get('state_draft'): states.append('draft')
+            if states:
+                domain.append(('state', 'in', states))
+            else:
+                domain.append(('state', '=', 'posted'))
+
+            payments = []
+            if active_filters.get('pay_paid'): payments.append('paid')
+            if active_filters.get('pay_not_paid'): payments.extend(['not_paid', 'partial'])
+            if payments:
+                domain.append(('payment_state', 'in', payments))
+
+            if active_filters.get('is_overdue'):
+                domain.append(('invoice_date_due', '<', today))
+                domain.append(('payment_state', 'in', ['not_paid', 'partial']))
+
+            if active_filters.get('has_po'):
+                domain.append(('purchase_id', '!=', False))
+            if active_filters.get('no_po'):
+                domain.append(('purchase_id', '=', False))
 
         bills = self.env['account.move'].search(domain)
 
