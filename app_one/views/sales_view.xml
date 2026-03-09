@@ -23,7 +23,7 @@
                   sequence="0"/>
 
         <menuitem id="menu_sales_dashboard_child"
-                  name="Sales Performance"
+                  name="Wholsale"
                   parent="menu_analytics_root"
                   action="action_sales_dashboard_client"
                   sequence="1"/>
