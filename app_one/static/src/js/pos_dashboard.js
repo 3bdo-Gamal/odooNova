@@ -14,6 +14,9 @@ export class PosDashboardClient extends Component {
 
         this.state = useState({
             period: 7,
+            duration: null,
+            date_from: null,
+            date_to: null,
             pos_revenue: 0,
             pos_orders_count: 0,
             cash_ratio: 0,
@@ -36,7 +39,10 @@ export class PosDashboardClient extends Component {
 
     async fetchData() {
         try {
-            const data = await this.orm.call("wb.pos.dashboard", "get_pos_dashboard_data", [this.state.period]);
+            const data = await this.orm.call("wb.pos.dashboard", "get_pos_dashboard_data",  [  this.state.period,
+        this.state.duration,
+        this.state.date_from,
+        this.state.date_to] );
             if (data) {
                 Object.assign(this.state, data);
                 this.renderCharts();
@@ -46,10 +52,37 @@ export class PosDashboardClient extends Component {
         }
     }
 
-    async onChangePeriod(ev) {
-        this.state.period = parseInt(ev.target.value);
+async onChangeFilter(ev) {
+    const value = ev.target.value;
+    this.state.filter_type = value;
+
+    if (!isNaN(value)) {
+        // رقم → period
+        this.state.period = parseInt(value);
+        this.state.duration = null;
+        await this.fetchData();
+    } else if (value === "custom") {
+        // مستنيين التواريخ
+        this.state.period = null;
+        this.state.duration = null;
+    } else {
+        // duration (today / week / month)
+        this.state.duration = value;
+        this.state.period = null;
         await this.fetchData();
     }
+}
+async onChangeDateFrom(ev) {
+    this.state.date_from = ev.target.value;
+}
+
+async onChangeDateTo(ev) {
+    this.state.date_to = ev.target.value;
+
+    if (this.state.date_from && this.state.date_to) {
+        await this.fetchData();
+    }
+}
 
     renderCharts() {
         // Line Chart: Revenue per Hour

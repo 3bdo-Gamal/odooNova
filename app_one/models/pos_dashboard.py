@@ -1,5 +1,6 @@
 from odoo import models, api
 from datetime import datetime, timedelta
+from odoo import fields
 
 
 class PosDashboard(models.Model):
@@ -7,16 +8,35 @@ class PosDashboard(models.Model):
     _description = 'POS KPI Dashboard'
 
     @api.model
-    def get_pos_dashboard_data(self, period=7):
-        # 1. Period configuration
-        try:
-            period = int(period)
-        except (ValueError, TypeError):
-            period = 7
+    def get_pos_dashboard_data(self, period=7, duration=None, date_from=None, date_to=None):
+        current_date_end = fields.Datetime.now()
 
-        current_date_end = datetime.now()
-        current_date_start = current_date_end - timedelta(days=period)
-        domain = [('date_order', '>=', current_date_start), ('date_order', '<=', current_date_end)]
+        # 🎯 Custom Date Range
+        if date_from and date_to:
+            current_date_start = fields.Datetime.from_string(date_from)
+            current_date_end = fields.Datetime.from_string(date_to).replace(hour=23, minute=59, second=59)
+
+        elif duration == "today":
+            current_date_start = current_date_end.replace(hour=0, minute=0, second=0)
+
+        elif duration == "week":
+            start_of_week = current_date_end - timedelta(days=current_date_end.weekday())
+            current_date_start = start_of_week.replace(hour=0, minute=0, second=0)
+
+        elif duration == "month":
+            current_date_start = current_date_end.replace(day=1, hour=0, minute=0, second=0)
+
+        else:
+            try:
+                period = int(period)
+            except:
+                period = 7
+            current_date_start = current_date_end - timedelta(days=period)
+
+        domain = [
+            ('date_order', '>=', current_date_start),
+            ('date_order', '<=', current_date_end)
+        ]
 
         # 2. Safety check: Ensure the Point of Sale module is installed
         if 'pos.order' not in self.env:

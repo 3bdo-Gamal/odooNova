@@ -4,21 +4,30 @@
         <style>
             .wb-dashboard-wrapper {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                height: 100%;
-                width: 100%;
-                display: flex;
-                overflow: hidden;
-                background-color: #f4f6f9;
+                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
             }
-            .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative;}
-            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; }
 
-            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem 1.5rem 0.5rem 1.5rem; }
-            .wb-sidebar-footer { padding: 1rem 1.5rem 1.5rem 1.5rem; border-top: 1px solid #e2e8f0; background: #f8fafc; flex-shrink: 0; z-index: 20; }
+            .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
+            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
+            /* Smooth Glassy Header */
+            .wb-glassy-header {
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 1.25rem;
+                padding: 1rem 1.5rem;
+                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+            }
+
+            /* ORIGINAL CARDS STYLE */
             .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
             .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+            .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
 
+            /* ORIGINAL ICON STYLES */
             .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
             .icon-primary { background: #eff6ff; color: #3b82f6; }
             .icon-success { background: #f0fdf4; color: #22c55e; }
@@ -29,12 +38,26 @@
             .icon-purple { background: #faf5ff; color: #a855f7; }
             .icon-teal { background: #f0fdfa; color: #14b8a6; }
 
-            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
+            /* Input styling */
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
             .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
 
-            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
-            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: modalFadeIn 0.3s ease-out; }
+            /* Native Search Bar Integration Styling */
+            .wb-native-search .o_searchview { background: #f8fafc; border-radius: 9999px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); padding: 4px 18px; transition: all 0.3s;}
+            .wb-native-search .o_searchview:focus-within { background: #ffffff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+            /* Text Hint for Charts */
+            .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
+
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
             @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+            #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 10px; }
+            .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
+            .print-title { font-size: 16px; font-weight: bold; color: #334155; }
+            .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
         </style>
 
         <div class="wb-dashboard-wrapper">
@@ -43,7 +66,7 @@
                 <div class="wb-modal-overlay">
                     <div class="wb-modal-content">
                         <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
-                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-sliders text-success me-2"></i> Custom Excel Pivot</h5>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-excel-o text-success me-2"></i> Export Excel Analytics</h5>
                             <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal"><i class="fa fa-times"></i></button>
                         </div>
                         <div class="p-4">
@@ -57,6 +80,17 @@
                                     <option value="date:month">📅 Month</option>
                                 </select>
                             </div>
+
+                            <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark"><i class="fa fa-sitemap text-primary me-2"></i>Detailed Excel</h6>
+                                    <small class="text-muted">Includes expandable/collapsible order lines under each group.</small>
+                                </div>
+                                <div class="form-check form-switch fs-4 m-0">
+                                    <input class="form-check-input shadow-sm" type="checkbox" t-model="state.detailed_excel"/>
+                                </div>
+                            </div>
+
                             <div class="mb-2">
                                 <label class="fw-bold text-muted text-xs text-uppercase mb-3">Select Measures (Columns)</label>
                                 <div class="row g-3">
@@ -65,7 +99,6 @@
                                     <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_profit" t-model="state.meas_profit"/><label class="form-check-label text-dark fw-bold" for="meas_profit">Gross Profit</label></div></div>
                                     <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_ord" t-model="state.meas_orders"/><label class="form-check-label text-dark fw-bold" for="meas_ord">Order Count</label></div></div>
                                     <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_aov" t-model="state.meas_aov"/><label class="form-check-label text-dark fw-bold" for="meas_aov">Avg Order Value</label></div></div>
-                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_disc" t-model="state.meas_discount"/><label class="form-check-label text-dark fw-bold" for="meas_disc">Total Discounts</label></div></div>
                                     <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_margin_pct" t-model="state.meas_margin_pct"/><label class="form-check-label text-dark fw-bold" for="meas_margin_pct">Profit Margin (%)</label></div></div>
                                 </div>
                             </div>
@@ -80,65 +113,188 @@
                 </div>
             </t>
 
-            <div class="wb-main-content">
-                <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
-                    <div>
-                        <h2 class="fw-bold mb-1" style="color: #1e293b; letter-spacing: -0.5px;">📊 Sales Analytics Overview</h2>
-                        <p class="text-muted text-sm mb-0">Track your key performance indicators and growth.</p>
+            <t t-if="state.showPdfModal">
+                <div class="wb-modal-overlay">
+                    <div class="wb-modal-content">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-pdf-o text-danger me-2"></i> Print Report KPIs</h5>
+                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closePdfModal"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted mb-3">Select the KPIs you want to include in the printed report:</p>
+                            <div class="list-group shadow-sm">
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_revenue" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Total Revenue</strong><small class="text-muted">Include total sales value.</small></span>
+                                </label>
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_orders" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Order Count and AOV</strong><small class="text-muted">Include number of orders and average value.</small></span>
+                                </label>
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_profit" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Gross Profit and Margin</strong><small class="text-muted">Include profitability metrics.</small></span>
+                                </label>
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_outstanding" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Outstanding Debt</strong><small class="text-muted">Include unpaid invoices value.</small></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
+                            <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closePdfModal">Cancel</button>
+                            <button class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" t-on-click="printCleanPDF"><i class="fa fa-print me-2"></i> Print PDF</button>
+                        </div>
                     </div>
+                </div>
+            </t>
+
+            <div id="print_report_area" style="display: none;">
+                <div class="print-header">
+                    <h1 style="margin: 0;">Sales Performance Report</h1>
+                    <p style="color: #64748b; margin-top: 5px;">Generated on: <t t-esc="new Date().toLocaleDateString()"/></p>
+                </div>
+                <div t-if="state.pdf_revenue" class="print-row"><span class="print-title">Total Revenue</span><span class="print-value"><t t-esc="state.total_revenue"/> EGP</span></div>
+                <div t-if="state.pdf_growth" class="print-row"><span class="print-title">Sales Growth (vs previous period)</span><span class="print-value"><t t-esc="state.sales_growth"/> %</span></div>
+                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">Total Orders</span><span class="print-value"><t t-esc="state.total_orders"/></span></div>
+                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">Average Order Value (AOV)</span><span class="print-value"><t t-esc="state.aov"/> EGP</span></div>
+                <div t-if="state.pdf_profit" class="print-row"><span class="print-title">Gross Profit</span><span class="print-value"><t t-esc="state.gross_profit"/> EGP</span></div>
+                <div t-if="state.pdf_profit" class="print-row"><span class="print-title">Profit Margin</span><span class="print-value"><t t-esc="state.profit_margin"/> %</span></div>
+                <div class="print-row"><span class="print-title">Total Invoiced Amount</span><span class="print-value"><t t-esc="state.total_invoiced"/> EGP</span></div>
+                <div t-if="state.pdf_outstanding" class="print-row"><span class="print-title">Outstanding Receivables (Debt)</span><span class="print-value" style="color: #dc2626;"><t t-esc="state.outstanding_receivables"/> EGP</span></div>
+                <div style="margin-top: 40px; text-align: center; color: #94a3b8; font-size: 12px;">* Report generated automatically from Odoo Sales Dashboard.</div>
+            </div>
+
+            <div class="wb-main-content">
+
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none">
+                    <div>
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
+                            <i class="fa fa-line-chart text-primary me-2"></i>Sales Analytics
+                        </h3>
+                        <p class="text-muted text-sm mb-0">Track performance, analyze trends, and monitor growth.</p>
+                    </div>
+
+                    <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">
+                        <SearchBar t-if="env.searchModel" />
+                    </div>
+
                     <div class="d-flex gap-2">
-                        <button class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-success" t-on-click="openExportModal">
-                            <i class="fa fa-sliders me-2"></i> Custom Excel
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white hover-bg-light text-nowrap" t-on-click="openExportModal" style="transition: all 0.2s;">
+                            <i class="fa fa-file-excel-o me-2"></i> Export Excel
                         </button>
-                        <button class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-danger" t-on-click="printPDF">
-                            <i class="fa fa-print me-2"></i> Print PDF
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white hover-bg-light text-nowrap" t-on-click="openPdfModal" style="transition: all 0.2s;">
+                            <i class="fa fa-file-pdf-o me-2"></i> Print PDF
+                        </button>
+                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar" title="Toggle Filters">
+                            <i class="fa fa-sliders"></i>
                         </button>
                     </div>
                 </div>
 
                 <div id="pdf_export_area" class="pb-4 pt-2">
                     <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-primary me-3"><i class="fa fa-money"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Revenue</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_revenue"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div></div></div>
-                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-success me-3"><i class="fa fa-line-chart"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Growth</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_growth"/>% <small t-if="state.sales_growth > 0" class="text-success"><i class="fa fa-arrow-up"></i></small><small t-if="state.sales_growth &lt; 0" class="text-danger"><i class="fa fa-arrow-down"></i></small></h4></div></div></div>
-                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-info me-3"><i class="fa fa-shopping-cart"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Orders Count</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_orders"/></h4></div></div></div>
+                        <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('revenue')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                                <div class="wb-icon-box icon-primary me-3"><i class="fa fa-usd"></i></div>
+                                <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Revenue</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_revenue"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('orders')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                                <div class="wb-icon-box icon-info me-3"><i class="fa fa-shopping-bag"></i></div>
+                                <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Orders Count</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_orders"/></h4></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('invoiced')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                                <div class="wb-icon-box icon-purple me-3"><i class="fa fa-file-text-o"></i></div>
+                                <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Invoiced</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_invoiced"/></h4></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('outstanding')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                                <div class="wb-icon-box icon-danger me-3"><i class="fa fa-exclamation-circle"></i></div>
+                                <div><p class="text-danger text-uppercase text-xs fw-bold mb-1">Outstanding (Debt)</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.outstanding_receivables"/></h4></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-success me-3"><i class="fa fa-line-chart"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Growth</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_growth"/>% </h4></div></div></div>
                         <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-warning me-3"><i class="fa fa-calculator"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Order Value</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.aov"/></h4></div></div></div>
-                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-danger me-3"><i class="fa fa-diamond"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Gross Profit</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.gross_profit"/></h4></div></div></div>
+                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-teal me-3"><i class="fa fa-diamond"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Gross Profit</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.gross_profit"/></h4></div></div></div>
                         <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-dark me-3"><i class="fa fa-pie-chart"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Profit Margin</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.profit_margin"/>%</h4></div></div></div>
-                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center"><div class="wb-icon-box icon-purple me-3"><i class="fa fa-tags"></i></div><div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Discounts</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_discount"/></h4></div></div></div>
-                        <div class="col-xl-3 col-md-6 mb-3"><div class="wb-card p-3 h-100 d-flex align-items-center" style="border-left: 4px solid #14b8a6;"><div class="wb-icon-box icon-teal me-3"><i class="fa fa-exclamation-circle"></i></div><div><p class="text-teal text-uppercase text-xs fw-bold mb-1">Outstanding (Debt)</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.outstanding_receivables"/></h4></div></div></div>
                     </div>
 
                     <div class="row mb-4">
-                        <div class="col-lg-8 mb-4"><div class="wb-card p-3 h-100"><h6 class="fw-bold text-dark mb-3 ps-2">Top Customers (Revenue)</h6><div style="height: 250px; position: relative;"><canvas t-ref="customer_chart"></canvas></div></div></div>
-                        <div class="col-lg-4 mb-4"><div class="wb-card p-3 h-100"><h6 class="fw-bold text-dark mb-3 ps-2">Top Products (Qty)</h6><div style="height: 250px; position: relative;"><canvas t-ref="product_chart"></canvas></div></div></div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-lg-8 mb-4"><div class="wb-card p-3 h-100"><h6 class="fw-bold text-dark mb-3 ps-2">Sales Trend (Time Series)</h6><div style="height: 280px; position: relative;"><canvas t-ref="trend_chart"></canvas></div></div></div>
+                        <div class="col-lg-8 mb-4">
+                            <div class="wb-card p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bold text-dark m-0">Top Customers (Revenue)<span class="chart-hint">(Click bar to view records)</span></h6>
+                                    <select class="form-select form-select-sm w-auto wb-input rounded-pill px-3" t-model="state.top_customers" t-on-change="onChangeFilter">
+                                        <option value="5">Top 5</option>
+                                        <option value="10">Top 10</option>
+                                        <option value="15">Top 15</option>
+                                    </select>
+                                </div>
+                                <div style="height: 280px; position: relative;"><canvas t-ref="customer_chart"></canvas></div>
+                            </div>
+                        </div>
                         <div class="col-lg-4 mb-4">
-                            <div class="wb-card p-3 h-100 d-flex flex-column">
-                                <h6 class="fw-bold text-dark mb-3 ps-2">Conversion (Win Rate)</h6>
+                            <div class="wb-card p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bold text-dark m-0">Top Products (Qty)<span class="chart-hint">(Click to drill)</span></h6>
+                                    <select class="form-select form-select-sm w-auto wb-input rounded-pill px-3" t-model="state.top_products" t-on-change="onChangeFilter">
+                                        <option value="5">Top 5</option>
+                                        <option value="10">Top 10</option>
+                                        <option value="15">Top 15</option>
+                                    </select>
+                                </div>
+                                <div style="height: 280px; position: relative;"><canvas t-ref="product_chart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-lg-8 mb-4">
+                            <div class="wb-card p-4 h-100">
+                                <h6 class="fw-bold text-dark mb-4">Sales Trend (Time Series)<span class="chart-hint">(Click point to view day records)</span></h6>
+                                <div style="height: 280px; position: relative;"><canvas t-ref="trend_chart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="wb-card p-4 h-100 d-flex flex-column">
+                                <h6 class="fw-bold text-dark mb-4">Conversion (Win Rate)<span class="chart-hint">(Click slice to drill)</span></h6>
                                 <div style="height: 280px; position: relative;"><canvas t-ref="win_rate_chart"></canvas></div>
                             </div>
                         </div>
                     </div>
 
                     <div class="row mb-4">
-                        <t t-if="state.user_id == 'all'">
-                            <div class="col-lg-6 mb-4"><div class="wb-card p-3 h-100"><h6 class="fw-bold text-dark mb-3 ps-2">Top Salespeople</h6><div style="height: 250px; position: relative;"><canvas t-ref="salesperson_chart"></canvas></div></div></div>
-                            <div class="col-lg-6 mb-4"><div class="wb-card p-3 h-100"><h6 class="fw-bold text-dark mb-3 ps-2">Sales by Category</h6><div style="height: 250px; position: relative;"><canvas t-ref="category_chart"></canvas></div></div></div>
-                        </t>
-                        <t t-else="">
-                            <div class="col-lg-12 mb-4"><div class="wb-card p-3 h-100"><h6 class="fw-bold text-dark mb-3 ps-2">Sales by Category</h6><div style="height: 250px; position: relative;"><canvas t-ref="category_chart"></canvas></div></div></div>
-                        </t>
+                        <div class="col-lg-6 mb-4">
+                            <div class="wb-card p-4 h-100">
+                                <h6 class="fw-bold text-dark mb-4">Top Salespeople<span class="chart-hint">(Click bar to view records)</span></h6>
+                                <div style="height: 280px; position: relative;"><canvas t-ref="salesperson_chart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="wb-card p-4 h-100">
+                                <h6 class="fw-bold text-dark mb-4">Sales by Category<span class="chart-hint">(Click slice to view category)</span></h6>
+                                <div style="height: 280px; position: relative;"><canvas t-ref="category_chart"></canvas></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="wb-sidebar d-print-none">
-                <div class="p-4 border-bottom bg-white d-flex align-items-center">
-                    <i class="fa fa-filter text-primary me-2 fs-5"></i>
-                    <h5 class="fw-bold text-dark mb-0">Filters</h5>
+            <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
+                <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-sliders text-primary me-2 fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
+                    </div>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar" style="transition: transform 0.2s;"><i class="fa fa-times"></i></button>
                 </div>
 
                 <div class="wb-sidebar-scroll">
@@ -154,45 +310,14 @@
                         </select>
                         <div class="p-3 bg-light rounded-3 border border-light">
                             <label class="text-xs fw-bold text-dark mb-2"><i class="fa fa-calendar me-1"></i> Custom Range</label>
-                            <input type="date" class="form-control wb-input form-control-sm mb-2" t-model="state.date_from"/>
-                            <input type="date" class="form-control wb-input form-control-sm mb-2" t-model="state.date_to"/>
-                            <button class="btn btn-primary btn-sm w-100 rounded-pill fw-bold shadow-sm" t-on-click="applyDateFilter">Apply Dates</button>
+                            <input type="date" class="form-control wb-input form-control-sm mb-2" t-model="state.date_from" t-on-change="applyDateFilter"/>
+                            <input type="date" class="form-control wb-input form-control-sm" t-model="state.date_to" t-on-change="applyDateFilter"/>
                         </div>
                     </div>
                     <hr class="text-muted opacity-25"/>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Dimensions</label>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Customer</label>
-                            <select class="form-select wb-input" t-model="state.partner_id" t-on-change="onChangeFilter">
-                                <option value="all">👥 All Customers</option>
-                                <t t-foreach="state.filter_partners" t-as="p" t-key="p.id">
-                                    <option t-att-value="p.id"><t t-esc="p.name"/></option>
-                                </t>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Sales Team</label>
-                            <select class="form-select wb-input" t-model="state.team_id" t-on-change="onChangeFilter">
-                                <option value="all">🚩 All Teams</option>
-                                <t t-foreach="state.filter_teams" t-as="team" t-key="team.id">
-                                    <option t-att-value="team.id"><t t-esc="team.name"/></option>
-                                </t>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Category</label>
-                            <select class="form-select wb-input" t-model="state.category_id" t-on-change="onChangeFilter">
-                                <option value="all">📦 All Categories</option>
-                                <t t-foreach="state.filter_categories" t-as="cat" t-key="cat.id">
-                                    <option t-att-value="cat.id"><t t-esc="cat.name"/></option>
-                                </t>
-                            </select>
-                        </div>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Analysis Dimensions</label>
 
                         <div class="mb-3">
                             <label class="text-xs text-dark fw-bold mb-1">Order Status</label>
@@ -202,31 +327,48 @@
                                 <option value="quotation">📄 Quotations Only</option>
                             </select>
                         </div>
+
                         <div class="mb-3">
                             <label class="text-xs text-dark fw-bold mb-1">Salesperson</label>
                             <select class="form-select wb-input" t-model="state.user_id" t-on-change="onChangeFilter">
                                 <option value="all">👤 All Salespeople</option>
-                                <t t-foreach="state.filter_users" t-as="user" t-key="user.id">
-                                    <option t-att-value="user.id"><t t-esc="user.name"/></option>
-                                </t>
+                                <t t-foreach="state.filter_users" t-as="user" t-key="user.id"><option t-att-value="user.id"><t t-esc="user.name"/></option></t>
                             </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Sales Team</label>
+                            <select class="form-select wb-input" t-model="state.team_id" t-on-change="onChangeFilter">
+                                <option value="all">🚩 All Teams</option>
+                                <t t-foreach="state.filter_teams" t-as="team" t-key="team.id"><option t-att-value="team.id"><t t-esc="team.name"/></option></t>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Category</label>
+                            <select class="form-select wb-input" t-model="state.category_id" t-on-change="onChangeFilter">
+                                <option value="all">📦 All Categories</option>
+                                <t t-foreach="state.filter_categories" t-as="cat" t-key="cat.id"><option t-att-value="cat.id"><t t-esc="cat.name"/></option></t>
+                            </select>
+                        </div>
+
                         <div class="mb-3">
                             <label class="text-xs text-dark fw-bold mb-1">Warehouse</label>
                             <select class="form-select wb-input" t-model="state.warehouse_id" t-on-change="onChangeFilter">
                                 <option value="all">🏭 All Warehouses</option>
-                                <t t-foreach="state.filter_warehouses" t-as="warehouse" t-key="warehouse.id">
-                                    <option t-att-value="warehouse.id"><t t-esc="warehouse.name"/></option>
-                                </t>
+                                <t t-foreach="state.filter_warehouses" t-as="warehouse" t-key="warehouse.id"><option t-att-value="warehouse.id"><t t-esc="warehouse.name"/></option></t>
                             </select>
                         </div>
-                    </div>
-                </div>
 
-                <div class="wb-sidebar-footer">
-                    <button class="btn btn-dark w-100 rounded-pill py-2 fw-bold shadow-sm" t-on-click="onChangeFilter" style="transition: transform 0.2s;">
-                        <i class="fa fa-refresh me-2"></i> Refresh Dashboard
-                    </button>
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Company</label>
+                            <select class="form-select wb-input" t-model="state.company_id" t-on-change="onChangeFilter">
+                                <option value="all">🏢 All Companies</option>
+                                <t t-foreach="state.filter_companies" t-as="comp" t-key="comp.id"><option t-att-value="comp.id"><t t-esc="comp.name"/></option></t>
+                            </select>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>

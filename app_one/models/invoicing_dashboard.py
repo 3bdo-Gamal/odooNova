@@ -1,75 +1,141 @@
-from odoo import models, api
-from datetime import datetime, timedelta
+from odoo import models, api, fields
+from datetime import timedelta
 
 class InvoicingDashboard(models.Model):
     _name = 'wb.invoicing.dashboard'
     _description = 'Invoicing KPI Dashboard'
 
     @api.model
-    def get_invoicing_data(self, period=30):
-        # 1. Period configuration (supports up to 365 days)
-        try:
-            period = int(period)
-        except (ValueError, TypeError):
-            period = 30
+    def get_invoicing_data(
+        self,
+        period=30,
+        duration=None,
+        date_from=None,
+        date_to=None,
+        invoice_filter=None
+    ):
 
-        current_date = datetime.now().date()
-        start_date = current_date - timedelta(days=period)
+        today = fields.Date.today()
 
-        # 2. Fetch posted customer invoices within the selected period
-        invoices = self.env['account.move'].search([
+
+        # 1️⃣ Date Logic
+
+
+        if date_from and date_to:
+            start_date = fields.Date.from_string(date_from)
+            end_date = fields.Date.from_string(date_to)
+
+        elif duration == "today":
+            start_date = today
+            end_date = today
+
+        elif duration == "week":
+            start_date = today - timedelta(days=today.weekday())
+            end_date = today
+
+        elif duration == "month":
+            start_date = today.replace(day=1)
+            end_date = today
+
+        else:
+            try:
+                period = int(period)
+            except:
+                period = 30
+            start_date = today - timedelta(days=period)
+            end_date = today
+
+        days_count = (end_date - start_date).days + 1
+
+
+        # 2️⃣ Base Domain
+
+
+        domain = [
             ('move_type', '=', 'out_invoice'),
-            ('state', '=', 'posted'),
-            ('invoice_date', '>=', start_date)
-        ])
+            ('invoice_date', '>=', start_date),
+            ('invoice_date', '<=', end_date),
+        ]
 
-        # 3. Core KPI Calculations
+
+        # 3️⃣ Invoice Filter
+
+
+        if invoice_filter == "posted":
+            domain.append(('state', '=', 'posted'))
+
+        elif invoice_filter == "unposted":
+            domain.append(('state', '=', 'draft'))
+
+        elif invoice_filter == "paid":
+            domain += [
+                ('state', '=', 'posted'),
+                ('payment_state', 'in', ['paid', 'in_payment'])
+            ]
+
+        elif invoice_filter == "unpaid":
+            domain += [
+                ('state', '=', 'posted'),
+                ('payment_state', 'in', ['not_paid', 'partial'])
+            ]
+
+        invoices = self.env['account.move'].search(domain)
+
+
+        # 4️⃣ KPI Calculations
+
+
         total_invoiced = sum(invoices.mapped('amount_total'))
         total_count = len(invoices)
 
-        # Filter paid vs unpaid invoices
-        paid_invoices = invoices.filtered(lambda i: i.payment_state in ['paid', 'in_payment'])
-        unpaid_invoices = invoices.filtered(lambda i: i.payment_state in ['not_paid', 'partial'])
+        paid_invoices = invoices.filtered(
+            lambda i: i.payment_state in ['paid', 'in_payment']
+        )
 
-        # Calculate ratios
-        paid_ratio = (len(paid_invoices) / total_count * 100) if total_count > 0 else 0
-        unpaid_ratio = (len(unpaid_invoices) / total_count * 100) if total_count > 0 else 0
+        unpaid_invoices = invoices.filtered(
+            lambda i: i.payment_state in ['not_paid', 'partial']
+        )
 
-        # 4. Financial Status (Cash vs Debt)
+        paid_ratio = (len(paid_invoices) / total_count * 100) if total_count else 0
+        unpaid_ratio = (len(unpaid_invoices) / total_count * 100) if total_count else 0
+
         residual_amount = sum(invoices.mapped('amount_residual'))
         cash_collected = total_invoiced - residual_amount
 
-        # Calculate overdue amounts based on due date
         overdue_invoices = unpaid_invoices.filtered(
-            lambda i: i.invoice_date_due and i.invoice_date_due < current_date
+            lambda i: i.invoice_date_due and i.invoice_date_due < today
         )
+
         overdue_amount = sum(overdue_invoices.mapped('amount_residual'))
 
-        # 5. Daily Collection Trend for Chart.js
+
+        # 5️⃣ Daily Trend
+
+
         daily_collection = {}
-        # Initialize the date structure for the selected period
-        for i in range(period):
-            date_str = (start_date + timedelta(days=i)).strftime('%Y-%m-%d')
-            daily_collection[date_str] = 0
 
-        # Aggregate collected amounts by invoice date
+        for i in range(days_count):
+            date_key = (start_date + timedelta(days=i)).strftime('%Y-%m-%d')
+            daily_collection[date_key] = 0
+
         for inv in invoices:
-            collected_from_inv = inv.amount_total - inv.amount_residual
-            if collected_from_inv > 0:
-                date_key = inv.invoice_date.strftime('%Y-%m-%d')
-                if date_key in daily_collection:
-                    daily_collection[date_key] += collected_from_inv
+            collected = inv.amount_total - inv.amount_residual
+            if collected > 0 and inv.invoice_date:
+                key = inv.invoice_date.strftime('%Y-%m-%d')
+                if key in daily_collection:
+                    daily_collection[key] += collected
 
-        # 6. Return data to JavaScript Frontend
+
+        # 6️⃣ Return Data
+
+
         return {
             'total_invoiced': round(total_invoiced, 2),
             'paid_ratio': round(paid_ratio, 1),
             'unpaid_ratio': round(unpaid_ratio, 1),
             'overdue_amount': round(overdue_amount, 2),
             'cash_collected': round(cash_collected, 2),
-            # DSO Equation: (Total Receivables / Total Sales) * Days in Period
-            'dso': round((residual_amount / total_invoiced * period), 1) if total_invoiced > 0 else 0,
-            'bad_debt_pct': 0,  # Placeholder for future implementation
+            'dso': round((residual_amount / total_invoiced * days_count), 1) if total_invoiced else 0,
             'trend_labels': list(daily_collection.keys()),
             'trend_data': list(daily_collection.values()),
         }
