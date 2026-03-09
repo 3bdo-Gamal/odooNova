@@ -1,5 +1,6 @@
 from odoo import models, fields, api
 from datetime import datetime, timedelta
+from odoo.osv import expression
 import io
 import base64
 
@@ -72,10 +73,10 @@ class SalesDashboard(models.Model):
         if country_id and country_id != 'all': extra_domain.append(('partner_id.country_id', '=', int(country_id)))
         if company_id and company_id != 'all': extra_domain.append(('company_id', '=', int(company_id)))
 
-        if native_domain: extra_domain += native_domain
+        base_domain = expression.AND([time_domain, extra_domain])
+        nav_domain = expression.AND([base_domain, native_domain]) if native_domain else base_domain
 
-        nav_domain = time_domain + extra_domain
-        all_period_orders = self.env['sale.order'].search(time_domain + extra_domain)
+        all_period_orders = self.env['sale.order'].search(nav_domain)
 
         if state and state != 'all':
             if state == 'quotation':
@@ -89,7 +90,10 @@ class SalesDashboard(models.Model):
         total_orders = len(orders)
         aov = total_revenue / total_orders if total_orders > 0 else 0
 
-        prev_orders = self.env['sale.order'].search(prev_time_domain + extra_domain).filtered(
+        prev_base_domain = expression.AND([prev_time_domain, extra_domain])
+        prev_nav_domain = expression.AND([prev_base_domain, native_domain]) if native_domain else prev_base_domain
+
+        prev_orders = self.env['sale.order'].search(prev_nav_domain).filtered(
             lambda o: o.state in ['sale', 'done'])
         prev_revenue = sum(prev_orders.mapped('amount_total'))
         sales_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
@@ -106,10 +110,17 @@ class SalesDashboard(models.Model):
         gross_profit = total_revenue - total_cost
         profit_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
 
+        # تم إرجاع الكود الأصلي لحساب المديونية والفواتير لحل مشكلة الأصفار
         unpaid_domain = [('move_type', '=', 'out_invoice'), ('state', '=', 'posted'),
                          ('payment_state', 'in', ['not_paid', 'partial']), ('invoice_date', '>=', current_date_start)]
         if user_id and user_id != 'all': unpaid_domain.append(('invoice_user_id', '=', int(user_id)))
         if company_id and company_id != 'all': unpaid_domain.append(('company_id', '=', int(company_id)))
+
+        # ربط الـ Search Bar بالفواتير بطريقة آمنة
+        if native_domain:
+            valid_partners = orders.mapped('partner_id').ids
+            if valid_partners:
+                unpaid_domain.append(('partner_id', 'in', valid_partners))
 
         account_moves = self.env['account.move'].search(unpaid_domain)
         outstanding_receivables = sum(account_moves.mapped('amount_residual'))
@@ -118,6 +129,11 @@ class SalesDashboard(models.Model):
                            ('invoice_date', '>=', current_date_start)]
         if user_id and user_id != 'all': invoiced_domain.append(('invoice_user_id', '=', int(user_id)))
         if company_id and company_id != 'all': invoiced_domain.append(('company_id', '=', int(company_id)))
+
+        if native_domain:
+            valid_partners = orders.mapped('partner_id').ids
+            if valid_partners:
+                invoiced_domain.append(('partner_id', 'in', valid_partners))
 
         total_invoiced = sum(self.env['account.move'].search(invoiced_domain).mapped('amount_total'))
 
@@ -167,7 +183,6 @@ class SalesDashboard(models.Model):
 
     @api.model
     def export_custom_pivot_excel(self, **kwargs):
-        # (باقي دالة الـ Excel كما هي تماماً من الكود السابق بدون أي تغيير لضمان عملها بشكل مثالي)
         date_from, date_to = kwargs.get('date_from'), kwargs.get('date_to')
         state, user_id, warehouse_id = kwargs.get('state'), kwargs.get('user_id'), kwargs.get('warehouse_id')
         team_id, category_id = kwargs.get('team_id'), kwargs.get('category_id')
@@ -186,7 +201,7 @@ class SalesDashboard(models.Model):
         if country_id and country_id != 'all': domain.append(('partner_id.country_id', '=', int(country_id)))
         if company_id and company_id != 'all': domain.append(('company_id', '=', int(company_id)))
 
-        if native_domain: domain += native_domain
+        domain = expression.AND([domain, native_domain]) if native_domain else domain
 
         orders = self.env['sale.order'].search(domain)
         if state and state != 'all':

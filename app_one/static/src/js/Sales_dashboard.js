@@ -22,11 +22,22 @@ export class SalesDashboardClient extends Component {
         this.categoryChartRef = useRef("category_chart");
         this.winRateChartRef = useRef("win_rate_chart");
 
+        const savedState = JSON.parse(localStorage.getItem('wb_sales_dashboard_state')) || {};
+
         this.state = useState({
             showSidebar: true,
-            top_products: "5", top_customers: "5",
-            state: "sale", user_id: "all", warehouse_id: "all", team_id: "all", category_id: "all", country_id: "all", company_id: "all",
-            period: "7", date_from: "", date_to: "",
+            top_products: savedState.top_products || "5",
+            top_customers: savedState.top_customers || "5",
+            state: savedState.state || "sale",
+            user_id: savedState.user_id || "all",
+            warehouse_id: savedState.warehouse_id || "all",
+            team_id: savedState.team_id || "all",
+            category_id: savedState.category_id || "all",
+            country_id: savedState.country_id || "all",
+            company_id: savedState.company_id || "all",
+            period: savedState.period || "7",
+            date_from: savedState.date_from || "",
+            date_to: savedState.date_to || "",
             filter_warehouses: [], filter_users: [], filter_teams: [], filter_categories: [], filter_countries: [], filter_companies: [],
 
             total_revenue: 0, total_orders: 0, aov: 0, sales_growth: 0, total_invoiced: 0,
@@ -53,7 +64,23 @@ export class SalesDashboardClient extends Component {
 
             try {
                 const views = await this.orm.call("sale.order", "get_views", [], { views: [[false, "search"]], options: { toolbar: false, action_id: false } });
-                await this.searchModel.load({ resModel: "sale.order", context: {}, searchViewId: views.views.search.id, searchViewArch: views.views.search.arch, searchViewFields: views.models["sale.order"] });
+
+                // 🌟 الحل السحري: تنظيف وتعديل الـ Search View برمجياً قبل تحميله
+                let cleanSearchArch = views.views.search.arch;
+                // حذف أي <group> الخاصة بالتجميع (Group By)
+                cleanSearchArch = cleanSearchArch.replace(/<group[^>]*>.*?<\/group>/gis, '');
+                // حذف أي فلتر فردي يحتوي على Group By
+                cleanSearchArch = cleanSearchArch.replace(/<filter [^>]*context="\{[^}]*'group_by'[^}]*\}"[^>]*\/>/gis, '');
+
+                await this.searchModel.load({
+                    resModel: "sale.order",
+                    context: {},
+                    searchViewId: views.views.search.id,
+                    searchViewArch: cleanSearchArch, // استخدام الكود النظيف
+                    searchViewFields: views.models["sale.order"],
+                    searchMenuTypes: ["filter"] // إجبار السيرش على إظهار الفلاتر فقط (بدون Group By وبدون Favorites)
+                });
+
                 this.searchModel.addEventListener("update", () => { this.fetchData(); });
             } catch (error) { console.error("Failed to load search model:", error); }
             await this.fetchData();
@@ -79,7 +106,14 @@ export class SalesDashboardClient extends Component {
     async onChangeFilter() { await this.fetchData(); }
 
     async fetchData() {
-        const searchDomain = this.env.searchModel ? this.env.searchModel.domain : [];
+        localStorage.setItem('wb_sales_dashboard_state', JSON.stringify({
+            top_products: this.state.top_products, top_customers: this.state.top_customers,
+            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id,
+            team_id: this.state.team_id, category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
+            period: this.state.period, date_from: this.state.date_from, date_to: this.state.date_to
+        }));
+
+        const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
         const kwargs = {
             state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id,
             team_id: this.state.team_id, category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
@@ -90,44 +124,86 @@ export class SalesDashboardClient extends Component {
         if (data) { Object.assign(this.state, data); this.renderCharts(); }
     }
 
-    // Logic for Drilling Down from KPI Cards
     openRecords(type) {
-        let domain = []; let model = 'sale.order'; let name = "Sales Orders";
         if (type === 'orders' || type === 'revenue') {
-            domain = [...this.state.nav_domain];
-            if(this.state.state === 'quotation') domain.push(['state', 'in', ['draft', 'sent']]);
-            else if(this.state.state === 'sale') domain.push(['state', 'in', ['sale', 'done']]);
-            else domain.push(['state', '!=', 'cancel']);
+            this.action.doAction({
+                name: "Sales Orders",
+                type: "ir.actions.act_window",
+                res_model: "sale.order",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: []
+            });
         } else if (type === 'outstanding') {
-            domain = this.state.unpaid_domain; model = 'account.move'; name = "Outstanding Invoices";
+            this.action.doAction({
+                name: "Outstanding Invoices",
+                type: "ir.actions.act_window",
+                res_model: "account.move",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: [['move_type', '=', 'out_invoice'], ['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']]]
+            });
         } else if (type === 'invoiced') {
-            domain = this.state.invoiced_domain; model = 'account.move'; name = "Invoiced Records";
+            this.action.doAction({
+                name: "Customer Invoices",
+                type: "ir.actions.act_window",
+                res_model: "account.move",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: [['move_type', '=', 'out_invoice'], ['state', '=', 'posted']]
+            });
         }
-        this.action.doAction({ name: name, type: "ir.actions.act_window", res_model: model, view_mode: "list,form", views: [[false, "list"], [false, "form"]], domain: domain });
     }
 
-    // Logic for Drilling Down from Charts
     openChartRecords(type, label) {
         if (!label || label === 'Unknown' || label === 'Uncategorized') return;
-        let domain = [...this.state.nav_domain];
-        if(this.state.state === 'quotation') domain.push(['state', 'in', ['draft', 'sent']]);
-        else if(this.state.state === 'sale') domain.push(['state', 'in', ['sale', 'done']]);
-        else domain.push(['state', '!=', 'cancel']);
 
-        if (type === 'customer') domain.push(['partner_id.name', '=', label]);
-        else if (type === 'product') domain.push(['order_line.product_id.name', '=', label]);
-        else if (type === 'salesperson') domain.push(['user_id.name', '=', label]);
-        else if (type === 'category') domain.push(['order_line.product_id.categ_id.name', '=', label]);
-        else if (type === 'trend') {
-            domain.push(['date_order', '>=', `${label} 00:00:00`]);
-            domain.push(['date_order', '<=', `${label} 23:59:59`]);
-        } else if (type === 'win_rate') {
-            domain = [...this.state.nav_domain];
-            if (label === 'Won Orders') domain.push(['state', 'in', ['sale', 'done']]);
-            else domain.push(['state', 'in', ['draft', 'sent', 'cancel']]);
+        if (type === 'product') {
+            this.action.doAction({
+                name: "Products",
+                type: "ir.actions.act_window",
+                res_model: "product.template",
+                view_mode: "kanban,list,form",
+                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                domain: []
+            });
+        } else if (type === 'customer') {
+            this.action.doAction({
+                name: "Customers",
+                type: "ir.actions.act_window",
+                res_model: "res.partner",
+                view_mode: "kanban,list,form",
+                views: [[false, "kanban"], [false, "list"], [false, "form"]],
+                domain: []
+            });
+        } else if (type === 'category') {
+            this.action.doAction({
+                name: "Product Categories",
+                type: "ir.actions.act_window",
+                res_model: "product.category",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: []
+            });
+        } else if (type === 'salesperson') {
+            this.action.doAction({
+                name: "Salespersons",
+                type: "ir.actions.act_window",
+                res_model: "res.users",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: []
+            });
+        } else if (type === 'trend' || type === 'win_rate') {
+            this.action.doAction({
+                name: "Sales Orders",
+                type: "ir.actions.act_window",
+                res_model: "sale.order",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: []
+            });
         }
-
-        this.action.doAction({ name: `Records for ${label}`, type: "ir.actions.act_window", res_model: "sale.order", view_mode: "list,form", views: [[false, "list"], [false, "form"]], domain: domain });
     }
 
     openExportModal() { this.state.showExportModal = true; }
@@ -144,7 +220,7 @@ export class SalesDashboardClient extends Component {
         if (this.state.meas_margin_pct) measures.push('margin_pct');
         if (measures.length === 0) { alert("Please select at least one measure."); return; }
 
-        const searchDomain = this.env.searchModel ? this.env.searchModel.domain : [];
+        const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
         const kwargs = {
             state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id,
             team_id: this.state.team_id, category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
