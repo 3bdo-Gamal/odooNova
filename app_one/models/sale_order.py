@@ -15,3 +15,5 @@ from odoo.exceptions import ValidationError
 #        for line in record.order_line:
 #           line.product_uom_qty = 12
 #  return super().action_confirm()
+
+#DR Ebram hand code signature 2025 <3

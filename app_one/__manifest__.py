@@ -29,14 +29,12 @@
             "app_one/static/src/xml/po_dashboard.xml",
             "app_one/static/src/js/inventory_dashboard.js",
             "app_one/static/src/xml/inventory_dashboard.xml",
-
             "app_one/static/src/js/Sales_dashboard.js",
             "app_one/static/src/xml/sales_dashboard.xml",
+            "app_one/static/src/js/invoicing_dashboard.js",
+            "app_one/static/src/xml/invoicing_dashboard.xml",
             "app_one/static/src/js/pos_dashboard.js",
             "app_one/static/src/xml/pos_dashboard.xml",
-            "app_one/static/src/js/invoicing_dashboard.js",
-            "app_one/static/src/xml/invoicing_dashboard.xml"
-
         ]
     },
 
