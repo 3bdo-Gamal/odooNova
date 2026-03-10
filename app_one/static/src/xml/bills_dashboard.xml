@@ -1,282 +1,466 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="purchase_bills_dashboard_template" owl="1">
-        <div class="o_dashboard_container w-100 h-100 overflow-auto"
-             style="background-color: #f8f9fa; padding: 20px;
-                    --kpi-red: #E74C3C;
-                    --kpi-blue: #3498DB;
-                    --kpi-orange: #F39C12;
-                    --kpi-purple: #9B59B6;
-                    --text-dark: #2C3E50;">
+        <style>
+            /* Glassmorphism and Modern UI Styles */
+            .wb-dashboard-wrapper {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
+            }
+            .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
 
-       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 shadow-sm rounded-3">
+            /* Sidebar Styles */
+            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
-                <div class="flex-grow-1 mx-4">
-                    <div class="input-group shadow-sm rounded-3" style="background: #fff;">
-                        <span class="input-group-text bg-transparent border-end-0"><i class="fa fa-search text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0 border-end-0 fw-bold"
-                               t-ref="vendor_search"
-                               placeholder="Search by Vendor Name... (Press Enter)"
-                               t-on-keyup="onSearchKeyUp"
-                               style="box-shadow: none; border-color: #ced4da;"/>
+            /* Header Styles */
+            .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); }
 
-                        <button class="btn btn-outline-secondary dropdown-toggle border-start-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: #ced4da; color: #495057;">
-                            <i class="fa fa-filter"></i> Filters
+            /* Card Styles */
+            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
+            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+            .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
+
+            /* Icon Box Styles */
+            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+            .icon-primary { background: #eff6ff; color: #3b82f6; }
+            .icon-success { background: #f0fdf4; color: #22c55e; }
+            .icon-info { background: #ecfeff; color: #06b6d4; }
+            .icon-warning { background: #fefce8; color: #eab308; }
+            .icon-danger { background: #fef2f2; color: #ef4444; }
+            .icon-dark { background: #f1f5f9; color: #334155; }
+            .icon-purple { background: #faf5ff; color: #a855f7; }
+            .icon-orange { background: #fff3cd; color: #fd7e14; }
+
+            /* Inputs and Search */
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; padding: 8px;}
+            .wb-input:focus { border-color: #3b82f6; outline: none; }
+
+            /* Native Search Bar Customization */
+            .wb-native-search .o_searchview { background: #f8fafc; border-radius: 9999px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); padding: 4px 18px; transition: all 0.3s;}
+            .wb-native-search .o_searchview:focus-within { background: #ffffff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+            /* Chart Hints and Modals */
+            .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+            #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+        </style>
+
+        <div class="wb-dashboard-wrapper">
+
+            <t t-if="state.showExportModal">
+                <div class="wb-modal-overlay">
+                    <div class="wb-modal-content">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-excel-o text-success me-2"></i> Export Bills Excel</h5>
+                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted">You are about to export Purchase Bills based on your current filters and date range.</p>
+                        </div>
+                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
+                            <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closeExportModal">Cancel</button>
+                            <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" t-on-click="downloadExcel">
+                                <i class="fa fa-download me-2"></i> Download Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <div id="print_report_area" style="display: none; background: white; padding: 40px; color: #334155; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+
+                <div style="border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: bold;">Purchase Bills Analytics</h1>
+                        <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px;">Comprehensive Vendor Liabilities &amp; Performance Report</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="margin: 0; color: #0f172a; font-weight: bold; font-size: 14px;">Report Date</p>
+                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;"><t t-esc="new Date().toLocaleDateString()"/></p>
+                    </div>
+                </div>
+
+                <h3 style="color: #0f172a; font-size: 18px; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 10px;">1. Executive Summary (KPIs)</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 14px;">
+                    <thead>
+                        <tr style="background-color: #f1f5f9;">
+                            <th style="padding: 12px 15px; text-align: left; border: 1px solid #cbd5e1; color: #334155; font-weight: bold; width: 60%;">Performance Metric</th>
+                            <th style="padding: 12px 15px; text-align: right; border: 1px solid #cbd5e1; color: #334155; font-weight: bold; width: 40%;">Current Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Total Bills Count</td>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #0f172a;"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></td>
+                        </tr>
+                        <tr style="background-color: #f8fafc;">
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Total Billed Amount</td>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #10b981;"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Upcoming Payables</td>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #ef4444;"><t t-esc="state.kpi_data.cards.upcoming_payables"/></td>
+                        </tr>
+                        <tr style="background-color: #f8fafc;">
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Average Days Payable Outstanding (DPO)</td>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #3b82f6;"><t t-esc="state.kpi_data.cards.avg_dpo"/> Days</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Late Bills Ratio</td>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #f59e0b;"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</td>
+                        </tr>
+                        <tr style="background-color: #f8fafc;">
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Maverick Spend (Bills Without PO)</td>
+                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #a855f7;"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="color: #0f172a; font-size: 18px; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 10px;">2. Applied Filters &amp; Parameters</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px;">
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; width: 30%;">Time Period</td>
+                            <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: bold;">
+                                <t t-if="state.period and state.period != '0'">Last <t t-esc="state.period"/> Days</t>
+                                <t t-else="">Custom Range (<t t-esc="state.date_from || 'All'"/> to <t t-esc="state.date_to || 'All'" />)</t>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 50px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                    <p style="margin: 0;">* This analytical report is computer-generated securely from the Odoo Dashboard System.</p>
+                </div>
+            </div>
+
+
+
+            <div class="wb-main-content">
+
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none">
+                    <div>
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
+                            <i class="fa fa-shopping-cart text-primary me-2"></i>Purchase Bills Analytics
+                        </h3>
+                        <p class="text-muted text-sm mb-0">Monitor vendor liabilities, spending trends, and invoice accuracy.</p>
+                    </div>
+
+                    <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">
+                        <SearchBar t-if="env.searchModel" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white hover-bg-light text-nowrap" t-on-click="openExportModal" style="transition: all 0.2s;">
+                            <i class="fa fa-file-excel-o me-2"></i> Export Excel
                         </button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white hover-bg-light text-nowrap" t-on-click="printPDF" style="transition: all 0.2s;">
+                            <i class="fa fa-file-pdf-o me-2"></i> Print PDF
+                        </button>
+                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar" title="Toggle Filters">
+                            <i class="fa fa-sliders"></i>
+                        </button>
+                    </div>
+                </div>
 
-                        <div class="dropdown-menu p-3 shadow" style="width: 450px; border-radius: 8px;">
-                            <div class="row">
-                                <div class="col-6 border-end">
-                                    <h6 class="dropdown-header text-dark fw-bolder px-1"><i class="fa fa-filter me-2"/>Filters</h6>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('state_posted')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.state_posted ? 'text-primary' : 'opacity-0' }}"/> Posted Bills
-                                    </a>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('state_draft')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.state_draft ? 'text-primary' : 'opacity-0' }}"/> Draft Bills
-                                    </a>
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('pay_not_paid')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.pay_not_paid ? 'text-primary' : 'opacity-0' }}"/> Not Paid
-                                    </a>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('pay_paid')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.pay_paid ? 'text-primary' : 'opacity-0' }}"/> Fully Paid
-                                    </a>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('is_overdue')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.is_overdue ? 'text-danger' : 'opacity-0' }}"/> Overdue
-                                    </a>
-                                    <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('has_po')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.has_po ? 'text-primary' : 'opacity-0' }}"/> With PO
-                                    </a>
-                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('no_po')">
-                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.no_po ? 'text-warning' : 'opacity-0' }}"/> Without PO (Maverick)
-                                    </a>
-                                </div>
-                                <div class="col-6">
-                                    <h6 class="dropdown-header text-dark fw-bolder px-1"><i class="fa fa-bars me-2"/>Group By</h6>
-                                    <span class="dropdown-item-text text-muted small px-1">Auto-grouped by Date &amp; Vendor.</span>
-                                </div>
+<!--                KPI Cards  -->
+                <div class="row mb-4">
+
+
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('all')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-success me-3"><i class="fa fa-usd"></i></div>
+            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Amount</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></h4></div>
+        </div>
+    </div>
+       <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('all')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-dark me-3"><i class="fa fa-files-o"></i></div>
+            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Bills</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></h4></div>
+        </div>
+    </div>
+
+
+    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('upcoming')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-danger me-3"><i class="fa fa-money"></i></div>
+            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Upcoming Payables</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.upcoming_payables"/></h4></div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('dpo')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-primary me-3"><i class="fa fa-calendar-check-o"></i></div>
+            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg DPO</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small></h4></div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('late_bills')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-warning me-3"><i class="fa fa-exclamation-triangle"></i></div>
+            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Late Bills Ratio</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</h4></div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('wo_po')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-info me-3"><i class="fa fa-file-text-o"></i></div>
+            <div><p class="text-dark text-uppercase text-xs fw-bold mb-1">Bill Without PO</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4></div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('wo_po')">
+        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+            <div class="wb-icon-box icon-purple me-3"><i class="fa fa-link"></i></div>
+            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Maverick Spend (No-PO)</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4></div>
+        </div>
+    </div>
+</div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+                    <h5 class="fw-bolder m-0 text-dark">
+                        <i class="fa fa-shield me-2 text-secondary"></i>Invoice Accuracy &amp; Control
+                    </h5>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-7">
+                        <div class="wb-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0">
+                                    <i class="fa fa-balance-scale text-danger me-2"></i>Price Variance (PO vs Bill)
+                                    <span class="chart-hint">(Click to view records)</span>
+                                </h6>
+                                <small class="text-muted fw-bold text-xs">
+                                    <span class="text-danger">■</span> Overbilled <span class="text-success ms-2">■</span> Underbilled
+                                </small>
+                            </div>
+                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('price_var')">
+                                <canvas t-ref="chart_price_var"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="wb-card h-100 overflow-hidden d-flex flex-column p-0">
+                            <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+                                <h6 class="fw-bold text-dark m-0">
+                                    <i class="fa fa-cubes text-info me-2"></i>Invoice Quantity Variance
+                                </h6>
+                                <button class="btn btn-sm btn-white border shadow-sm rounded-pill fw-bold text-xs px-3" t-on-click="() => this.openAction('qty_variance_pivot')">
+                                    <i class="fa fa-table me-1"></i> Pivot View
+                                </button>
+                            </div>
+                            <div class="table-responsive flex-grow-1" style="max-height: 280px; cursor: pointer;" t-on-click="() => this.openAction('qty_variance_pivot')">
+                                <table class="table table-hover table-borderless align-middle mb-0">
+                                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                                        <tr>
+                                            <th class="px-4 py-3 text-uppercase text-muted text-xs fw-bold">Product</th>
+                                            <th class="px-4 py-3 text-uppercase text-muted text-xs fw-bold text-end">Variance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="state.kpi_data.tables?.qty_variance_pivot || []" t-as="row" t-key="row.product">
+                                            <td class="px-4 py-2 fw-bold text-dark" style="font-size: 0.85rem;"><t t-esc="row.product"/></td>
+                                            <td class="px-4 py-2 fw-bolder text-end">
+                                                <span t-attf-class="badge rounded-pill px-3 py-2 {{ row.qty_variance &gt; 0 ? 'bg-danger' : (row.qty_variance &lt; 0 ? 'bg-success' : 'bg-secondary') }}">
+                                                    <t t-esc="row.qty_variance"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2">
-                    <input type="date" class="form-control shadow-sm border-0 py-2 rounded-3 fw-bold text-muted" t-ref="date_from" style="cursor: pointer;"/>
-                    <span class="fw-bold text-muted">To</span>
-                    <input type="date" class="form-control shadow-sm border-0 py-2 rounded-3 fw-bold text-muted" t-ref="date_to" style="cursor: pointer;"/>
-                    <button class="btn btn-primary fw-bold py-2 px-3 shadow-sm rounded-3" t-on-click="onApplyFilter">
-                        Apply
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-8">
+                        <div class="wb-card p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-4">
+                                <i class="fa fa-line-chart text-primary me-2"></i>Spend Trend Analysis
+                                <span class="chart-hint">(Click point to view records)</span>
+                            </h6>
+                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('trend')">
+                                <canvas t-ref="chart_trend"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="wb-card p-4 h-100 d-flex flex-column">
+                            <h6 class="fw-bold text-dark mb-4">
+                                <i class="fa fa-pie-chart text-warning me-2"></i>Paid vs Unpaid Bills
+                                <span class="chart-hint">(Click slice to drill)</span>
+                            </h6>
+                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('status')">
+                                <canvas t-ref="chart_status"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="wb-card p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-4">
+                                <i class="fa fa-users text-success me-2"></i>Top 10 Vendors
+                                <span class="chart-hint">(Click bar to view records)</span>
+                            </h6>
+                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('vendor')">
+                                <canvas t-ref="chart_vendor"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="wb-card p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-4">
+                                <i class="fa fa-clock-o text-info me-2"></i>Vendor Payment Lead Time
+                            </h6>
+                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('lead_time')">
+                                <canvas t-ref="chart_lead_time"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
+
+                <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-sliders text-primary me-2 fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
+                    </div>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar" style="transition: transform 0.2s;">
+                        <i class="fa fa-times"></i>
                     </button>
                 </div>
 
-            </div>
+                <div class="wb-sidebar-scroll">
 
-            <div class="row g-3 mb-3">
-                <div class="col-lg-3 col-md-6">
-                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 4px solid var(--kpi-red) !important; cursor: pointer;"
-                         t-on-click="() => this.openAction('upcoming')">
-                        <div class="card-body d-flex align-items-center p-3">
-                            <div class="flex-grow-1" >
-                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Upcoming Payables</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
-                                    <t t-esc="state.kpi_data.cards.upcoming_payables"/>
-                                </h2>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                 style="background-color: rgba(231, 76, 60, 0.15); color: var(--kpi-red); width: 55px; height: 55px;">
-                                <i class="fa fa-money fa-lg"></i>
-                            </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
+                        <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
+                            <option value="0">-- All Time / Custom Dates --</option>
+                            <option value="7">📅 Last 7 Days</option>
+                            <option value="30">📅 Last Month</option>
+                            <option value="90">📅 Last 3 Months</option>
+                            <option value="180">📅 Last 6 Months</option>
+                            <option value="365">📅 Last Year</option>
+                        </select>
+
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2"><i class="fa fa-calendar me-1"></i> Custom Date Range</label>
+                        <input type="date" class="form-control wb-input form-control-sm mb-2" t-model="state.date_from" t-on-change="applyDateFilter"/>
+                        <input type="date" class="form-control wb-input form-control-sm" t-model="state.date_to" t-on-change="applyDateFilter"/>
+                    </div>
+
+
+
+                    <hr class="text-muted opacity-25"/>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Vendor</label>
+                        <select class="form-select wb-input" t-model="state.filters.vendor_id" t-on-change="onApplyFilter">
+                            <option value="all">🏢 All Vendors</option>
+                            <t t-foreach="state.filter_options?.vendors || []" t-as="vendor" t-key="vendor.id">
+                                <option t-att-value="vendor.id"><t t-esc="vendor.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Journal</label>
+                        <select class="form-select wb-input" t-model="state.filters.journal_id" t-on-change="onApplyFilter">
+                            <option value="all">📓 All Journals</option>
+                            <t t-foreach="state.filter_options?.journals || []" t-as="journal" t-key="journal.id">
+                                <option t-att-value="journal.id"><t t-esc="journal.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Product Category</label>
+                        <select class="form-select wb-input" t-model="state.filters.category_id" t-on-change="onApplyFilter">
+                            <option value="all">📁 All Categories</option>
+                            <t t-foreach="state.filter_options?.categories || []" t-as="cat" t-key="cat.id">
+                                <option t-att-value="cat.id"><t t-esc="cat.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Location</label>
+                        <select class="form-select wb-input" t-model="state.filters.location_id" t-on-change="onApplyFilter">
+                            <option value="all">📍 All Locations</option>
+                            <t t-foreach="state.filter_options?.locations || []" t-as="loc" t-key="loc.id">
+                                <option t-att-value="loc.id"><t t-esc="loc.display_name"/></option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <hr class="text-muted opacity-25"/>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Quick Filters</label>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_posted"
+                                   t-att-checked="state.active_filters.state_posted"
+                                   t-on-change="() => this.toggleFilter('state_posted')"/>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_posted">Posted Bills Only</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_draft"
+                                   t-att-checked="state.active_filters.state_draft"
+                                   t-on-change="() => this.toggleFilter('state_draft')"/>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_draft">Draft Bills</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_paid"
+                                   t-att-checked="state.active_filters.pay_paid"
+                                   t-on-change="() => this.toggleFilter('pay_paid')"/>
+                            <label class="form-check-label text-success fw-bold mb-0" for="f_paid">Fully Paid</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_not_paid"
+                                   t-att-checked="state.active_filters.pay_not_paid"
+                                   t-on-change="() => this.toggleFilter('pay_not_paid')"/>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_not_paid">Not Paid</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_overdue"
+                                   t-att-checked="state.active_filters.is_overdue"
+                                   t-on-change="() => this.toggleFilter('is_overdue')"/>
+                            <label class="form-check-label text-danger fw-bold mb-0" for="f_overdue">Overdue</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_has_po"
+                                   t-att-checked="state.active_filters.has_po"
+                                   t-on-change="() => this.toggleFilter('has_po')"/>
+                            <label class="form-check-label text-primary fw-bold mb-0" for="f_has_po">With PO</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_no_po"
+                                   t-att-checked="state.active_filters.no_po"
+                                   t-on-change="() => this.toggleFilter('no_po')"/>
+                            <label class="form-check-label text-warning fw-bold mb-0" for="f_no_po">Without PO (Maverick)</label>
                         </div>
                     </div>
-                </div>
 
-                <div class="col-lg-3 col-md-6">
-                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 4px solid var(--kpi-blue) !important; cursor: pointer;"
-                         t-on-click="() => this.openAction('dpo')">
-                        <div class="card-body d-flex align-items-center p-3">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Avg DPO</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
-                                    <t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small>
-                                </h2>
-                            </div>
-                             <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                 style="background-color: rgba(52, 152, 219, 0.15); color: var(--kpi-blue); width: 55px; height: 55px;">
-                                <i class="fa fa-calendar-check-o fa-lg"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-3 col-md-6">
-                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 4px solid var(--kpi-orange) !important; cursor: pointer;"
-                         t-on-click="() => this.openAction('late_bills')">
-                        <div class="card-body d-flex align-items-center p-3">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Late Bills Ratio</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
-                                    <t t-esc="state.kpi_data.cards.late_bills_ratio"/>%
-                                </h2>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                 style="background-color: rgba(243, 156, 18, 0.15); color: var(--kpi-orange); width: 55px; height: 55px;">
-                                <i class="fa fa-exclamation-triangle fa-lg"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-3 col-md-6">
-                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="background-color: #fff3cd; border-left: 4px solid #fd7e14 !important; cursor: pointer;"
-                         t-on-click="() => this.openAction('wo_po')">
-                        <div class="card-body d-flex align-items-center p-3">
-                            <div class="flex-grow-1">
-                                <h6 class="text-dark text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Bill Without PO</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: #2C3E50; font-size: 1.8rem;">
-                                    <t t-esc="state.kpi_data.cards.wo_po_ratio"/>%
-                                </h2>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                 style="background-color: rgba(253, 126, 20, 0.2); color: #fd7e14; width: 55px; height: 55px;">
-                                <i class="fa fa-link fa-lg"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-3 mb-4">
-                <div class="col-lg-3 col-md-6">
-                    <div class="card shadow-sm border-0 h-100 rounded-3 overflow-hidden"
-                         style="border-left: 4px solid var(--kpi-purple) !important; cursor: pointer;"
-                         t-on-click="() => this.openAction('wo_po')">
-                        <div class="card-body d-flex align-items-center p-3">
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Maverick Spend (No-PO)</h6>
-                                <h2 class="mb-0 fw-bolder" style="color: var(--text-dark); font-size: 1.8rem;">
-                                    <t t-esc="state.kpi_data.cards.wo_po_ratio"/>%
-                                </h2>
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                 style="background-color: rgba(155, 89, 182, 0.15); color: var(--kpi-purple); width: 55px; height: 55px;">
-                                <i class="fa fa-file-text-o fa-lg"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
-                <h5 class="fw-bolder m-0" style="color: var(--text-dark);">
-                    <i class="fa fa-shield me-2 text-secondary"></i>Invoice Accuracy &amp; Control
-                </h5>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-7">
-                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold m-0" style="color: var(--text-dark);">
-                                <i class="fa fa-balance-scale me-2 text-danger"/>Price Variance (PO vs Bill)
-                            </h6>
-                            <small class="text-muted fw-bold" style="font-size: 0.75rem;">
-                                <span class="text-danger">■</span> Overbilled <span class="text-success ms-2">■</span> Underbilled
-                            </small>
-                        </div>
-                        <div class="chart-container" style="position: relative; height: 280px; cursor: pointer;"
-                             t-on-click="() => this.openAction('price_var')">
-                            <canvas t-ref="chart_price_var"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-5">
-                    <div class="card shadow-sm border-0 p-0 h-100 rounded-3 overflow-hidden">
-                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="background-color: #ffffff;">
-                            <h6 class="fw-bold m-0" style="color: var(--text-dark);">
-                                <i class="fa fa-cubes me-2 text-info"/>Invoice Quantity Variance
-                            </h6>
-                            <button class="btn btn-sm btn-outline-secondary fw-bold py-1" style="font-size: 0.75rem;" t-on-click="() => this.openAction('qty_variance_pivot')">
-                                <i class="fa fa-table me-1"></i> Full Pivot
-                            </button>
-                        </div>
-                        <div class="table-responsive" style="max-height: 280px; cursor: pointer;" t-on-click="() => this.openAction('qty_variance_pivot')">
-                            <table class="table table-hover table-borderless align-middle mb-0">
-                                <thead class="table-light position-sticky top-0" style="z-index: 1;">
-                                    <tr>
-                                        <th class="px-3 py-2 text-uppercase text-muted" style="font-size: 0.75rem;">Product</th>
-                                        <th class="px-3 py-2 text-uppercase text-muted text-end" style="font-size: 0.75rem;">Variance</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr t-foreach="state.kpi_data.tables?.qty_variance_pivot || []" t-as="row" t-key="row.product">
-                                        <td class="px-3 py-2 fw-bold text-dark" style="font-size: 0.85rem;"><t t-esc="row.product"/></td>
-                                        <td class="px-3 py-2 fw-bolder text-end">
-                                            <span t-attf-class="badge rounded-pill {{ row.qty_variance &gt; 0 ? 'bg-danger' : (row.qty_variance &lt; 0 ? 'bg-success' : 'bg-secondary') }}">
-                                                <t t-esc="row.qty_variance"/>
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-8">
-                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-line-chart me-2 text-primary"/>Spend Trend Analysis</h6>
-                        </div>
-                        <div class="chart-container" style="position: relative; height: 300px; cursor: pointer;"
-                             t-on-click="() => this.openAction('trend')">
-                            <canvas t-ref="chart_trend"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-4">
-                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                             <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-pie-chart me-2 text-warning"/>Paid vs Unpaid Bills</h6>
-                        </div>
-                        <div class="chart-container" style="position: relative; height: 300px; cursor: pointer;"
-                             t-on-click="() => this.openAction('status')">
-                            <canvas t-ref="chart_status"/>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-6">
-                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                             <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-users me-2 text-success"/>Top 10 Vendors</h6>
-                        </div>
-                        <div class="chart-container" style="position: relative; height: 300px; cursor: pointer;"
-                             t-on-click="() => this.openAction('vendor')">
-                            <canvas t-ref="chart_vendor"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-6">
-                    <div class="card shadow-sm border-0 p-3 h-100 rounded-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                             <h6 class="fw-bold m-0" style="color: var(--text-dark);"><i class="fa fa-clock-o me-2 text-info"/>Vendor Payment Lead Time</h6>
-                        </div>
-                        <div class="chart-container" style="position: relative; height: 300px;">
-                            <canvas t-ref="chart_lead_time"/>
-                        </div>
-                    </div>
                 </div>
             </div>
 
