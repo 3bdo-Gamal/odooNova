@@ -146,7 +146,7 @@
                         <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
                             <i class="fa fa-shopping-cart text-primary me-2"></i>Purchase Bills Analytics
                         </h3>
-                        <p class="text-muted text-sm mb-0">Monitor vendor liabilities, spending trends, and invoice accuracy.</p>
+                        <p class="text-muted text-sm mb-0">Monitor vendor bills , spending trends, and accuracy.</p>
                     </div>
 
                     <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">

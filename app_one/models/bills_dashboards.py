@@ -47,29 +47,28 @@ class PurchaseBillsDashboard(models.AbstractModel):
                            journal_id='all', category_id='all', location_id='all', native_domain=None):
         today = fields.Date.context_today(self)
 
-        # 1. الفلتر الأساسي
         base_domain = [('move_type', '=', 'in_invoice')]
 
-        # تطبيق فلتر التواريخ المخصصة إذا وجدت
+        # Fixed dates
         if date_from or date_to:
             if date_from:
                 base_domain.append(('invoice_date', '>=', fields.Date.to_date(date_from)))
             if date_to:
                 base_domain.append(('invoice_date', '<=', fields.Date.to_date(date_to)))
-        # أو تطبيق فلتر المدة الزمنية (Period)
+        # Date Range
         elif period and int(period) > 0:
             current_date_start = today - timedelta(days=int(period))
             base_domain.append(('invoice_date', '>=', current_date_start))
             base_domain.append(('invoice_date', '<=', today))
 
-        # 2. فلاتر القائمة الجانبية (Sidebar)
+        # (Sidebar)
         if vendor_id and vendor_id != 'all':
             base_domain.append(('partner_id', '=', int(vendor_id)))
 
         if journal_id and journal_id != 'all':
             base_domain.append(('journal_id', '=', int(journal_id)))
 
-        # الفلاتر الجديدة (فئة المنتج والموقع)
+
         if category_id and category_id != 'all':
             base_domain.append(('invoice_line_ids.product_id.categ_id', 'child_of', int(category_id)))
 
@@ -78,7 +77,7 @@ class PurchaseBillsDashboard(models.AbstractModel):
                 ('invoice_line_ids.purchase_line_id.order_id.picking_type_id.default_location_dest_id', 'child_of',
                  int(location_id)))
 
-        # 3. تطبيق الفلاتر السريعة (Quick Filters)
+        #  (Quick Filters)
         if active_filters:
             states = []
             if active_filters.get('state_posted'): states.append('posted')
@@ -103,7 +102,7 @@ class PurchaseBillsDashboard(models.AbstractModel):
             if active_filters.get('no_po'):
                 base_domain.append(('purchase_id', '=', False))
 
-        # 4. دمج دومين شريط البحث الخاص بأودو (Native Search Bar)
+        # (Native Search Bar)
         if native_domain:
             domain = expression.AND([base_domain, native_domain])
         else:
