@@ -1,31 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="wb_app_one_inventory_graph_view" model="ir.ui.view">
-        <field name="name">wb.app.one.inventory.graph</field>
-        <field name="model">stock.quant</field>
-        <field name="arch" type="xml">
-            <graph string="Inventory Quantities" type="bar">
-                <field name="product_id"/>
-                <field name="quantity" type="measure"/>
-            </graph>
-        </field>
-    </record>
+    <data>
 
-    <record id="action_app_one_inventory_graph" model="ir.actions.act_window">
-        <field name="name">Inventory Analysis</field>
-        <field name="res_model">stock.quant</field>
-        <field name="view_mode">graph,pivot,tree,form</field>
-        <field name="view_id" ref="wb_app_one_inventory_graph_view"/>
-        <field name="domain">[('location_id.usage', '=', 'internal')]</field>
-    </record>
+        <record id="action_inventory_dashboard_client" model="ir.actions.client">
+            <field name="name">Inventory Advanced Dashboard</field>
+            <field name="tag">inventory_dashboard_client_tag</field>
+        </record>
 
-    <record id="action_inventory_dashboard_client" model="ir.actions.client">
-        <field name="name">Inventory Advanced Dashboard</field>
-        <field name="tag">inventory_dashboard_client_tag</field>
-    </record>
+        <record id="wb_app_one_inventory_graph_view" model="ir.ui.view">
+            <field name="name">wb.app.one.inventory.graph</field>
+            <field name="model">stock.quant</field>
+            <field name="arch" type="xml">
+                <graph string="Inventory Quantities" type="bar">
+                    <field name="product_id"/>
+                    <field name="quantity" type="measure"/>
+                </graph>
+            </field>
+        </record>
 
-    <menuitem id="menu_inventory_dashboard"
-              name="Inventory Dashboard"
-              action="action_inventory_dashboard_client"
-              parent="wb_app_one_root_menu"
-              sequence="10"/>
+        <record id="action_app_one_inventory_graph" model="ir.actions.act_window">
+            <field name="name">Inventory Analysis</field>
+            <field name="res_model">stock.quant</field>
+            <field name="view_mode">graph,pivot,tree,form</field>
+            <field name="view_id" ref="wb_app_one_inventory_graph_view"/>
+            <field name="domain">[('location_id.usage', '=', 'internal')]</field>
+        </record>
+
+        <menuitem id="menu_inventory_dashboard"
+                  name="Inventory Dashboard"
+                  action="action_inventory_dashboard_client"
+                  parent="wb_app_one_root_menu"
+                  sequence="10"/>
+
+    </data>
 </odoo>

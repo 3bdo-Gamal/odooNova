@@ -1,86 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="app_one.InventoryDashboard" owl="1">
-        <div class="o_dashboard_container p-4" style="background-color: #f4f7f6; min-height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <t t-name="InventoryDashboardClientTemplate">
+        <style>
+            .wb-inv-wrapper {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f0f4f8;
+            }
+            .wb-inv-main { flex-grow: 1; overflow-y: auto; padding: 2rem; }
+            .wb-inv-sidebar {
+                width: 340px; flex-shrink: 0; display: flex; flex-direction: column;
+                background: #ffffff; border-left: 1px solid #e2e8f0;
+                box-shadow: -4px 0 15px rgba(0,0,0,0.04); z-index: 10; height: 100%;
+            }
+            .wb-inv-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="fw-bold text-dark m-0">Inventory KPI Dashboard</h2>
-                <button class="btn btn-danger shadow-sm" t-on-click="resetFilters">
-                    <i class="fa fa-refresh me-1"></i> Clear All Filters
-                </button>
-            </div>
+            .wb-glassy-header {
+                background: rgba(255,255,255,0.7);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255,255,255,0.9);
+                border-radius: 1.25rem;
+                padding: 1rem 1.5rem;
+                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.04);
+            }
 
-            <div class="row mb-4 g-3 bg-white shadow-sm p-3 rounded-3 border-0">
-                <div class="col-md-3">
-                    <label class="small fw-bold text-muted mb-1">Date From</label>
-                    <input type="date" class="form-control border-1" t-model="state.filters.date_from" t-on-change="(ev) => this.onFilterChange(ev, 'date_from')"/>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold text-muted mb-1">Date To</label>
-                    <input type="date" class="form-control border-1" t-model="state.filters.date_to" t-on-change="(ev) => this.onFilterChange(ev, 'date_to')"/>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold text-muted mb-1">Warehouse</label>
-                    <select class="form-select border-1" t-model="state.filters.warehouse_id" t-on-change="(ev) => this.onFilterChange(ev, 'warehouse_id')">
-                        <option value="">All Warehouses</option>
-                        <t t-foreach="state.kpis.warehouses || []" t-as="wh" t-key="wh.id">
-                            <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
-                        </t>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold text-muted mb-1">Product</label>
-                    <select class="form-select border-1" t-model="state.filters.product_id" t-on-change="(ev) => this.onFilterChange(ev, 'product_id')">
-                        <option value="">All Products</option>
-                        <t t-foreach="state.kpis.products_list || []" t-as="p" t-key="p.id">
-                            <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
-                        </t>
-                    </select>
-                </div>
-            </div>
+            .wb-kpi-card {
+                background: #fff; border-radius: 16px;
+                border: 1px solid rgba(0,0,0,0.05);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+                transition: all 0.3s ease; padding: 1.25rem;
+            }
+            .wb-kpi-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+            .wb-kpi-card.clickable { cursor: pointer; }
+            .wb-kpi-card.clickable:hover { border-color: #6366f1; }
 
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 h-100"
-                         style="cursor: pointer; transition: 0.3s;"
-                         t-on-click="() => this.openView('stock.quant', [['location_id.usage', '=', 'internal']], 'Stock Details')">
-                        <h6 class="text-muted text-uppercase small fw-bold">Stock On Hand (Click)</h6>
-                        <h3 class="fw-bold mb-0 text-primary"><t t-esc="state.kpis.stock_on_hand"/></h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-success border-4 p-3 h-100"
-                         style="cursor: pointer;"
-                         t-on-click="() => this.openView('product.product', [['detailed_type', '=', 'product']], 'Product Costs')">
-                        <h6 class="text-muted text-uppercase small fw-bold">Total Stock Value</h6>
-                        <h3 class="fw-bold mb-0 text-success"><t t-esc="state.kpis.stock_value"/> <small class="fs-6">EGP</small></h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-warning border-4 p-3 h-100">
-                        <h6 class="text-muted text-uppercase small fw-bold">DIO (Inventory Days)</h6>
-                        <h3 class="fw-bold mb-0 text-warning"><t t-esc="state.kpis.dio"/></h3>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card shadow-sm border-0 border-start border-danger border-4 p-3 h-100"
-                         style="cursor: pointer;"
-                         t-on-click="() => this.openView('product.product', [['qty_available', '&lt;=', 0]], 'Low Stock Products')">
-                        <h6 class="text-muted text-uppercase small fw-bold">Low Stock Alerts</h6>
-                        <h3 class="text-danger fw-bold mb-0"><t t-esc="state.kpis.low_stock_count"/> Items</h3>
-                    </div>
-                </div>
-            </div>
+            .wb-icon-box {
+                width: 48px; height: 48px; border-radius: 12px;
+                display: flex; align-items: center; justify-content: center; font-size: 20px;
+            }
+            .icon-indigo  { background: #eef2ff; color: #4f46e5; }
+            .icon-emerald { background: #ecfdf5; color: #10b981; }
+            .icon-cyan    { background: #ecfeff; color: #06b6d4; }
+            .icon-amber   { background: #fffbeb; color: #f59e0b; }
+            .icon-red     { background: #fef2f2; color: #ef4444; }
+            .icon-violet  { background: #f5f3ff; color: #7c3aed; }
+            .icon-slate   { background: #f1f5f9; color: #475569; }
+            .icon-teal    { background: #f0fdfa; color: #14b8a6; }
 
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card shadow-sm border-0 p-4" style="height: 400px;">
-                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">ABC Analysis (By Category)</h5>
-                        <div class="chart-container" style="position: relative; height: 300px;">
-                            <canvas id="abcChart"></canvas>
+            .wb-chart-card {
+                background: #fff; border-radius: 16px;
+                border: 1px solid rgba(0,0,0,0.05);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+                padding: 1.5rem;
+            }
+            .wb-chart-title { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin-bottom: 1.25rem; }
+            .chart-hint { font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-left: 6px; }
+
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; transition: all 0.2s; font-size: 0.875rem; }
+            .wb-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12); outline: none; }
+
+            .wb-modal-overlay {
+                position: fixed; top:0; left:0; right:0; bottom:0;
+                background: rgba(15,23,42,0.6); backdrop-filter: blur(5px);
+                z-index: 1050; display: flex; align-items: center; justify-content: center;
+            }
+            .wb-modal-content {
+                background: white; border-radius: 20px; width: 100%; max-width: 640px;
+                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
+                animation: modalFadeIn 0.3s ease-out;
+            }
+            @keyframes modalFadeIn {
+                from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                to   { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            .badge-kpi {
+                font-size: 0.7rem; padding: 3px 8px; border-radius: 999px; font-weight: 600;
+            }
+        </style>
+
+        <div class="wb-inv-wrapper">
+
+            <!-- ===== EXPORT MODAL ===== -->
+            <t t-if="state.showExportModal">
+                <div class="wb-modal-overlay">
+                    <div class="wb-modal-content">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light"
+                             style="border-radius: 20px 20px 0 0;">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="fa fa-file-excel-o text-success me-2"></i>Export Inventory Excel
+                            </h5>
+                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <!-- Group By -->
+                            <div class="mb-4">
+                                <label class="fw-bold text-muted text-xs text-uppercase mb-2">Group Data By (Rows)</label>
+                                <select class="form-select wb-input" t-model="state.export_group">
+                                    <option value="product">📦 Product</option>
+                                    <option value="category">📁 Product Category</option>
+                                    <option value="location">📍 Location</option>
+                                    <option value="warehouse">🏭 Warehouse</option>
+                                </select>
+                            </div>
+
+                            <!-- Detailed Toggle -->
+                            <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark">
+                                        <i class="fa fa-sitemap text-primary me-2"></i>Detailed Excel
+                                    </h6>
+                                    <small class="text-muted">Includes expandable/collapsible stock move lines per group.</small>
+                                </div>
+                                <div class="form-check form-switch fs-4 m-0">
+                                    <input class="form-check-input shadow-sm" type="checkbox" t-model="state.detailed_excel"/>
+                                </div>
+                            </div>
+
+                            <!-- Measures -->
+                            <div class="mb-2">
+                                <label class="fw-bold text-muted text-xs text-uppercase mb-3">Select Measures (Columns)</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_qty" t-model="state.meas_qty"/>
+                                            <label class="form-check-label text-dark fw-bold" for="meas_qty">Qty On Hand</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_value" t-model="state.meas_value"/>
+                                            <label class="form-check-label text-dark fw-bold" for="meas_value">Stock Value (EGP)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_cogs" t-model="state.meas_cogs"/>
+                                            <label class="form-check-label text-dark fw-bold" for="meas_cogs">COGS (EGP)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_turnover" t-model="state.meas_turnover"/>
+                                            <label class="form-check-label text-dark fw-bold" for="meas_turnover">Turnover Rate</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_cat" t-model="state.meas_category"/>
+                                            <label class="form-check-label text-dark fw-bold" for="meas_cat">Category Column</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
+                            <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closeExportModal">Cancel</button>
+                            <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" t-on-click="downloadInventoryExcel">
+                                <i class="fa fa-download me-2"></i>Download Excel
+                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </t>
+
+            <!-- ===== MAIN CONTENT ===== -->
+            <div class="wb-inv-main">
+
+                <!-- Header -->
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing:-0.5px;">
+                            <i class="fa fa-cubes text-indigo me-2" style="color:#4f46e5;"></i>Inventory Analytics
+                        </h3>
+                        <p class="text-muted mb-0" style="font-size:0.85rem;">
+                            Track stock levels, movements, and inventory health.
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white"
+                                t-on-click="openExportModal" style="transition:all 0.2s;">
+                            <i class="fa fa-file-excel-o me-2"></i>Export Excel
+                        </button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-3 fw-bold text-danger bg-white"
+                                t-on-click="resetFilters" style="transition:all 0.2s;">
+                            <i class="fa fa-refresh me-1"></i>Reset
+                        </button>
+                        <button class="btn btn-dark shadow-sm rounded-circle d-flex align-items-center justify-content-center"
+                                style="width:42px;height:42px;background:#1e293b;border:none;"
+                                t-on-click="toggleSidebar" title="Toggle Filters">
+                            <i class="fa fa-sliders"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ===== ROW 1: KPI Cards ===== -->
+                <div class="row g-3 mb-4">
+
+                    <!-- Stock On Hand -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
+                             t-on-click="openStockDetails">
+                            <div class="wb-icon-box icon-indigo me-3"><i class="fa fa-cubes"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Stock On Hand</p>
+                                <h4 class="fw-bold mb-0 text-dark">
+                                    <t t-esc="state.stock_on_hand"/>
+                                    <span class="text-muted fw-normal" style="font-size:0.8rem;"> Units</span>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Value -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
+                             t-on-click="openProductList">
+                            <div class="wb-icon-box icon-emerald me-3"><i class="fa fa-money"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Stock Value</p>
+                                <h4 class="fw-bold mb-0 text-dark">
+                                    <t t-esc="state.stock_value_fmt"/>
+                                    <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COGS -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card d-flex align-items-center h-100">
+                            <div class="wb-icon-box icon-amber me-3"><i class="fa fa-shopping-cart"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">COGS (Period)</p>
+                                <h4 class="fw-bold mb-0 text-dark">
+                                    <t t-esc="state.cogs_fmt"/>
+                                    <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Products -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
+                             t-on-click="openProductList">
+                            <div class="wb-icon-box icon-cyan me-3"><i class="fa fa-tags"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Products</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_products"/></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ROW 2: More KPIs ===== -->
+                <div class="row g-3 mb-4">
+
+                    <!-- Inventory Turnover -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card d-flex align-items-center h-100">
+                            <div class="wb-icon-box icon-violet me-3"><i class="fa fa-refresh"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Inventory Turnover</p>
+                                <h4 class="fw-bold mb-0" style="color:#7c3aed;"><t t-esc="state.inventory_turnover"/></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DIO -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card d-flex align-items-center h-100">
+                            <div class="wb-icon-box icon-teal me-3"><i class="fa fa-calendar"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">DIO (Days in Stock)</p>
+                                <h4 class="fw-bold mb-0" style="color:#14b8a6;"><t t-esc="state.dio"/></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Low Stock -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
+                             t-on-click="openLowStock">
+                            <div class="wb-icon-box icon-red me-3"><i class="fa fa-exclamation-triangle"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Low Stock Alerts</p>
+                                <h4 class="fw-bold mb-0 text-danger">
+                                    <t t-esc="state.low_stock_count"/>
+                                    <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dead Stock -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="wb-kpi-card d-flex align-items-center h-100">
+                            <div class="wb-icon-box icon-slate me-3"><i class="fa fa-archive"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Dead Stock (No Movement)</p>
+                                <h4 class="fw-bold mb-0 text-secondary">
+                                    <t t-esc="state.dead_stock_count"/>
+                                    <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ROW 3: Stock Movement Trend ===== -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <div class="wb-chart-card">
+                            <div class="wb-chart-title">
+                                <i class="fa fa-line-chart me-2" style="color:#4f46e5;"></i>
+                                Stock Movement Trend (In vs Out)
+                                <span class="chart-hint">(Qty over selected period)</span>
+                            </div>
+                            <div style="height:300px; position:relative;">
+                                <canvas t-ref="trend_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ROW 4: ABC + Top Products ===== -->
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-5">
+                        <div class="wb-chart-card h-100">
+                            <div class="wb-chart-title">
+                                <i class="fa fa-pie-chart me-2" style="color:#10b981;"></i>
+                                ABC Analysis (Stock Value by Category)
+                            </div>
+                            <div style="height:300px; position:relative;">
+                                <canvas t-ref="abc_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="wb-chart-card h-100">
+                            <div class="wb-chart-title">
+                                <i class="fa fa-bar-chart me-2" style="color:#4f46e5;"></i>
+                                Top Products by Quantity Out
+                                <span class="chart-hint">(Click bar to view moves)</span>
+                            </div>
+                            <div style="height:300px; position:relative;">
+                                <canvas t-ref="top_product_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== ROW 5: Stock by Location ===== -->
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <div class="wb-chart-card">
+                            <div class="wb-chart-title">
+                                <i class="fa fa-map-marker me-2" style="color:#06b6d4;"></i>
+                                Stock Distribution by Location
+                                <span class="chart-hint">(Click bar to view stock details)</span>
+                            </div>
+                            <div style="height:280px; position:relative;">
+                                <canvas t-ref="location_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- end main -->
+
+            <!-- ===== SIDEBAR FILTERS ===== -->
+            <div class="wb-inv-sidebar" t-if="state.showSidebar">
+                <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-sliders me-2 fs-5" style="color:#4f46e5;"></i>
+                        <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
+                    </div>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="wb-inv-sidebar-scroll">
+
+                    <!-- Time Period -->
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
+                        <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
+                            <option value="0" disabled="1">-- Custom Dates --</option>
+                            <option value="7">📅 Last 7 Days</option>
+                            <option value="30">📅 Last 30 Days</option>
+                            <option value="90">📅 Last 3 Months</option>
+                            <option value="180">📅 Last 6 Months</option>
+                            <option value="365">📅 Last Year</option>
+                        </select>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <label class="text-xs fw-bold text-dark mb-2">
+                                <i class="fa fa-calendar me-1"></i> Custom Range
+                            </label>
+                            <input type="date" class="form-control wb-input form-control-sm mb-2"
+                                   t-model="state.date_from" t-on-change="applyDateFilter"/>
+                            <input type="date" class="form-control wb-input form-control-sm"
+                                   t-model="state.date_to" t-on-change="applyDateFilter"/>
+                        </div>
+                    </div>
+                    <hr class="text-muted opacity-25"/>
+
+                    <!-- Filters -->
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Filter Dimensions</label>
+
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Warehouse</label>
+                            <select class="form-select wb-input" t-model="state.warehouse_id" t-on-change="onChangeFilter">
+                                <option value="all">🏭 All Warehouses</option>
+                                <t t-foreach="state.filter_warehouses" t-as="wh" t-key="wh.id">
+                                    <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Product</label>
+                            <select class="form-select wb-input" t-model="state.product_id" t-on-change="onChangeFilter">
+                                <option value="all">📦 All Products</option>
+                                <t t-foreach="state.filter_products" t-as="p" t-key="p.id">
+                                    <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Product Category</label>
+                            <select class="form-select wb-input" t-model="state.category_id" t-on-change="onChangeFilter">
+                                <option value="all">📁 All Categories</option>
+                                <t t-foreach="state.filter_categories" t-as="cat" t-key="cat.id">
+                                    <option t-att-value="cat.id"><t t-esc="cat.name"/></option>
+                                </t>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-xs text-dark fw-bold mb-1">Location</label>
+                            <select class="form-select wb-input" t-model="state.location_id" t-on-change="onChangeFilter">
+                                <option value="all">📍 All Locations</option>
+                                <t t-foreach="state.filter_locations" t-as="loc" t-key="loc.id">
+                                    <option t-att-value="loc.id"><t t-esc="loc.complete_name"/></option>
+                                </t>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <!-- Quick Stats Summary -->
+                    <hr class="text-muted opacity-25"/>
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Quick Summary</label>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-xs text-muted">Stock On Hand</span>
+                                <span class="text-xs fw-bold text-dark"><t t-esc="state.stock_on_hand"/> Units</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-xs text-muted">Stock Value</span>
+                                <span class="text-xs fw-bold text-dark"><t t-esc="state.stock_value_fmt"/> EGP</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-xs text-muted">Turnover Rate</span>
+                                <span class="text-xs fw-bold text-dark"><t t-esc="state.inventory_turnover"/></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-xs text-muted">Days in Stock (DIO)</span>
+                                <span class="text-xs fw-bold text-dark"><t t-esc="state.dio"/></span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-xs text-muted">Low Stock Items</span>
+                                <span class="text-xs fw-bold text-danger"><t t-esc="state.low_stock_count"/></span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div><!-- end sidebar -->
+
+        </div><!-- end wrapper -->
     </t>
 </templates>
