@@ -23,6 +23,7 @@ export class HrDashboard extends Component {
         const defaultFav = savedFavorites.find(f => f.is_default === true);
 
         this.state = useState({
+            showSidebar: true,
             employee_count: 0,
             workload_hours: 0,
             tasks_complete: 0,
@@ -74,6 +75,10 @@ export class HrDashboard extends Component {
         onMounted(() => {
             this.renderChart();
         });
+    }
+
+    toggleSidebar() {
+        this.state.showSidebar = !this.state.showSidebar;
     }
 
     async downloaddata() {

@@ -2,46 +2,162 @@
 <templates xml:space="preserve">
     <t t-name="HRdashboard" owl="1">
         <style>
-            .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
+            .wb-dashboard-wrapper {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
+            }
             .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
-            .wb-sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; }
-            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem 1.5rem 0.5rem 1.5rem; }
-            .wb-input { border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); }
-            .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
+
+            .wb-glassy-header {
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 1.25rem;
+                padding: 1rem 1.5rem;
+                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+            }
+
             .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
-            .wb-card.clickable:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); border-color: #cbd5e1; }
-            .wb-search-dropdown-btn { background-color: transparent; border-color: #ccc !important; width: 40px; margin: -2px -5px -2px 0; border-top-right-radius: 4px !important; border-bottom-right-radius: 4px !important; box-shadow: none; transition: background-color 0.2s ease-in-out; }
-            .wb-search-dropdown-btn:hover, .wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
+            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+            .wb-card.clickable:hover { border-color: #3b82f6; cursor: pointer; }
+
             .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
             .icon-primary { background: #eff6ff; color: #3b82f6; }
             .icon-success { background: #f0fdf4; color: #22c55e; }
             .icon-info { background: #ecfeff; color: #06b6d4; }
             .icon-warning { background: #fefce8; color: #eab308; }
             .icon-danger { background: #fef2f2; color: #ef4444; }
-            .icon-purple { background: #faf5ff; color: #a855f7; }
             .icon-dark { background: #f1f5f9; color: #334155; }
+            .icon-purple { background: #faf5ff; color: #a855f7; }
             .icon-teal { background: #f0fdfa; color: #14b8a6; }
-            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-            .wb-modal-content { background: #ffffff; border-radius: 12px; width: 100%; max-width: 600px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); animation: modalFadeIn 0.2s ease-out forwards; display: flex; flex-direction: column; max-height: 90vh; }
-            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-            .wb-modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; }
-            .wb-modal-body { padding: 1.5rem; overflow-y: auto; }
-            .wb-modal-footer { padding: 1.25rem 1.5rem; border-top: 1px solid #f3f4f6; display: flex; justify-content: flex-end; gap: 0.75rem; background-color: #f9fafb; border-radius: 0 0 12px 12px; }
+
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
+            .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+            .wb-search-dropdown-btn { background-color: transparent; border-color: #ccc !important; width: 40px; margin: -2px -5px -2px 0; border-top-right-radius: 4px !important; border-bottom-right-radius: 4px !important; box-shadow: none; transition: background-color 0.2s ease-in-out; }
+            .wb-search-dropdown-btn:hover, .wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
+
             .wb-custom-switch { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; transition: border-color 0.2s; }
             .wb-custom-switch:hover { border-color: #cbd5e1; }
             .wb-custom-switch .form-check-input { width: 2.5em; height: 1.25em; cursor: pointer; margin: 0; }
         </style>
+
         <div class="wb-dashboard-wrapper">
+
+            <t t-if="state.showExportModal">
+                <div class="wb-modal-overlay" t-on-click="closeExportModal">
+                    <div class="wb-modal-content" t-on-click.stop="">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="fa fa-sliders text-success me-2"></i> Custom Excel Pivot
+                            </h5>
+                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="mb-4">
+                                <label class="fw-bold text-muted text-xs text-uppercase mb-2">Group Data By (Rows)</label>
+                                <select class="form-select wb-input" t-model="state.export_group">
+                                    <option value="department">Department</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="job_position">Job Position</option>
+                                    <option value="none">No Grouping</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="fw-bold text-muted text-xs text-uppercase mb-3">Select Measures (Columns)</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_emp">Total Employees</label>
+                                            <input class="form-check-input" type="checkbox" id="m_emp" t-model="state.meas_emp"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_wl">Total Workload</label>
+                                            <input class="form-check-input" type="checkbox" id="m_wl" t-model="state.meas_workload"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_task">Completed Tasks</label>
+                                            <input class="form-check-input" type="checkbox" id="m_task" t-model="state.meas_tasks"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_prod">Productivity</label>
+                                            <input class="form-check-input" type="checkbox" id="m_prod" t-model="state.meas_prod"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_att">Attendance Rate</label>
+                                            <input class="form-check-input" type="checkbox" id="m_att" t-model="state.meas_att"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_turn">Turnover Rate</label>
+                                            <input class="form-check-input" type="checkbox" id="m_turn" t-model="state.meas_turnover"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_sales">Sales / Emp</label>
+                                            <input class="form-check-input" type="checkbox" id="m_sales" t-model="state.meas_sales"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_lv">Vocations Rate</label>
+                                            <input class="form-check-input" type="checkbox" id="m_lv" t-model="state.meas_leaves"/>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch wb-custom-switch bg-light">
+                                            <label class="form-check-label text-dark fw-bold mb-0" for="m_ab">Absence Rate</label>
+                                            <input class="form-check-input" type="checkbox" id="m_ab" t-model="state.meas_absence"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
+                            <button class="btn btn-light border bg-white rounded-pill px-4 me-2 fw-bold text-dark shadow-sm" t-on-click="closeExportModal">Cancel</button>
+                            <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center d-inline-block" t-on-click="downloadCustomExcel">
+                                <i class="fa fa-download me-2"></i> Download Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
             <div class="wb-main-content">
-                <div class="d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
+
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
                     <div class="flex-shrink-0">
-                        <h2 class="fw-bold mb-1" style="color: #1e293b; letter-spacing: -0.5px;">HR Analytics Overview</h2>
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
+                            <i class="fa fa-users text-primary me-2"></i>HR Analytics
+                        </h3>
                         <p class="text-muted text-sm mb-0">Track employee performance, attendance, and workload.</p>
                     </div>
 
-                   <div class="flex-grow-1 d-flex justify-content-center d-print-none">
-                        <div class="shadow-sm d-flex align-items-stretch" style="width: 100%; max-width: 500px; background: #ffffff; border-radius: 4px; border: 1px solid #ccc; min-height: 38px;">
-                            <div class="d-flex align-items-center justify-content-center" style="width: 35px;">
+                    <div class="flex-grow-1 d-flex justify-content-center d-print-none mx-4" style="max-width: 500px;">
+                        <div class="shadow-sm d-flex align-items-stretch w-100" style="background: #ffffff; border-radius: 9999px; border: 1px solid #e2e8f0; min-height: 38px; padding: 0 10px;">
+                            <div class="d-flex align-items-center justify-content-center" style="width: 30px;">
                                 <i class="fa fa-search text-muted"></i>
                             </div>
 
@@ -86,18 +202,18 @@
 
                                 <input type="text" class="border-0 fw-bold flex-grow-1 px-1"
                                        t-on-keyup="onSearchKeyUp"
-                                       placeholder="Search by Employee Name(Press Enter)"
+                                       placeholder="Search by Employee Name..."
                                        style="box-shadow: none; background: transparent; min-width: 150px; outline: none; height: 26px;"/>
                             </div>
 
                             <div class="dropdown d-flex align-items-stretch">
-                                <button class="btn border-0 border-start rounded-0 d-flex align-items-center justify-content-center wb-search-dropdown-btn"
+                                <button class="btn border-0 d-flex align-items-center justify-content-center wb-search-dropdown-btn bg-transparent"
                                         data-bs-toggle="dropdown"
                                         data-bs-auto-close="outside">
                                     <i class="fa fa-caret-down" style="color: #495057; font-size: 14px;"></i>
                                 </button>
 
-                                <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0" style="width: 750px; border-radius: 4px; border: 1px solid #ccc;">
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0" style="width: 750px; border-radius: 12px; border: 1px solid #ccc;">
                                     <div class="row g-0">
                                         <div class="col-4 border-end p-3">
                                             <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-filter me-2 text-muted"></i>Filters</h6>
@@ -154,12 +270,24 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white text-nowrap" t-on-click.prevent="openExportModal" style="transition: all 0.2s;">
+                            <i class="fa fa-file-excel-o me-2"></i> Custom Excel
+                        </button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white text-nowrap" t-on-click.prevent="downloadPdf" style="transition: all 0.2s;">
+                            <i class="fa fa-file-pdf-o me-2"></i> PDF
+                        </button>
+                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar" title="Toggle Filters">
+                            <i class="fa fa-sliders"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="pdf_export_area" class="pb-4 pt-2">
                     <div class="row mb-4">
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showEmployees" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showEmployees">
                                 <div class="wb-icon-box icon-primary me-3"><i class="fa fa-users"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Employees</p>
@@ -168,7 +296,7 @@
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAttendances" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAttendances">
                                 <div class="wb-icon-box icon-info me-3"><i class="fa fa-calendar-check-o"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Attendance Rate</p>
@@ -177,7 +305,7 @@
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showCompletedTasks" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showCompletedTasks">
                                 <div class="wb-icon-box icon-success me-3"><i class="fa fa-check-square-o"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Completed Tasks</p>
@@ -186,7 +314,7 @@
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAllTasks" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAllTasks">
                                 <div class="wb-icon-box icon-warning me-3"><i class="fa fa-line-chart"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Productivity</p>
@@ -198,7 +326,7 @@
 
                     <div class="row mb-4">
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showWorkloadTasks" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showWorkloadTasks">
                                 <div class="wb-icon-box icon-danger me-3"><i class="fa fa-clock-o"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Workload</p>
@@ -207,7 +335,7 @@
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showTurnover" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showTurnover">
                                 <div class="wb-icon-box icon-purple me-3"><i class="fa fa-sign-out"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Employee Turnover</p>
@@ -216,7 +344,7 @@
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showSales" style="cursor: pointer; ">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showSales">
                                 <div class="wb-icon-box icon-dark me-3"><i class="fa fa-money"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Sales Done / Emp</p>
@@ -225,7 +353,7 @@
                             </div>
                         </div>
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showleaves" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showleaves">
                                 <div class="wb-icon-box icon-info me-3"><i class="fa fa-umbrella"></i></div>
                                 <div>
                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Vacations Rate</p>
@@ -237,9 +365,10 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="row mb-4">
                         <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAbsence" style="cursor: pointer;">
+                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAbsence">
                                 <div class="wb-icon-box icon-warning me-3"><i class="fa fa-calendar-times-o"></i></div>
                                 <div>
                                     <p class="text-muted text-uppercase text-xs fw-bold mb-1">Absence Rate</p>
@@ -262,11 +391,15 @@
                 </div>
             </div>
 
-            <div class="wb-sidebar d-print-none">
-                <div class="p-4 border-bottom bg-white d-flex align-items-center">
-                    <i class="fa fa-filter text-primary me-2 fs-5"></i>
-                    <h5 class="fw-bold text-dark mb-0">Filters</h5>
+            <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
+                <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-sliders text-primary me-2 fs-5"></i>
+                        <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
+                    </div>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar" style="transition: transform 0.2s;"><i class="fa fa-times"></i></button>
                 </div>
+
                 <div class="wb-sidebar-scroll">
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Organization</label>
@@ -286,126 +419,18 @@
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
                         <div class="p-3 bg-light rounded-3 border border-light">
+                            <label class="text-xs fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> From</label>
                             <div class="mb-3">
                                 <input type="date" class="form-control wb-input form-control-sm" t-model="state.start_date" t-on-change="(ev) => this.onChangeStartDate(ev)" t-att-max="state.today_date"/>
                             </div>
-                            <label class="text-xs fw-bold text-dark mb-1">TO</label>
+                            <label class="text-xs fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> To</label>
                             <div>
                                 <input type="date" class="form-control wb-input form-control-sm" t-model="state.end_date" t-on-change="(ev) => this.onChangeEndDate(ev)" t-att-max="state.today_date"/>
                             </div>
                         </div>
                     </div>
-                    <hr class="text-muted opacity-25"/>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-success" t-on-click.prevent="openExportModal">
-                            <i class="fa fa-file-excel-o me-2"></i> Custom Excel
-                        </button>
-                        <button class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-danger" t-on-click.prevent="downloadPdf">
-                            <i class="fa fa-file-pdf-o me-2"></i> PDF
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
-
-        <t t-if="state.showExportModal">
-            <div class="wb-modal-overlay" t-on-click="closeExportModal">
-
-                <div class="wb-modal-content" t-on-click.stop="">
-
-                    <div class="wb-modal-header">
-                        <h5 class="fw-bold text-dark mb-0 fs-5">
-                            <i class="fa fa-sliders text-success me-2"></i> Custom Excel Pivot
-                        </h5>
-                        <button class="btn btn-sm btn-light border-0 rounded-circle text-muted" t-on-click="closeExportModal" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #f3f4f6;">
-                            <i class="fa fa-times fw-bold fs-6"></i>
-                        </button>
-                    </div>
-
-                    <div class="wb-modal-body">
-                        <div class="mb-4">
-                            <label class="fw-bold text-muted text-xs mb-2" style="letter-spacing: 0.5px;">GROUP DATA BY (ROWS)</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white text-primary border-end-0"><i class="fa fa-folder"></i></span>
-                                <select class="form-select border-start-0 ps-0 text-dark fw-semibold" t-model="state.export_group" style="box-shadow: none;">
-                                    <option value="department">Department</option>
-                                    <option value="manager">Manager</option>
-                                    <option value="job_position">Job Position</option>
-                                    <option value="none">No Grouping</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="fw-bold text-muted text-xs mb-3" style="letter-spacing: 0.5px;">SELECT MEASURES (COLUMNS)</label>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_emp">Total Employees</label>
-                                        <input class="form-check-input" type="checkbox" id="m_emp" t-model="state.meas_emp"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_wl">Total Workload</label>
-                                        <input class="form-check-input" type="checkbox" id="m_wl" t-model="state.meas_workload"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_task">Completed Tasks</label>
-                                        <input class="form-check-input" type="checkbox" id="m_task" t-model="state.meas_tasks"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_prod">Productivity</label>
-                                        <input class="form-check-input" type="checkbox" id="m_prod" t-model="state.meas_prod"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_att">Attendance Rate</label>
-                                        <input class="form-check-input" type="checkbox" id="m_att" t-model="state.meas_att"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_turn">Turnover Rate</label>
-                                        <input class="form-check-input" type="checkbox" id="m_turn" t-model="state.meas_turnover"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_sales">Sales / Emp</label>
-                                        <input class="form-check-input" type="checkbox" id="m_sales" t-model="state.meas_sales"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_lv">Vocations Rate</label>
-                                        <input class="form-check-input" type="checkbox" id="m_lv" t-model="state.meas_leaves"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch wb-custom-switch">
-                                        <label class="form-check-label text-dark fw-bold mb-0" for="m_ab">Absence Rate</label>
-                                        <input class="form-check-input" type="checkbox" id="m_ab" t-model="state.meas_absence"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="wb-modal-footer">
-                        <button class="btn btn-light border bg-white rounded-pill px-4 fw-bold text-dark shadow-sm" t-on-click="closeExportModal">Cancel</button>
-                        <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center" t-on-click="downloadCustomExcel">
-                            <i class="fa fa-download me-2"></i> Download Excel
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </t>
     </t>
 </templates>
