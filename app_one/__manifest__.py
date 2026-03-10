@@ -1,5 +1,5 @@
 {
-    'name': 'odooNova',
+    'name': 'Odoo Nova',
     'version': '1.0',
     'author': '3bdo',
     'depends': [

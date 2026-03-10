@@ -1,34 +1,152 @@
-<t t-name="InvoicingDashboardTemplate">
-    <div class="o_dashboard_container" style="padding:20px; height:100%; overflow-y:auto; background-color: #f9f9f9;">
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-            <h2 class="text-primary fw-bold">🧾 Invoicing &amp; Collections Analytics</h2>
-            <select class="form-select shadow-sm" t-model="state.period" t-on-change="onChangePeriod" style="width:180px; border-radius: 10px; border: 2px solid #4e73df;">
-                <option value="7">📅 Last 7 Days</option>
-                <option value="30">📅 Last 30 Days</option>
-                <option value="90">📅 Last Quarter</option>
-                <option value="365">📅 Last Year (Full)</option> </select>
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="InvoicingDashboardTemplate">
+
+        <!-- Filters -->
+        <div class="d-flex justify-content-end mb-4">
+            <div class="card shadow-sm border-0 p-3" style="border-radius:15px;">
+                <div class="d-flex gap-3 flex-wrap align-items-center">
+
+                    <!-- Duration Filter -->
+                    <select class="form-select"
+                            t-on-change="onChangeMainFilter"
+                            style="width:200px; border-radius:12px;">
+
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected="selected">Last 30 Days</option>
+                        <option value="90">Last Quarter</option>
+                        <option value="365">Last Year</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+
+                    <!-- Custom Date يظهر فقط لما period = null -->
+                    <t t-if="state.period === null">
+                        <div class="d-flex gap-2">
+                            <input type="date"
+                                   t-on-change="onChangeDateFrom"
+                                   class="form-control"
+                                   style="width:160px;"/>
+                            <input type="date"
+                                   t-on-change="onChangeDateTo"
+                                   class="form-control"
+                                   style="width:160px;"/>
+                        </div>
+                    </t>
+
+                    <!-- Invoice Status -->
+                    <select class="form-select"
+                            t-model="state.invoice_filter"
+                            t-on-change="onChangeInvoiceFilter"
+                            style="width:180px; border-radius:12px;">
+
+                        <option value="posted">Posted</option>
+                        <option value="unposted">Unposted</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                    </select>
+
+                </div>
+            </div>
         </div>
 
+        <!-- KPI Cards -->
         <div class="row mb-3">
-            <div class="col-md-3"><div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #4e73df !important;"><div class="card-body"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Invoiced</div><div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.total_invoiced"/></div></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #1cc88a !important;"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Cash Collected</div><div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.cash_collected"/></div></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #e74a3b !important;"><div class="card-body"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Overdue Amount</div><div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.overdue_amount"/></div></div></div></div>
-            <div class="col-md-3"><div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #6f42c1 !important;"><div class="card-body"><div class="text-xs font-weight-bold text-uppercase mb-1" style="color:#6f42c1">Avg Collection (DSO)</div><div class="h5 mb-0 font-weight-bold text-gray-800"><t t-esc="state.dso"/> Days</div></div></div></div>
+
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #4e73df;">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Invoiced
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <t t-esc="state.total_invoiced"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #1cc88a;">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Cash Collected
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <t t-esc="state.cash_collected"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #e74a3b;">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Overdue Amount
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <t t-esc="state.overdue_amount"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 mb-3" style="border-left: 5px solid #6f42c1;">
+                    <div class="card-body">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1" style="color:#6f42c1">
+                            Avg Collection (DSO)
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            <t t-esc="state.dso"/> Days
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
+        <!-- Charts -->
         <div class="row mb-4">
+
+            <!-- Doughnut -->
             <div class="col-md-4">
                 <div class="card shadow mb-4 h-100">
-                    <div class="card-header py-3 bg-white"><h6 class="m-0 font-weight-bold text-primary">Payment Status</h6></div>
-                    <div class="card-body"><div style="height: 250px;"><canvas t-ref="ratio_chart"></canvas></div></div>
+                    <div class="card-header py-3 bg-white">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            Payment Status
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:250px;">
+                            <canvas t-ref="ratio_chart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Line Chart -->
             <div class="col-md-8">
                 <div class="card shadow mb-4 h-100">
-                    <div class="card-header py-3 bg-white"><h6 class="m-0 font-weight-bold text-primary">Collection Trend (Daily)</h6></div>
-                    <div class="card-body"><div style="height: 250px;"><canvas t-ref="trend_chart"></canvas></div></div>
+                    <div class="card-header py-3 bg-white">
+                        <h6 class="m-0 font-weight-bold text-primary">
+                            Collection Trend (Daily)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div style="height:250px;">
+                            <canvas t-ref="trend_chart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
-    </div>
-</t>
+
+    </t>
+
+</templates>

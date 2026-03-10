@@ -9,29 +9,67 @@
                     --kpi-purple: #9B59B6;
                     --text-dark: #2C3E50;">
 
-            <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 shadow-sm rounded-3">
-                <div>
-                    <h4 class="m-0 fw-bolder" style="color: var(--text-dark);">
-                        Purchase Executive Overview
-                    </h4>
-                    <small class="text-muted">Monitor spending, liquidity, and vendor performance.</small>
-                </div>
+       <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 shadow-sm rounded-3">
 
-                <div class="d-flex align-items-center">
-                     <div class="input-group shadow-sm rounded-3 me-3" style="width: fit-content;">
-                        <span class="input-group-text bg-white border-end-0 py-1"><i class="fa fa-calendar text-muted"></i></span>
-                        <select class="form-select border-start-0 bg-white fw-bold py-1" style="color: var(--text-dark); cursor: pointer; box-shadow: none;" t-on-change="onChangeFilter">
-                            <option value="this_week">This Week</option>
-                            <option value="last_week">Last Week</option>
-                            <option value="this_month">This Month</option>
-                            <option value="last_month">Last Month</option>
-                            <option value="last_3_months">Last 3 Months</option>
-                            <option value="last_6_months">Last 6 Months</option>
-                            <option value="this_year" selected="1">This Year</option>
-                            <option value="last_year">Last Year</option>
-                        </select>
+                <div class="flex-grow-1 mx-4">
+                    <div class="input-group shadow-sm rounded-3" style="background: #fff;">
+                        <span class="input-group-text bg-transparent border-end-0"><i class="fa fa-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 border-end-0 fw-bold"
+                               t-ref="vendor_search"
+                               placeholder="Search by Vendor Name... (Press Enter)"
+                               t-on-keyup="onSearchKeyUp"
+                               style="box-shadow: none; border-color: #ced4da;"/>
+
+                        <button class="btn btn-outline-secondary dropdown-toggle border-start-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-color: #ced4da; color: #495057;">
+                            <i class="fa fa-filter"></i> Filters
+                        </button>
+
+                        <div class="dropdown-menu p-3 shadow" style="width: 450px; border-radius: 8px;">
+                            <div class="row">
+                                <div class="col-6 border-end">
+                                    <h6 class="dropdown-header text-dark fw-bolder px-1"><i class="fa fa-filter me-2"/>Filters</h6>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('state_posted')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.state_posted ? 'text-primary' : 'opacity-0' }}"/> Posted Bills
+                                    </a>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('state_draft')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.state_draft ? 'text-primary' : 'opacity-0' }}"/> Draft Bills
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('pay_not_paid')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.pay_not_paid ? 'text-primary' : 'opacity-0' }}"/> Not Paid
+                                    </a>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('pay_paid')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.pay_paid ? 'text-primary' : 'opacity-0' }}"/> Fully Paid
+                                    </a>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('is_overdue')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.is_overdue ? 'text-danger' : 'opacity-0' }}"/> Overdue
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('has_po')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.has_po ? 'text-primary' : 'opacity-0' }}"/> With PO
+                                    </a>
+                                    <a class="dropdown-item px-1" href="#" t-on-click.prevent="() => this.toggleFilter('no_po')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.no_po ? 'text-warning' : 'opacity-0' }}"/> Without PO (Maverick)
+                                    </a>
+                                </div>
+                                <div class="col-6">
+                                    <h6 class="dropdown-header text-dark fw-bolder px-1"><i class="fa fa-bars me-2"/>Group By</h6>
+                                    <span class="dropdown-item-text text-muted small px-1">Auto-grouped by Date &amp; Vendor.</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <input type="date" class="form-control shadow-sm border-0 py-2 rounded-3 fw-bold text-muted" t-ref="date_from" style="cursor: pointer;"/>
+                    <span class="fw-bold text-muted">To</span>
+                    <input type="date" class="form-control shadow-sm border-0 py-2 rounded-3 fw-bold text-muted" t-ref="date_to" style="cursor: pointer;"/>
+                    <button class="btn btn-primary fw-bold py-2 px-3 shadow-sm rounded-3" t-on-click="onApplyFilter">
+                        Apply
+                    </button>
+                </div>
+
             </div>
 
             <div class="row g-3 mb-3">
