@@ -9,14 +9,13 @@ export class HrDashboard extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         const today = new Date();
-        const lastWeek = new Date(today);
-        lastWeek.setDate(lastWeek.getDate() - 7);
         const formatDate = (date) => date.toISOString().split('T')[0];
         const todayStr = formatDate(today);
-        const lastWeekStr = formatDate(lastWeek);
-        const savedStartDate = sessionStorage.getItem("hr_dashboard_start") || lastWeekStr;
-        const savedEndDate = sessionStorage.getItem("hr_dashboard_end") || todayStr;
-       const savedDeptStr = sessionStorage.getItem("hr_dashboard_dept");
+
+        const savedPeriod = sessionStorage.getItem("hr_dashboard_period") || "30";
+        const savedStartDate = sessionStorage.getItem("hr_dashboard_start") || "";
+        const savedEndDate = sessionStorage.getItem("hr_dashboard_end") || "";
+        const savedDeptStr = sessionStorage.getItem("hr_dashboard_dept");
         const savedDept = savedDeptStr ? parseInt(savedDeptStr) : "";
 
         const savedFavorites = JSON.parse(localStorage.getItem('hr_dashboard_favorites')) || [];
@@ -28,8 +27,13 @@ export class HrDashboard extends Component {
             workload_hours: 0,
             tasks_complete: 0,
             production_kpi: 0,
-            average_leaves:0,
-            absence:0,
+            average_leaves: 0,
+            absence: 0,
+            bottleneck_emps: 0,
+            bottleneck_emp_ids: [],
+            workload_std: 0,
+            dept_stats_cards: [],
+            period: savedPeriod,
             start_date: savedStartDate,
             end_date: savedEndDate,
             today_date: todayStr,
@@ -48,17 +52,26 @@ export class HrDashboard extends Component {
             favorite_name: 'HR Analytics',
             is_default_fav: false,
             is_shared_fav: false,
+
             showExportModal: false,
             export_group: 'department',
+            detailed_excel: false,
             meas_emp: true,
             meas_workload: true,
-            meas_tasks: true,
-            meas_prod: true,
+            meas_tasks: false,
+            meas_prod: false,
             meas_att: false,
             meas_turnover: false,
             meas_sales: false,
             meas_leaves: false,
-            meas_absence:false,
+            meas_absence: false,
+            showPdfModal: false,
+            pdf_emp: true,
+            pdf_workload: true,
+            pdf_att: true,
+            pdf_sales: false,
+            prod_trend_labels: [],
+            prod_trend_data: [],
         });
 
         this.last_valid_start = savedStartDate;
@@ -82,8 +95,25 @@ export class HrDashboard extends Component {
     }
 
     async downloaddata() {
+        if (this.state.period === "0" || this.state.period === 0) {
+            if (this.state.start_date && this.state.end_date) {
+                const start = new Date(this.state.start_date);
+                const end = new Date(this.state.end_date);
+                const td = new Date(this.state.today_date);
+                if (start > end || start > td || end > td) {
+                    alert("Invalid Date Range! Reverting to last valid dates.");
+                    this.state.start_date = this.last_valid_start;
+                    this.state.end_date = this.last_valid_end;
+                    sessionStorage.setItem("hr_dashboard_start", this.last_valid_start || "");
+                    sessionStorage.setItem("hr_dashboard_end", this.last_valid_end || "");
+                    return;
+                }
+            }
+        }
+
         try {
             const data = await this.orm.call("wb.hr.dashboard", "compute_kpis", [], {
+                period: this.state.period,
                 start_date: this.state.start_date,
                 end_date: this.state.end_date,
                 filters: this.state.filters,
@@ -100,25 +130,61 @@ export class HrDashboard extends Component {
                 this.state.attendance = data.attendance;
                 this.state.emp_turnover = data.emp_turnover;
                 this.state.sales_per_emp = data.sales_per_emp;
-                this.state.average_leaves=data.average_leaves;
-                this.state.absence=data.absence;
+                this.state.average_leaves = data.average_leaves;
+                this.state.absence = data.absence;
                 this.state.departments = data.departments;
+
+                this.state.bottleneck_emps = data.bottleneck_emps;
+                this.state.bottleneck_emp_ids = data.bottleneck_emp_ids || [];
+                this.state.workload_std = data.workload_std;
+                this.state.dept_stats_cards = data.dept_stats_cards;
+
                 this.chartLabels = data.chart_labels;
                 this.chartData = data.chart_data;
+                this.trendLabels = data.trend_labels;
+                this.trendData = data.trend_data;
+                this.scatterData = data.scatter_data;
+                this.state.prod_trend_labels = data.prod_trend_labels;
+                this.state.prod_trend_data = data.prod_trend_data;
+                this.anovaLabels = data.anova_labels || [];
+                this.anovaMeans = data.anova_means || [];
+                this.anovaVariances = data.anova_variances || [];
+                if (data.computed_start_date && data.computed_end_date) {
+                    this.state.start_date = data.computed_start_date;
+                    this.state.end_date = data.computed_end_date;
+                }
+
                 this.last_valid_start = this.state.start_date;
                 this.last_valid_end = this.state.end_date;
+
+                sessionStorage.setItem("hr_dashboard_start", this.state.start_date);
+                sessionStorage.setItem("hr_dashboard_end", this.state.end_date);
             }
         } catch (e) {
             this.state.start_date = this.last_valid_start;
             this.state.end_date = this.last_valid_end;
+            sessionStorage.setItem("hr_dashboard_start", this.last_valid_start || "");
+            sessionStorage.setItem("hr_dashboard_end", this.last_valid_end || "");
             throw e;
         }
     }
 
+    async onChangePeriod(ev) {
+        this.state.period = ev.target.value;
+        sessionStorage.setItem("hr_dashboard_period", this.state.period);
+        this.state.start_date = "";
+        this.state.end_date = "";
+        sessionStorage.removeItem("hr_dashboard_start");
+        sessionStorage.removeItem("hr_dashboard_end");
+        await this.downloaddata();
+        this.renderChart();
+    }
+
     async onChangeStartDate(ev) {
         this.state.start_date = ev.target.value;
-        sessionStorage.setItem("hr_dashboard_start", this.state.start_date);
         if (this.state.start_date && this.state.end_date) {
+            this.state.period = "0";
+            sessionStorage.setItem("hr_dashboard_period", "0");
             await this.downloaddata();
             this.renderChart();
         }
@@ -126,14 +192,15 @@ export class HrDashboard extends Component {
 
     async onChangeEndDate(ev) {
         this.state.end_date = ev.target.value;
-        sessionStorage.setItem("hr_dashboard_end", this.state.end_date);
         if (this.state.start_date && this.state.end_date) {
+            this.state.period = "0";
+            sessionStorage.setItem("hr_dashboard_period", "0");
             await this.downloaddata();
             this.renderChart();
         }
     }
 
-   async onDepartmentChange(ev) {
+    async onDepartmentChange(ev) {
         this.state.filters.department_id = ev.target.value ? parseInt(ev.target.value) : "";
 
         if (this.state.filters.department_id) {
@@ -144,6 +211,7 @@ export class HrDashboard extends Component {
         await this.downloaddata();
         this.renderChart();
     }
+
     async onSearchKeyUp(ev) {
         if (ev.key === 'Enter' && ev.target.value.trim() !== '') {
             this.state.active_favorite_name = null;
@@ -196,11 +264,13 @@ export class HrDashboard extends Component {
         ev.stopPropagation();
         this.state.show_save_menu = !this.state.show_save_menu;
     }
+
     onDefaultCheckboxChange() {
         if (this.state.is_default_fav) {
             this.state.is_shared_fav = false;
         }
     }
+
     onSharedCheckboxChange() {
         if (this.state.is_shared_fav) {
             this.state.is_default_fav = false;
@@ -242,6 +312,7 @@ export class HrDashboard extends Component {
         this.downloaddata();
         this.renderChart();
     }
+
     async clearFavorite() {
         this.state.active_favorite_name = null;
         this.state.search_query = '';
@@ -255,6 +326,7 @@ export class HrDashboard extends Component {
         this.state.saved_favorites = this.state.saved_favorites.filter(f => f.id !== favId);
         localStorage.setItem('hr_dashboard_favorites', JSON.stringify(this.state.saved_favorites));
     }
+
     showEmployees() {
         let domain = [];
         if (this.state.filters.department_id) {
@@ -269,6 +341,7 @@ export class HrDashboard extends Component {
             domain: domain,
         });
     }
+
     showWorkloadTasks() {
         let domain = [
             ['state', 'not in', ['1_done', '1_canceled']],
@@ -333,6 +406,7 @@ export class HrDashboard extends Component {
             domain: domain,
         });
     }
+
      showleaves(){
         let domain=[['state', '=', 'validate'],
             ['request_date_to', '>=', this.state.start_date],
@@ -406,6 +480,7 @@ export class HrDashboard extends Component {
             domain: domain,
         });
     }
+
     showAbsence() {
         let domain = [
             ['attendance_ids', '=', false],
@@ -424,83 +499,156 @@ export class HrDashboard extends Component {
             context: { 'search_default_filter_to_check': 1 }
         });
     }
+
+    openEmployeeAllTasks(employeeName) {
+        let domain = [
+            ['create_date', '>=', this.state.start_date],
+            ['create_date', '<=', this.state.end_date]
+        ];
+        if (employeeName === 'Unassigned') {
+            domain.push(['user_ids', '=', false]);
+        } else {
+            domain.push(['user_ids.name', '=', employeeName]);
+        }
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: `Analysis for: ${employeeName}`,
+            res_model: "project.task",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: domain,
+        });
+    }
+
+    openTrendDetails(monthLabel, datasetIndex) {
+        const date = new Date(monthLabel + " 1");
+        const startStr = date.toISOString().split('T')[0];
+        const endStr = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+
+        let domain = [];
+        let res_model = "";
+        let name = "";
+
+        if (datasetIndex === 0) {
+            res_model = "project.task";
+            name = `Completed Tasks (${monthLabel})`;
+            domain = [
+                ['state', '=', '1_done'],
+                ['date_last_stage_update', '>=', startStr],
+                ['date_last_stage_update', '<=', endStr]
+            ];
+        } else if (datasetIndex === 1) {
+            res_model = "hr.employee";
+            name = `Turnover Employees (${monthLabel})`;
+            domain = [
+                ['active', '=', false],
+                ['departure_date', '>=', startStr],
+                ['departure_date', '<=', endStr]
+            ];
+            if (this.state.filters.department_id) {
+                domain.push(['department_id', '=', parseInt(this.state.filters.department_id)]);
+            }
+        }
+
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: name,
+            res_model: res_model,
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: domain,
+        });
+    }
+
+    openDepartmentEmployees(deptName) {
+        let domain = [['department_id.name', '=', deptName]];
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: `Employees in: ${deptName}`,
+            res_model: "hr.employee",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: domain,
+        });
+    }
+    showWorkloadCongestion() {
+        let domain = [];
+        const emp_ids = Array.from(this.state.bottleneck_emp_ids || []);
+
+        if (emp_ids.length > 0) {
+            domain.push(['id', 'in', emp_ids]);
+        } else {
+            domain.push(['id', '=', -1]);
+        }
+
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Bottleneck Employees",
+            res_model: "hr.employee",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: domain,
+        });
+    }
+showWorkloadDisparity() {
+        let domain = [
+            ['state', 'not in', ['1_done', '1_canceled']],
+            ['create_date', '>=', this.state.start_date],
+            ['create_date', '<=', this.state.end_date]
+        ];
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            name: "Workload Disparity Analysis",
+            res_model: "project.task",
+            views: [[false, "list"], [false, "form"]],
+            target: "current",
+            domain: domain,
+            context: { 'group_by': ['user_ids'] }
+        });
+    }
     openExportModal() { this.state.showExportModal = true; }
     closeExportModal() { this.state.showExportModal = false; }
+    openPdfModal() { this.state.showPdfModal = true; }
+    closePdfModal() { this.state.showPdfModal = false; }
 
     async downloadCustomExcel() {
-        if (!this.state.meas_emp && !this.state.meas_workload && !this.state.meas_tasks &&
-            !this.state.meas_prod && !this.state.meas_att && !this.state.meas_turnover &&
-            !this.state.meas_sales && !this.state.meas_leaves && !this.state.meas_absence) {
+        const measures = [];
+        if (this.state.meas_emp) measures.push('emp');
+        if (this.state.meas_workload) measures.push('workload');
+        if (this.state.meas_tasks) measures.push('tasks');
+        if (this.state.meas_prod) measures.push('prod');
+        if (this.state.meas_att) measures.push('att');
+        if (this.state.meas_turnover) measures.push('turnover');
+        if (this.state.meas_sales) measures.push('sales');
+        if (this.state.meas_leaves) measures.push('leaves');
+        if (this.state.meas_absence) measures.push('absence');
+
+        if (measures.length === 0) {
             alert("Please select at least one KPI to export.");
             return;
         }
         this.state.showExportModal = false;
-        let exportGroupBy = [];
-        if (this.state.export_group !== 'none') {
-            exportGroupBy.push(this.state.export_group);
-        }
 
-        const data = await this.orm.call("wb.hr.dashboard", "compute_kpis", [], {
+        const kwargs = {
+            period: this.state.period,
             start_date: this.state.start_date,
             end_date: this.state.end_date,
             filters: this.state.filters,
             search_query: this.state.search_query,
             active_filters: this.state.active_filters,
-            group_by_list: exportGroupBy
-        });
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('HR Pivot Data');
-        worksheet.columns = [ {width: 35}, {width: 25} ];
-        let deptName = "All Departments";
-        if (this.state.filters.department_id) {
-            const selectedDept = this.state.departments.find(d => d.id == this.state.filters.department_id);
-            if (selectedDept) deptName = selectedDept.name;
-        }
-        worksheet.addRow(["Department Filter", deptName]);
-        worksheet.addRow(["From Date", this.state.start_date]);
-        worksheet.addRow(["To Date", this.state.end_date]);
-        if (this.state.search_query) worksheet.addRow(["Employee Name", this.state.search_query]);
-        worksheet.addRow([]);
-
-        const headerRow = worksheet.addRow(["Key Performance Indicator", "Value"]);
-        headerRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'} };
-            cell.font = { color: {argb: 'FFFFFFFF'}, bold: true, size: 13 };
-        });
-
-        if (this.state.meas_emp) worksheet.addRow(["Total Employees", data.employee_count]);
-        if (this.state.meas_workload) worksheet.addRow(["Total Workload", data.workload_hours + " Hrs"]);
-        if (this.state.meas_tasks) worksheet.addRow(["Completed Tasks", data.tasks_complete]);
-        if (this.state.meas_prod) worksheet.addRow(["Productivity", data.production_kpi + "%"]);
-        if (this.state.meas_att) worksheet.addRow(["Employee Attendances", data.attendance + "%"]);
-        if (this.state.meas_turnover) worksheet.addRow(["Employee Turnover", data.emp_turnover + "%"]);
-        if (this.state.meas_sales) worksheet.addRow(["Sales Done/Employee", data.sales_per_emp]);
-        if (this.state.meas_leaves) worksheet.addRow(["Vacations Rate", data.average_leaves + "%"]);
-        if (this.state.meas_absence) worksheet.addRow(["Absence Rate", data.absence + "%"]);
-
-        worksheet.addRow([]);
-        if (this.state.export_group !== 'none') {
-            const chartHeaderRow = worksheet.addRow([`Workload Analysis by: ${this.state.export_group.replace('_', ' ').toUpperCase()}`, ""]);
-            chartHeaderRow.getCell(1).font = {bold: true, color: {argb: '17ac39'},size:10};
-            worksheet.addRow(["Group By", "Assigned Workload (Hrs)"]).font = {bold: true};
-
-            if (data.chart_labels && data.chart_data) {
-                for (let i = 0; i < data.chart_labels.length; i++) {
-                    worksheet.addRow([data.chart_labels[i], data.chart_data[i]]);
-                }
-            }
-        }
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `HR_Analytics_Report${this.state.today_date}.xlsx`;
-        link.click();
+            export_group: this.state.export_group,
+            export_measures: measures,
+            detailed_excel: this.state.detailed_excel
+        };
+        const attachmentId = await this.orm.call("wb.hr.dashboard", "export_custom_pivot_excel", [kwargs]);
+        if (attachmentId) { window.location = `/web/content/${attachmentId}?download=true`; }
     }
 
-  async downloadPdf() {
+    async downloadPdf() {
+        this.state.showPdfModal = false;
         const {jsPDF} = window.jspdf;
         const doc = new jsPDF();
+
         let departmentName = "All Departments";
         if (this.state.filters.department_id) {
             const selectedDept = this.state.departments.find(d => d.id == this.state.filters.department_id);
@@ -508,6 +656,7 @@ export class HrDashboard extends Component {
                 departmentName = selectedDept.name;
             }
         }
+
         doc.setFontSize(22);
         doc.setTextColor(0, 123, 255);
         doc.text("HR Analysis", 14, 20);
@@ -517,28 +666,36 @@ export class HrDashboard extends Component {
         let currentY = 30;
         doc.text(`Department: ${departmentName}`, 14, currentY);
         currentY += 7;
-        doc.text(`From Date: ${this.state.start_date}      To Date: ${this.state.end_date}`, 14, currentY);
+        doc.text(`From Date: ${this.state.start_date || ''}      To Date: ${this.state.end_date || ''}`, 14, currentY);
         currentY += 7;
         if (this.state.search_query) {
             doc.text(`Employee Name: ${this.state.search_query}`, 14, currentY);
             currentY += 7;
         }
 
-        const kpiBody = [
-            ["Total Employees", this.state.employee_count],
-            ["Total Workload", this.state.workload_hours + " Hrs"],
-            ["Completed Tasks", this.state.tasks_complete],
-            ["Productivity", this.state.production_kpi + "%"],
-            ["Employee Attendances", this.state.attendance + "%"],
-            ["Employee Turnover", this.state.emp_turnover + "%"],
-            ["Sales Done/Employee", this.state.sales_per_emp],
-            ["Employee Vocations", this.state.average_leaves + "%"],
-            ["Employee absenteeism", this.state.absence + "%"],
-        ];
+        const kpiBody = [];
+        if (this.state.pdf_emp) {
+            kpiBody.push(["Total Employees", this.state.employee_count]);
+            kpiBody.push(["Employee Turnover", this.state.emp_turnover + "%"]);
+        }
+        if (this.state.pdf_workload) {
+            kpiBody.push(["Total Workload", this.state.workload_hours + " Hrs"]);
+            kpiBody.push(["Completed Tasks", this.state.tasks_complete]);
+            kpiBody.push(["Productivity", this.state.production_kpi + "%"]);
+        }
+        if (this.state.pdf_att) {
+            kpiBody.push(["Employee Attendances", this.state.attendance + "%"]);
+            kpiBody.push(["Employee Vocations", this.state.average_leaves + "%"]);
+            kpiBody.push(["Employee absenteeism", this.state.absence + "%"]);
+        }
+        if (this.state.pdf_sales) {
+            kpiBody.push(["Sales Done/Employee", this.state.sales_per_emp]);
+        }
+
         doc.autoTable({
             startY: currentY + 3,
             head: [['Key Performance Indicator', 'Value']],
-            body: kpiBody,
+            body: kpiBody.length > 0 ? kpiBody : [["No KPIs selected", "-"]],
             headStyles: {fillColor: [0, 123, 255], fontSize: 12},
             styles: {fontSize: 11, cellPadding: 4},
             alternateRowStyles: {fillColor: [245, 245, 245]}
@@ -570,10 +727,11 @@ export class HrDashboard extends Component {
     }
 
     renderChart() {
+        const self = this;
+
         const ctx = document.querySelector('.my_dashboard_chart');
         if (ctx && this.chartData) {
             if (ctx.chartInstance) ctx.chartInstance.destroy();
-            const self = this;
             ctx.chartInstance = new window.Chart(ctx, {
                 type: "doughnut",
                 data: {
@@ -597,6 +755,222 @@ export class HrDashboard extends Component {
                     },
                     onHover: (event, chartElement) => {
                         event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    }
+                }
+            });
+        }
+
+        const scatterCtx = document.querySelector('.scatter_analytics_chart');
+        if (scatterCtx && this.scatterData) {
+            if (scatterCtx.chartInstance) scatterCtx.chartInstance.destroy();
+            scatterCtx.chartInstance = new window.Chart(scatterCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Employees',
+                        data: this.scatterData,
+                        backgroundColor: '#4f46e5',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (event, elements, chart) => {
+                        if (elements && elements.length > 0) {
+                            const clickedIndex = elements[0].index;
+                            const dataPoint = chart.data.datasets[0].data[clickedIndex];
+                            self.openEmployeeAllTasks(dataPoint.name);
+                        }
+                    },
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Assigned Workload (Hours)', font: {weight: 'bold'} },
+                            beginAtZero: true
+                        },
+                        y: {
+                            title: { display: true, text: 'Tasks Completed', font: {weight: 'bold'} },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const dataPoint = context.raw;
+                                    return `${dataPoint.name}: ${dataPoint.x} Hrs / ${dataPoint.y} Tasks`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const combinedCtx = document.querySelector(".productivity_trend_chart");
+        if (combinedCtx) {
+            if (combinedCtx.chartInstance) combinedCtx.chartInstance.destroy();
+
+            combinedCtx.chartInstance = new window.Chart(combinedCtx, {
+                type: 'line',
+                data: {
+                    labels: this.state.prod_trend_labels || [],
+                    datasets: [
+                        {
+                            label: 'Productivity %',
+                            data: this.state.prod_trend_data || [],
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            fill: true,
+                            tension: 0.4,
+                        },
+                        {
+                            label: 'Turnover %',
+                            data: this.trendData || [],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            tension: 0.4,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (elements && elements.length > 0) {
+                            const clickedIndex = elements[0].index;
+                            const datasetIndex = elements[0].datasetIndex;
+                            const monthLabel = chart.data.labels[clickedIndex];
+                            self.openTrendDetails(monthLabel, datasetIndex);
+                        }
+                    },
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + "%";
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const anovaCtx = document.querySelector('.anova_variance_chart');
+        if (anovaCtx && this.anovaLabels && this.anovaLabels.length > 0) {
+            if (anovaCtx.chartInstance) anovaCtx.chartInstance.destroy();
+
+            anovaCtx.chartInstance = new window.Chart(anovaCtx, {
+                type: 'bar',
+                data: {
+                    labels: this.anovaLabels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Mean Productivity (%)',
+                            data: this.anovaMeans,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            yAxisID: 'y',
+                        },
+                        {
+                            type: 'line',
+                            label: 'Variance (Dispersion)',
+                            data: this.anovaVariances,
+                            backgroundColor: '#ef4444',
+                            borderColor: '#ef4444',
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#fff',
+                            tension: 0.3,
+                            yAxisID: 'y1',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    onClick: (event, elements, chart) => {
+                        if (elements && elements.length > 0) {
+                            const clickedIndex = elements[0].index;
+                            const deptName = chart.data.labels[clickedIndex];
+                            self.openDepartmentEmployees(deptName);
+                        }
+                    },
+                    onHover: (event, chartElement) => {
+                        event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Mean Productivity (%)', font: {weight: 'bold'} },
+                            min: 0,
+                            max: 100,
+                            ticks: { callback: function(value) { return value + "%"; } }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: { display: true, text: 'Variance (Instability)', font: {weight: 'bold'} },
+                            grid: { drawOnChartArea: false },
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        label += context.dataset.type === 'bar' ? context.parsed.y + '%' : context.parsed.y;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
                     }
                 }
             });
