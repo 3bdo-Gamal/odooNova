@@ -60,7 +60,6 @@ class PurchaseDashboard(models.Model):
 
         return {
             'stats': {
-                # نرسل أرقاماً فقط لكي يقبل الـ XML الحساب عليها
                 'avg_savings': round(data.get('price_variance', 0) * 100, 2),
                 'stability_rate': round((data.get('touches_count', 0) / (total_orders or 1)), 2),
                 'emergency_count': self.env['purchase.order'].search_count(base_domain + [('is_emergency', '=', True)]),
