@@ -1,136 +1,103 @@
 from odoo import models, fields, api
-class PurchaseOrder(models.Model):
+from datetime import datetime, timedelta, date
+from odoo.exceptions import UserError
+
+# 1. إضافة الحقول للموديل الأصلي للمشتريات
+class PurchaseOrderExtension(models.Model):
     _inherit = 'purchase.order'
-    # emergency
+
+    price_variance = fields.Float(string="Price Variance", compute="_compute_custom_stats", store=True)
+    touches_count = fields.Integer(string="Touches Count", default=0)
     is_emergency = fields.Boolean(string="Is Emergency", compute="_compute_is_emergency", store=True)
+
+    @api.depends('order_line.price_unit')
+    def _compute_custom_stats(self):
+        for rec in self:
+
+            rec.price_variance = 0.0
+
     @api.depends('date_approve', 'date_planned')
     def _compute_is_emergency(self):
         for rec in self:
             if rec.date_approve and rec.date_planned:
-                diff = abs(rec.date_approve - rec.date_planned)
-                rec.is_emergency = diff.days < 2
+                # حساب الفرق بالأيام
+                diff = (rec.date_planned.date() - rec.date_approve.date()).days
+                rec.is_emergency = diff < 2
             else:
-               rec.is_emergency = False
-
-
-    # savings
-    price_variance = fields.Float(string="Price Variance (%)",
-                                  compute="_compute_price_variance",
-                                  help="الفرق بين سعر الاتفاقية وسعر السوق(أو آخر سعر شراء بدون اتفاقية)",
-                                  store=True)
-
-    @api.depends('order_line.price_unit', 'requisition_id')
-    def _compute_price_variance(self):
-        for rec in self:
-            variance_sum = 0
-            count = 0
-            for line in rec.order_line:
-                if not line.product_id and line.price_unit<=0:
-                    continue
-
-                domain = [
-                    ('product_id', '=', line.product_id.id),
-                    ('order_id.requisition_id', '=', False),
-                    ('state', 'in', ['purchase', 'done']),
-                    ('price_unit','>',0)
-                ]
-
-
-                if isinstance(line.id, int):
-                    domain.append(('id', '!=', line.id))
-
-                last_purchase_line = self.env['purchase.order.line'].search(
-                    domain, limit=1, order='date_order desc'
-                )
-
-                if last_purchase_line:
-                    last_market_price = last_purchase_line.price_unit
-                    if last_market_price > 0:
-                        variance_sum += (last_market_price - line.price_unit) / last_market_price
-                        count+=1
-                raw_avg =(variance_sum / count) if count > 0 else 0
-                rec.price_variance = max(min(raw_avg,1.0),-1.0)
-
-    # stability
-    touches_count = fields.Integer(string="Order Touches", default=0, readonly=True)
-
-    def write(self, vals):
-        for rec in self:
-            if rec.state in ['purchase', 'done']:
-                if 'state' not in vals and 'touches_count' not in vals:
-                    tracked_fields = ['order_line', 'partner_id', 'amount_total', 'date_planned']
-                    if any(field in vals for field in tracked_fields):
-                        vals['touches_count'] = rec.touches_count + 1
-        return super(PurchaseOrder, self).write(vals)
+                rec.is_emergency = False
+class PurchaseDashboard(models.Model):
+    _name = 'wb.po.dashboard'
+    _description = 'Purchase Dashboard'
 
     @api.model
-    def get_confirmed_orders_stat(self):
-
-        orders = self.search([('state', 'in', ['purchase', 'done'])])
-        total_touches = sum(orders.mapped('touches_count'))
-        total_orders = len(orders)
-        rate = total_touches/total_orders if total_orders > 0 else 0
-        return round(rate, 2)
-
-    # bills
-    bill_lag_time  = fields.Float(string="Bill Lag Time (Hours)",
-                                  compute="_compute_bill_lag_time",
-                                  store=True)
-
-    @api.depends('invoice_ids.create_date', 'date_approve')
-    def _compute_bill_lag_time(self):
-        for rec in self:
-            if rec.date_approve and rec.invoice_ids:
-                first_bill_date = min(rec.invoice_ids.mapped('create_date'))
-                duration = first_bill_date - rec.date_approve
-                rec.bill_lag_time = duration.total_seconds() /3600
-
-            else:
-                rec.bill_lag_time = 0
-
-    @api.model
-    def get_purchase_stats(self, period=7):
-        period = int(period)
-        if (period == 0):
-            period = 7
-        # حساب المتوسطات (التوفير وتأخير الفواتير)
-        res = self.read_group([], ['price_variance:avg', 'bill_lag_time:avg'], [])
-        '''''
-        if res and res[0]:
-            raw_savings = res[0].get('price_variance') or 0
-            clean_savings = max(min(raw_savings, 1.0), -1.0)
-            avg_savings = f"{round(clean_savings * 100, 2)}%"
-
-            raw_lag = res[0].get('bill_lag_time') or 0
-            avg_lag = f"{round(raw_lag, 1)} Hrs"
+    def get_purchase_stats(self, start_date=None, end_date=None, **kwargs):
+        if isinstance(start_date, str) and start_date:
+            StartDate = datetime.strptime(start_date, '%Y-%m-%d')
         else:
-            avg_savings = "0%"
-            avg_lag = "0 Hrs"
-            '''
-        avg_savings = res[0]['price_variance'] if res and res[0]['price_variance'] else 0
-        avg_lag = res[0]['bill_lag_time'] if res and res[0]['bill_lag_time'] else 0
+            StartDate = datetime.now() - timedelta(days=7)
 
-        confirmed_orders = self.search([('state','in',['purchase','done'])])
-        total_touches  = sum(confirmed_orders.mapped('touches_count'))
-        total_orders = len(confirmed_orders)
-        stability_rate = total_touches/total_orders if total_orders > 0 else 0
+        if isinstance(end_date, str) and end_date:
+            EndDate = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        else:
+            EndDate = datetime.now()
 
-        vendor_group = self.read_group([], ['partner_id', 'price_variance:avg'], ['partner_id'])
-        vendor_names_list = [v['partner_id'][1] for v in vendor_group if v['partner_id']]
-        vendor_values_list = [round(v['price_variance'] * 100, 2) for v in vendor_group]
+        today = date.today()
+        if StartDate.date() > today or EndDate.date() > today:
+            raise UserError("Not Valid Date: You should enter a date less than or equal to today.")
 
-        user_group = self.read_group([], ['user_id', 'bill_lag_time:sum'], ['user_id'])
-        user_names_list = [u['user_id'][1] for u in user_group if u['user_id']]
-        user_lag_list = [round(u['bill_lag_time'], 1) for u in user_group]
+        base_domain = [
+            ('date_order', '>=', StartDate),
+            ('date_order', '<=', EndDate),
+            ('state', 'in', ['purchase', 'done'])
+        ]
+
+        res = self.env['purchase.order'].read_group(base_domain, ['price_variance:avg', 'touches_count:sum'], [])
+        data = res[0] if res else {}
+        total_orders = self.env['purchase.order'].search_count(base_domain)
+
+        delay_stats = self._get_delay_analysis(base_domain)
+        vendor_perf = self._get_vendor_performance(base_domain)
+
         return {
-            'stats':{
-            'avg_savings': f"{round(avg_savings * 100, 2)}%",
-            'avg_lag': f"{round(avg_lag, 1)}Hrs",
-            'stability_rate': f"{round(stability_rate, 2)}%",
-            'emergency_count': self.search_count([('is_emergency', '=', True)]),
+            'stats': {
+                # نرسل أرقاماً فقط لكي يقبل الـ XML الحساب عليها
+                'avg_savings': round(data.get('price_variance', 0) * 100, 2),
+                'stability_rate': round((data.get('touches_count', 0) / (total_orders or 1)), 2),
+                'emergency_count': self.env['purchase.order'].search_count(base_domain + [('is_emergency', '=', True)]),
+                'total_orders': total_orders,
+                'total_delay_days': round(delay_stats['avg_total_delay'], 2),
             },
-            'vendorLabels': vendor_names_list,  # قائمة أسماء الموردين
-            'chart_vendor_data': vendor_values_list,  # قائمة أرقام التوفير لكل مورد
-            'workloadLabels': user_names_list,  # قائمة أسماء الموظفين
-            'workload_chart_data': user_lag_list  # قائمة أرقام التأخير لكل موظف
+            'late_vendor_names': delay_stats['late_names'],
+            'late_vendor_values': delay_stats['late_values'],
+            'vendor_labels': vendor_perf['labels'],
+            'chart_vendor_data': vendor_perf['values'],
         }
+
+    @api.model
+    def _get_delay_analysis(self, domain):
+        orders = self.env['purchase.order'].search(domain)
+        total_delay = 0
+        vendor_delays = {}
+        for order in orders:
+            if order.date_planned and order.effective_date:
+                delay = max(0, (order.effective_date.date() - order.date_planned.date()).days)
+                total_delay += delay
+                v_name = order.partner_id.name or "Unknown"
+                if v_name not in vendor_delays: vendor_delays[v_name] = []
+                vendor_delays[v_name].append(delay)
+
+        late_results = [{'name': n, 'delay': sum(d) / len(d)} for n, d in vendor_delays.items() if sum(d) / len(d) > 0]
+        top_5 = sorted(late_results, key=lambda x: x['delay'], reverse=True)[:5]
+
+        return {
+            'avg_total_delay': total_delay / len(orders) if orders else 0,
+            'late_names': [x['name'] for x in top_5],
+            'late_values': [round(x['delay'], 1) for x in top_5]
+        }
+
+    @api.model
+    def _get_vendor_performance(self, domain):
+        v_group = self.env['purchase.order'].read_group(domain, ['partner_id', 'price_variance:avg'], ['partner_id'])
+        labels = [v['partner_id'][1] for v in v_group if v.get('partner_id')]
+        values = [round(v.get('price_variance', 0) * 100, 2) for v in v_group]
+        return {'labels': labels, 'values': values}

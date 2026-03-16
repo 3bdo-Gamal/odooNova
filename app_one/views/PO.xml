@@ -1,50 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-  <record id="view_purchase_order_form_inherit" model="ir.ui.view">
-        <field name="name">purchase.order.form.inherit</field>
-        <field name="model">purchase.order</field>
-        <field name="inherit_id" ref="purchase.purchase_order_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='date_planned']" position="after">
-               <group>
-        <field name="is_emergency" string="Emergency Order?" widget="boolean_toggle"/>
-        <field name="price_variance" string="Price Variance" widget="percentage"/>
-                     <field name="bill_lag_time" string="Bill Lag Time" widget="float_time"/>
-                    <field name="touches_count"
-                       string="Order Touches"/>
-                </group>
-            </xpath>
-        </field>
-    </record>
+     <data>
 
-    <record id="view_purchase_order_search_inherit" model="ir.ui.view">
-        <field name="name">purchase.order.search.inherit</field>
-        <field name="model">purchase.order</field>
-        <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
-        <field name="arch" type="xml">
-            <xpath expr="//group" position="inside">
-                <filter string="Emergency Status" name="group_by_is_emergency" context="{'group_by': 'is_emergency'}"/>
-            </xpath>
-            <xpath expr="//filter[@name='approved']" position="after">
-            <filter string="Critical Emergency" name="critical_emergency" domain="[('is_emergency', '=', True)]"/>
-            <filter string="Delayed Bills (>24h)" name="delayed_bills" domain="[('bill_lag_time', '>', 24)]"/>
-            <separator/>
-        </xpath>
-        </field>
-    </record>
-
-
-
-    <data>
-       <record id="action_purchase_orders_dashboard_client" model="ir.actions.client">
-           <field name="name">Orders Dashboard</field>
-           <field name="tag">purchase_orders_dashboard_tag</field>
-       </record>
-
-        <menuitem id="menu_purchase_orders_dashboard"
+<record id="action_purchase_dashboard_client" model="ir.actions.client">
+    <field name="name">Purchase Order Dashboard</field>
+      <field name="tag">PO_dashboard_client_tag</field> </record> <menuitem id="menu_purchase_orders_dashboard"
           name="Orders Dashboard"
           parent="menu_purchase_dashboards_container"
-          action="action_purchase_orders_dashboard_client"
+          action="action_purchase_dashboard_client"
           sequence="1"/>
 
     </data>

@@ -1,120 +1,166 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-  <t t-name="purchase_orders_dashboard_template" owl="1">
-        <div class="o_dashboard_container" style="padding:20px; height:100%; background-color:FFFCFCE8;">
-            <t t-if="state.stats">
-            </t>
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="text-primary" style="font-weight:bold">
-                   PO Dashboard
-                </h1>
-                <select class="form_select" t-model="state.period" t-on-change="onChangePeriod" style="width:10%;height:70%;border:bold 3 px solid purple !important;border-radius:10px;text-align:center;background-color:purple;color:white; ">
-                    <option value="0" style="color:black;">Select Period</option>
-                          <option value="7" style="color:black;"> last Week</option>
-                          <option value="30" style="color:black;">last Month</option>
-                          <option value="90" style="color:black;">last 3 Months</option>
-                          <option value="180" style="color:black;">last 6 Months</option>
-                          <option value="270" style="color:black;">last 9 Months</option>
-                          <option value="365" style="color:black;"> last year</option>
-                          <option value="730" style="color:black;">last 2 years</option>
-                </select>
-            </div>
+    <t t-name="purchase_orders_dashboard_template" owl="1">
+        <style>
+            .wb-dashboard-wrapper {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
+            }
+            .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
+            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
-   <!--Savings-->
-        <div class="row container my-5 mx-auto">
-  <div class="col-sm-3">
-    <div class="card">
-      <div class="card-body bg-success text-light shadow-lg p-3">
-       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">Average price savings</h6>
-         <h2 class="mb-0" style="font-weight:bold">
-             <t t-esc="state.stats.avg_savings"/>
+            .wb-glassy-header {
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 1.25rem;
+                padding: 1rem 1.5rem;
+                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+            }
 
-         </h2>
-      </div>
-    </div>
-  </div>
+            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
+            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
 
- <!--Efficiency-->
-              <div class="col-sm-3">
-    <div class="card">
-      <div class="card-body bg-danger shadow-lg text-light p-3">
-       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">Average invoice issuance time</h6>
-         <h2 class="mb-0" style="font-weight:bold">
-             <t t-esc="state.stats.avg_lag"/>
+            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+            .icon-primary { background: #eff6ff; color: #3b82f6; }
+            .icon-success { background: #f0fdf4; color: #22c55e; }
+            .icon-info { background: #ecfeff; color: #06b6d4; }
+            .icon-warning { background: #fefce8; color: #eab308; }
+            .icon-danger { background: #fef2f2; color: #ef4444; }
+            .icon-purple { background: #faf5ff; color: #a855f7; }
 
-         </h2>
-      </div>
-    </div>
-  </div>
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
+            .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+        </style>
 
- <!--Urgency-->
-              <div class="col-sm-3">
-    <div class="card">
-      <div class="card-body bg-warning shadow-lg text-light p-3">
-       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">number of urgent requests</h6>
-         <h2 class="mb-0" style="font-weight:bold">
-             <t t-esc="state.stats.emergency_count"/>
+        <div class="wb-dashboard-wrapper">
+            <div class="wb-main-content">
 
-         </h2>
-      </div>
-    </div>
-  </div>
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
+                            <i class="fa fa-shopping-cart text-primary me-2"></i>Purchase Orders Analytics
+                        </h3>
+                        <p class="text-muted text-sm mb-0">Track performance, savings, and vendor delays.</p>
+                    </div>
 
-<!--Stability-->
-              <div class="col-sm-3">
-    <div class="card">
-      <div class="card-body bg-info text-light shadow-lg p-3">
-       <h6 class="text-muted text-uppercase mb-2" style="font-size:12px">Confirmed order modification rate</h6>
-         <h2 class="mb-0" style="font-weight:bold">
-             <t t-esc="state.stats.stability_rate"/>
-
-         </h2>
-      </div>
-    </div>
-  </div>
-
-</div>
+                    <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">
+                        <SearchBar t-if="env.searchModel" />
+                    </div>
 
 
-          <div class="row">
-                <div class="col-lg-6">
-                    <div class="card shadow-sm border-0">
-
-                        <div class="card-header bg-white border-0 pt-4 pb-2">
-                            <h4 class="card-title mb-0">
-                                Vendor Performance
-                            </h4>
-                        </div>
-
-                        <div class="card-body">
-                            <!-- chart wrapper -->
-                            <div style="height:300px; width:100%; position:relative">
-                                <canvas t-ref="vendor_chart_container"></canvas>
-                            </div>
-                        </div>
-
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white" t-on-click="excelsheet">
+                            <i class="fa fa-file-excel-o me-2"></i> Export Excel
+                        </button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white" t-on-click="downloadPdf">
+                            <i class="fa fa-file-pdf-o me-2"></i> Print PDF
+                        </button>
+                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;" t-on-click="() => state.showSidebar = !state.showSidebar">
+                            <i class="fa fa-sliders"></i>
+                        </button>
                     </div>
                 </div>
 
-               <div class="col-lg-6">
-                    <div class="card shadow-sm border-0">
-
-                        <div class="card-header bg-white border-0 pt-4 pb-2">
-                            <h4 class="card-title mb-0">
-                                Department Workload
-                            </h4>
-                        </div>
-
-                        <div class="card-body">
-                            <!-- chart wrapper -->
-                            <div style="height:300px;width:100%; position:relative">
-                                <canvas t-ref="workload_chart_container"></canvas>
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                            <div class="wb-icon-box icon-primary me-3">
+                                <t t-if="state.stats.avg_savings != 0">
+                                    <i class="fa fa-line-chart"></i>
+                                </t>
+                                <t t-else="">
+                                    <i class="fa fa-check-circle"></i>
+                                </t>
+                            </div>
+                            <div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Price Variance Status</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_savings"/>%</h4>
+                                <small t-attf-class="fw-bold {{ state.stats.avg_savings > 0 ? 'text-danger' : 'text-success' }}">
+                                    <t t-if="state.stats.avg_savings > 0">Alert!</t>
+                                    <t t-else="">Healthy</t>
+                                </small>
                             </div>
                         </div>
+                    </div>
 
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                            <div class="wb-icon-box icon-danger me-3"><i class="fa fa-bolt"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Urgent Requests</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.emergency_count"/></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                            <div class="wb-icon-box icon-warning me-3"><i class="fa fa-edit"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Modification Rate</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="(state.stats.stability_rate * 100).toFixed(1)"/>%</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-3">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                            <div class="wb-icon-box icon-info me-3"><i class="fa fa-clock-o"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Delivery Delay</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.total_delay_days"/> Days</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="wb-card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Top 5 Late Vendors</h5>
+                            </div>
+                            <div style="height: 400px; position: relative;">
+                                <canvas t-ref="delays_chart_container"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wb-sidebar" t-if="state.showSidebar">
+                <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa fa-sliders text-primary me-2"></i>Filters</h5>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="() => state.showSidebar = false"><i class="fa fa-times"></i></button>
+                </div>
+
+                <div class="wb-sidebar-scroll">
+                    <div class="mb-4">
+
+                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
+                        <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
+                            <option value="0">-- All Time / Custom Dates --</option>
+                            <option value="7">📅 Last 7 Days</option>
+                            <option value="30">📅 Last Month</option>
+                            <option value="90">📅 Last 3 Months</option>
+                            <option value="180">📅 Last 6 Months</option>
+                            <option value="365">📅 Last Year</option>
+                        </select>
+
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2"><i class="fa fa-calendar me-1"></i> Custom Date Range</label>
+                        <div class="p-3 bg-light rounded-3 border">
+                            <label class="text-xs fw-bold text-dark mb-1">From</label>
+                            <input type="date" class="form-control wb-input mb-3" t-model="state.stats.start_date" t-on-change="onChangeStartDate"/>
+
+                            <label class="text-xs fw-bold text-dark mb-1">To</label>
+                            <input type="date" class="form-control wb-input" t-model="state.stats.end_date" t-on-change="onChangeEndDate"/>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </t>
-    </templates>
+</templates>
