@@ -43,7 +43,7 @@ export class PurchaseBillsDashboard extends Component {
                 category_id: savedState.category_id || "all",
                 location_id: savedState.location_id || "all"
             },
-                period: "30", // القيمة الافتراضية (Last Month)
+                period: "30", // (Last Month) Default value
     date_from: "",
     date_to: "",
     kpi_data: {

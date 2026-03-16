@@ -2,18 +2,19 @@
 import { registry } from "@web/core/registry";
 import { loadJS } from "@web/core/assets";
 import { useService } from "@web/core/utils/hooks";
-import { Component, onWillStart, onMounted, useState, useRef, useSubEnv } from "@odoo/owl";
-import { SearchModel } from "@web/search/search_model";
-import { SearchBar } from "@web/search/search_bar/search_bar";
+import { Component, onWillStart, onMounted, useState, useRef } from "@odoo/owl";
 
 export class SalesDashboardClient extends Component {
     static template = "SalesDashboardClientTemplate";
-    static components = { SearchBar };
+
+    get currentField() {
+        if (!this.state.model_fields || this.state.model_fields.length === 0) return {};
+        return this.state.model_fields.find(f => f.name === this.state.cf_field) || {};
+    }
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
-        this.viewService = useService("view");
 
         this.customerChartRef = useRef("customer_chart");
         this.productChartRef = useRef("product_chart");
@@ -21,14 +22,17 @@ export class SalesDashboardClient extends Component {
         this.salespersonChartRef = useRef("salesperson_chart");
         this.categoryChartRef = useRef("category_chart");
         this.winRateChartRef = useRef("win_rate_chart");
+        this.dynamicChartRef = useRef("dynamic_chart");
 
-        const savedState = JSON.parse(localStorage.getItem('wb_sales_dashboard_state')) || {};
+        const savedState = JSON.parse(localStorage.getItem('wb_sales_dashboard_state_v2')) || {};
+        const savedFavorites = JSON.parse(localStorage.getItem('sales_dashboard_favorites')) || [];
+        const defaultFav = savedFavorites.find(f => f.is_default === true);
 
         this.state = useState({
             showSidebar: true,
             top_products: savedState.top_products || "5",
             top_customers: savedState.top_customers || "5",
-            state: savedState.state || "sale",
+            state: savedState.state || "all", // 🌟 التعديل هنا لعرض كافة الطلبات افتراضياً (الـ 30 أوردر)
             user_id: savedState.user_id || "all",
             warehouse_id: savedState.warehouse_id || "all",
             team_id: savedState.team_id || "all",
@@ -38,7 +42,9 @@ export class SalesDashboardClient extends Component {
             period: savedState.period || "7",
             date_from: savedState.date_from || "",
             date_to: savedState.date_to || "",
+
             filter_warehouses: [], filter_users: [], filter_teams: [], filter_categories: [], filter_countries: [], filter_companies: [],
+            model_fields: [],
 
             total_revenue: 0, total_orders: 0, aov: 0, sales_growth: 0, total_invoiced: 0,
             gross_profit: 0, profit_margin: 0, total_discount: 0, outstanding_receivables: 0,
@@ -47,42 +53,35 @@ export class SalesDashboardClient extends Component {
 
             customer_labels: [], customer_data: [], product_labels: [], product_data: [],
             trend_labels: [], trend_data: [], salesperson_labels: [], salesperson_data: [],
-            category_labels: [], category_data: [],
+            category_labels: [], category_data: [], dynamic_chart_labels: [], dynamic_chart_data: [],
+
+            search_query: defaultFav ? defaultFav.search_query : (savedState.search_query || ''),
+            active_filters: defaultFav ? { ...defaultFav.active_filters } : (savedState.active_filters || { my_orders: false, quotations: false, sales_orders: false, to_invoice: false }),
+
+            custom_domain: defaultFav ? [...defaultFav.custom_domain] : (savedState.custom_domain || []),
+            show_custom_filter_menu: false,
+            cf_field: '', cf_operator: '=', cf_value: '',
+
+            group_by_list: defaultFav ? [...defaultFav.group_by_list] : (savedState.group_by_list || []),
+            show_custom_group_menu: false,
+            cg_field: '',
+
+            active_favorite_name: defaultFav ? defaultFav.name : null,
+            saved_favorites: savedFavorites,
+            show_save_menu: false,
+            favorite_name: 'Sales Analytics',
+            is_default_fav: false,
+            is_shared_fav: false,
 
             showExportModal: false, showPdfModal: false, export_group: "partner_id", detailed_excel: false,
             meas_revenue: true, meas_qty: true, meas_profit: false, meas_orders: false, meas_aov: false, meas_discount: false, meas_margin_pct: false,
             pdf_revenue: true, pdf_orders: true, pdf_growth: true, pdf_profit: true, pdf_outstanding: true
         });
 
-        this.searchModel = new SearchModel(this.env, { user: useService("user"), orm: this.orm, view: this.viewService });
-        useSubEnv({ searchModel: this.searchModel });
-
         onWillStart(async () => {
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js");
             await this.loadFilters();
-
-            try {
-                const views = await this.orm.call("sale.order", "get_views", [], { views: [[false, "search"]], options: { toolbar: false, action_id: false } });
-
-                // 🌟 الحل السحري: تنظيف وتعديل الـ Search View برمجياً قبل تحميله
-                let cleanSearchArch = views.views.search.arch;
-                // حذف أي <group> الخاصة بالتجميع (Group By)
-                cleanSearchArch = cleanSearchArch.replace(/<group[^>]*>.*?<\/group>/gis, '');
-                // حذف أي فلتر فردي يحتوي على Group By
-                cleanSearchArch = cleanSearchArch.replace(/<filter [^>]*context="\{[^}]*'group_by'[^}]*\}"[^>]*\/>/gis, '');
-
-                await this.searchModel.load({
-                    resModel: "sale.order",
-                    context: {},
-                    searchViewId: views.views.search.id,
-                    searchViewArch: cleanSearchArch, // استخدام الكود النظيف
-                    searchViewFields: views.models["sale.order"],
-                    searchMenuTypes: ["filter"] // إجبار السيرش على إظهار الفلاتر فقط (بدون Group By وبدون Favorites)
-                });
-
-                this.searchModel.addEventListener("update", () => { this.fetchData(); });
-            } catch (error) { console.error("Failed to load search model:", error); }
             await this.fetchData();
         });
 
@@ -96,6 +95,11 @@ export class SalesDashboardClient extends Component {
                 this.state.filter_warehouses = data.warehouses || []; this.state.filter_users = data.users || [];
                 this.state.filter_teams = data.teams || []; this.state.filter_categories = data.categories || [];
                 this.state.filter_countries = data.countries || []; this.state.filter_companies = data.companies || [];
+                this.state.model_fields = data.model_fields || [];
+                if(this.state.model_fields.length > 0) {
+                    this.state.cf_field = this.state.model_fields[0].name;
+                    this.state.cg_field = this.state.model_fields[0].name;
+                }
             }
         } catch (error) { console.error("Error loading filters:", error); }
     }
@@ -105,36 +109,145 @@ export class SalesDashboardClient extends Component {
     async onChangePeriod() { this.state.date_from = ""; this.state.date_to = ""; await this.fetchData(); }
     async onChangeFilter() { await this.fetchData(); }
 
+    async onSearchKeyUp(ev) {
+        if (ev.key === 'Enter' && ev.target.value.trim() !== '') {
+            this.state.active_favorite_name = null;
+            this.state.search_query = ev.target.value;
+            ev.target.value = '';
+            await this.fetchData();
+        }
+    }
+    async clearSearchQuery() { this.state.active_favorite_name = null; this.state.search_query = ''; await this.fetchData(); }
+
+    async toggleFilter(filterName) {
+        this.state.active_favorite_name = null;
+        this.state.active_filters[filterName] = !this.state.active_filters[filterName];
+        if(filterName === 'quotations' && this.state.active_filters.quotations) this.state.active_filters.sales_orders = false;
+        if(filterName === 'sales_orders' && this.state.active_filters.sales_orders) this.state.active_filters.quotations = false;
+        await this.fetchData();
+    }
+
+    toggleCustomFilterMenu(ev) { ev.stopPropagation(); this.state.show_custom_filter_menu = !this.state.show_custom_filter_menu; }
+
+    async addCustomFilter(ev) {
+        ev.stopPropagation();
+        if(this.state.cf_field && this.state.cf_value !== '') {
+            const fieldObj = this.state.model_fields.find(f => f.name === this.state.cf_field);
+            this.state.custom_domain.push({
+                field: this.state.cf_field, label: fieldObj ? fieldObj.string : this.state.cf_field,
+                operator: this.state.cf_operator, value: this.state.cf_value, type: fieldObj ? fieldObj.type : 'char'
+            });
+            this.state.active_favorite_name = null;
+            this.state.cf_value = '';
+            this.state.show_custom_filter_menu = false;
+            await this.fetchData();
+        }
+    }
+
+    async removeCustomFilter(index) {
+        this.state.active_favorite_name = null;
+        this.state.custom_domain.splice(index, 1);
+        await this.fetchData();
+    }
+
+    toggleCustomGroupMenu(ev) { ev.stopPropagation(); this.state.show_custom_group_menu = !this.state.show_custom_group_menu; }
+
+    async addCustomGroupBy(ev) {
+        ev.stopPropagation();
+        if(this.state.cg_field && !this.state.group_by_list.includes(this.state.cg_field)) {
+            this.state.active_favorite_name = null;
+            this.state.group_by_list.push(this.state.cg_field);
+            this.state.show_custom_group_menu = false;
+            await this.fetchData();
+        }
+    }
+
+    async toggleGroupBy(groupName) {
+        this.state.active_favorite_name = null;
+        if (this.state.group_by_list.includes(groupName)) {
+            this.state.group_by_list = this.state.group_by_list.filter(g => g !== groupName);
+        } else {
+            this.state.group_by_list.push(groupName);
+        }
+        await this.fetchData();
+    }
+
+    async removeGroupBy(groupName) {
+        this.state.active_favorite_name = null;
+        this.state.group_by_list = this.state.group_by_list.filter(g => g !== groupName);
+        await this.fetchData();
+    }
+
+    toggleSaveMenu(ev) { ev.stopPropagation(); this.state.show_save_menu = !this.state.show_save_menu; }
+    onDefaultCheckboxChange() { if (this.state.is_default_fav) this.state.is_shared_fav = false; }
+    onSharedCheckboxChange() { if (this.state.is_shared_fav) this.state.is_default_fav = false; }
+
+    saveFavoriteUI(ev) {
+        ev.stopPropagation();
+        if (this.state.favorite_name.trim()) {
+            if (this.state.is_default_fav) this.state.saved_favorites.forEach(f => f.is_default = false);
+            const newFav = {
+                id: Date.now(), name: this.state.favorite_name, search_query: this.state.search_query,
+                active_filters: { ...this.state.active_filters }, custom_domain: [...this.state.custom_domain],
+                group_by_list: [...this.state.group_by_list], is_default: this.state.is_default_fav, is_shared: this.state.is_shared_fav
+            };
+            this.state.saved_favorites.push(newFav);
+            localStorage.setItem('sales_dashboard_favorites', JSON.stringify(this.state.saved_favorites));
+            this.state.show_save_menu = false; this.state.favorite_name = 'Sales Analytics';
+            this.state.is_default_fav = false; this.state.is_shared_fav = false;
+        }
+    }
+
+    loadFavorite(fav) {
+        this.state.search_query = fav.search_query;
+        this.state.active_filters = { ...fav.active_filters };
+        this.state.custom_domain = [...fav.custom_domain];
+        this.state.group_by_list = [...fav.group_by_list];
+        this.state.active_favorite_name = fav.name;
+        this.fetchData();
+    }
+
+    async clearFavorite() {
+        this.state.active_favorite_name = null;
+        this.state.search_query = '';
+        this.state.active_filters = { my_orders: false, quotations: false, sales_orders: false, to_invoice: false };
+        this.state.custom_domain = [];
+        this.state.group_by_list = [];
+        await this.fetchData();
+    }
+
+    deleteFavorite(favId) {
+        this.state.saved_favorites = this.state.saved_favorites.filter(f => f.id !== favId);
+        localStorage.setItem('sales_dashboard_favorites', JSON.stringify(this.state.saved_favorites));
+    }
+
     async fetchData() {
-        localStorage.setItem('wb_sales_dashboard_state', JSON.stringify({
+       localStorage.setItem('wb_sales_dashboard_state_v2', JSON.stringify({
             top_products: this.state.top_products, top_customers: this.state.top_customers,
-            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id,
-            team_id: this.state.team_id, category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
-            period: this.state.period, date_from: this.state.date_from, date_to: this.state.date_to
+            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id, team_id: this.state.team_id,
+            category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
+            period: this.state.period, date_from: this.state.date_from, date_to: this.state.date_to,
+            search_query: this.state.search_query, active_filters: this.state.active_filters,
+            custom_domain: this.state.custom_domain, group_by_list: this.state.group_by_list
         }));
 
-        const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
         const kwargs = {
-            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id,
-            team_id: this.state.team_id, category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
+            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id, team_id: this.state.team_id,
+            category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
             period: parseInt(this.state.period) || 0, date_from: this.state.date_from || false, date_to: this.state.date_to || false,
-            top_products: this.state.top_products, top_customers: this.state.top_customers, native_domain: searchDomain
+            top_products: this.state.top_products, top_customers: this.state.top_customers,
+            search_query: this.state.search_query, active_filters: this.state.active_filters,
+            custom_domain: this.state.custom_domain, group_by_list: this.state.group_by_list
         };
         const data = await this.orm.call("wb.sales.dashboard", "get_sales_dashboard_data", [], kwargs);
         if (data) { Object.assign(this.state, data); this.renderCharts(); }
     }
-
-    openRecords(type) {
+openRecords(type) {
         if (type === 'orders' || type === 'revenue') {
-            this.action.doAction({
-                name: "Sales Orders",
-                type: "ir.actions.act_window",
-                res_model: "sale.order",
-                view_mode: "list,form",
-                views: [[false, "list"], [false, "form"]],
-                domain: []
-            });
-        } else if (type === 'outstanding') {
+            this.action.doAction({ name: "Sales Orders", type: "ir.actions.act_window", res_model: "sale.order", view_mode: "list,form", views: [[false, "list"], [false, "form"]], domain: this.state.nav_domain });
+        } else if (type === 'to_invoice') {
+            this.action.doAction({ name: "Orders To Invoice", type: "ir.actions.act_window", res_model: "sale.order", view_mode: "list,form", views: [[false, "list"], [false, "form"]], domain: this.state.to_invoice_domain });
+        }else if (type === 'outstanding') {
             this.action.doAction({
                 name: "Outstanding Invoices",
                 type: "ir.actions.act_window",
@@ -143,67 +256,18 @@ export class SalesDashboardClient extends Component {
                 views: [[false, "list"], [false, "form"]],
                 domain: [['move_type', '=', 'out_invoice'], ['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']]]
             });
-        } else if (type === 'invoiced') {
-            this.action.doAction({
-                name: "Customer Invoices",
-                type: "ir.actions.act_window",
-                res_model: "account.move",
-                view_mode: "list,form",
-                views: [[false, "list"], [false, "form"]],
-                domain: [['move_type', '=', 'out_invoice'], ['state', '=', 'posted']]
-            });
+
         }
     }
 
     openChartRecords(type, label) {
         if (!label || label === 'Unknown' || label === 'Uncategorized') return;
-
-        if (type === 'product') {
-            this.action.doAction({
-                name: "Products",
-                type: "ir.actions.act_window",
-                res_model: "product.template",
-                view_mode: "kanban,list,form",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
-                domain: []
-            });
-        } else if (type === 'customer') {
-            this.action.doAction({
-                name: "Customers",
-                type: "ir.actions.act_window",
-                res_model: "res.partner",
-                view_mode: "kanban,list,form",
-                views: [[false, "kanban"], [false, "list"], [false, "form"]],
-                domain: []
-            });
-        } else if (type === 'category') {
-            this.action.doAction({
-                name: "Product Categories",
-                type: "ir.actions.act_window",
-                res_model: "product.category",
-                view_mode: "list,form",
-                views: [[false, "list"], [false, "form"]],
-                domain: []
-            });
-        } else if (type === 'salesperson') {
-            this.action.doAction({
-                name: "Salespersons",
-                type: "ir.actions.act_window",
-                res_model: "res.users",
-                view_mode: "list,form",
-                views: [[false, "list"], [false, "form"]],
-                domain: []
-            });
-        } else if (type === 'trend' || type === 'win_rate') {
-            this.action.doAction({
-                name: "Sales Orders",
-                type: "ir.actions.act_window",
-                res_model: "sale.order",
-                view_mode: "list,form",
-                views: [[false, "list"], [false, "form"]],
-                domain: []
-            });
-        }
+        let res_model = "sale.order"; let views = [[false, "list"], [false, "form"]]; let name = "Sales Records";
+        if (type === 'product') { res_model = "product.template"; views = [[false, "kanban"], [false, "list"], [false, "form"]]; name = "Products"; }
+        else if (type === 'customer') { res_model = "res.partner"; views = [[false, "kanban"], [false, "list"], [false, "form"]]; name = "Customers"; }
+        else if (type === 'category') { res_model = "product.category"; name = "Product Categories"; }
+        else if (type === 'salesperson') { res_model = "res.users"; name = "Salespersons"; }
+        this.action.doAction({ name: name, type: "ir.actions.act_window", res_model: res_model, view_mode: views.map(v=>v[1]).join(","), views: views, domain: [] });
     }
 
     openExportModal() { this.state.showExportModal = true; }
@@ -220,12 +284,12 @@ export class SalesDashboardClient extends Component {
         if (this.state.meas_margin_pct) measures.push('margin_pct');
         if (measures.length === 0) { alert("Please select at least one measure."); return; }
 
-        const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
         const kwargs = {
-            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id,
-            team_id: this.state.team_id, category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
+            state: this.state.state, user_id: this.state.user_id, warehouse_id: this.state.warehouse_id, team_id: this.state.team_id,
+            category_id: this.state.category_id, country_id: this.state.country_id, company_id: this.state.company_id,
             period: parseInt(this.state.period) || 0, date_from: this.state.date_from || false, date_to: this.state.date_to || false,
-            export_group: this.state.export_group, export_measures: measures, detailed_excel: this.state.detailed_excel, native_domain: searchDomain
+            export_group: this.state.export_group, export_measures: measures, detailed_excel: this.state.detailed_excel,
+            search_query: this.state.search_query, active_filters: this.state.active_filters, custom_domain: this.state.custom_domain
         };
         const attachmentId = await this.orm.call("wb.sales.dashboard", "export_custom_pivot_excel", [], kwargs);
         if (attachmentId) { window.location = `/web/content/${attachmentId}?download=true`; }
@@ -245,38 +309,29 @@ export class SalesDashboardClient extends Component {
         this._renderDoughnut(this.winRateChartRef, ['Won Orders', 'Lost/Draft'], [this.state.won_quotes, this.state.lost_quotes], ['#10b981', '#cbd5e1'], 'win_rate');
         this._renderHorizontalBar(this.salespersonChartRef, this.state.salesperson_labels, this.state.salesperson_data, 'salesperson');
         this._renderPie(this.categoryChartRef, this.state.category_labels, this.state.category_data, 'category');
+
+        if (this.state.group_by_list && this.state.group_by_list.length > 0) {
+            this._renderChart(this.dynamicChartRef, 'bar', this.state.dynamic_chart_labels, this.state.dynamic_chart_data, '#8b5cf6', 'Grouped Revenue', 'dynamic');
+        } else if (this.dynamicChartRef.el && this.dynamicChartRef.el.chartInstance) {
+            this.dynamicChartRef.el.chartInstance.destroy();
+        }
     }
 
     _renderChart(ref, type, labels, data, color, label, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
-        ref.el.chartInstance = new window.Chart(ref.el, {
-            type: type, data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: color, borderColor: color, fill: type === 'line', tension: 0.4, borderRadius: type === 'bar' ? 4 : 0 }] },
-            options: { responsive: true, maintainAspectRatio: false, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } }
-        });
+        ref.el.chartInstance = new window.Chart(ref.el, { type: type, data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: color, borderColor: color, fill: type === 'line', tension: 0.4, borderRadius: type === 'bar' ? 4 : 0 }] }, options: { responsive: true, maintainAspectRatio: false, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
     }
-
     _renderDoughnut(ref, labels, data, colors, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
-        ref.el.chartInstance = new window.Chart(ref.el, {
-            type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, hoverOffset: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } }
-        });
+        ref.el.chartInstance = new window.Chart(ref.el, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 2, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
     }
-
     _renderHorizontalBar(ref, labels, data, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
-        ref.el.chartInstance = new window.Chart(ref.el, {
-            type: 'bar', data: { labels: labels, datasets: [{ label: 'Revenue', data: data, backgroundColor: '#f59e0b', borderRadius: 4 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } }
-        });
+        ref.el.chartInstance = new window.Chart(ref.el, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Revenue', data: data, backgroundColor: '#f59e0b', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
     }
-
     _renderPie(ref, labels, data, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
-        ref.el.chartInstance = new window.Chart(ref.el, {
-            type: 'pie', data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#ef4444', '#4f46e5', '#10b981', '#06b6d4', '#f59e0b'], borderWidth: 2, hoverOffset: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } }
-        });
+        ref.el.chartInstance = new window.Chart(ref.el, { type: 'pie', data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#ef4444', '#4f46e5', '#10b981', '#06b6d4', '#f59e0b'], borderWidth: 2, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
     }
 }
 registry.category("actions").add("sales_dashboard_client_tag", SalesDashboardClient);

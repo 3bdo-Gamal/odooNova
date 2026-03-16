@@ -23,10 +23,38 @@ class SalesDashboard(models.Model):
         countries = self.env['res.country'].search_read([], ['id', 'name'])
         companies = self.env['res.company'].search_read([], ['id', 'name'])
 
+        fields_data = self.env['sale.order'].fields_get()
+        model_fields = []
+        for fname, fdata in fields_data.items():
+            if fdata.get('searchable') or fdata.get('store'):
+                model_fields.append({
+                    'name': fname,
+                    'string': fdata.get('string'),
+                    'type': fdata.get('type'),
+                    'selection': fdata.get('selection', [])
+                })
+        model_fields = sorted(model_fields, key=lambda x: x['string'])
+
         return {
             'warehouses': warehouses, 'users': users, 'teams': teams,
-            'categories': categories, 'countries': countries, 'companies': companies
+            'categories': categories, 'countries': countries, 'companies': companies,
+            'model_fields': model_fields
         }
+
+    def _get_field_display_value(self, record, field_name):
+        field = record._fields.get(field_name)
+        if not field: return 'Unknown'
+        val = record[field_name]
+        if not val and val != 0: return 'None'
+
+        if field.type == 'many2one':
+            return val.display_name
+        elif field.type == 'selection':
+            return dict(field.selection).get(val, val)
+        elif field.type in ['date', 'datetime']:
+            return val.strftime('%Y-%m-%d')
+        else:
+            return str(val)
 
     @api.model
     def get_sales_dashboard_data(self, **kwargs):
@@ -35,13 +63,17 @@ class SalesDashboard(models.Model):
         date_to = kwargs.get('date_to', False)
         warehouse_id = kwargs.get('warehouse_id', 'all')
         user_id = kwargs.get('user_id', 'all')
-        state = kwargs.get('state', 'sale')
+        state = kwargs.get('state', 'all')
         team_id = kwargs.get('team_id', 'all')
         category_id = kwargs.get('category_id', 'all')
         country_id = kwargs.get('country_id', 'all')
         company_id = kwargs.get('company_id', 'all')
 
-        native_domain = kwargs.get('native_domain', [])
+        search_query = kwargs.get('search_query', '')
+        active_filters = kwargs.get('active_filters', {})
+        custom_domain_list = kwargs.get('custom_domain', [])
+        group_by_list = kwargs.get('group_by_list', [])
+
         top_products_limit = int(kwargs.get('top_products', 5))
         top_customers_limit = int(kwargs.get('top_customers', 5))
 
@@ -64,18 +96,44 @@ class SalesDashboard(models.Model):
         time_domain = [('date_order', '>=', current_date_start), ('date_order', '<=', current_date_end)]
         prev_time_domain = [('date_order', '>=', previous_date_start), ('date_order', '<=', previous_date_end)]
 
-        extra_domain = []
-        if warehouse_id and warehouse_id != 'all': extra_domain.append(('warehouse_id', '=', int(warehouse_id)))
-        if user_id and user_id != 'all': extra_domain.append(('user_id', '=', int(user_id)))
-        if team_id and team_id != 'all': extra_domain.append(('team_id', '=', int(team_id)))
-        if category_id and category_id != 'all': extra_domain.append(
+        and_tuples = []
+        if warehouse_id and warehouse_id != 'all': and_tuples.append(('warehouse_id', '=', int(warehouse_id)))
+        if user_id and user_id != 'all': and_tuples.append(('user_id', '=', int(user_id)))
+        if team_id and team_id != 'all': and_tuples.append(('team_id', '=', int(team_id)))
+        if category_id and category_id != 'all': and_tuples.append(
             ('order_line.product_id.categ_id', 'child_of', int(category_id)))
-        if country_id and country_id != 'all': extra_domain.append(('partner_id.country_id', '=', int(country_id)))
-        if company_id and company_id != 'all': extra_domain.append(('company_id', '=', int(company_id)))
+        if country_id and country_id != 'all': and_tuples.append(('partner_id.country_id', '=', int(country_id)))
+        if company_id and company_id != 'all': and_tuples.append(('company_id', '=', int(company_id)))
 
-        base_domain = expression.AND([time_domain, extra_domain])
-        nav_domain = expression.AND([base_domain, native_domain]) if native_domain else base_domain
+        if active_filters.get('my_orders'): and_tuples.append(('user_id', '=', self.env.uid))
+        if active_filters.get('quotations'): and_tuples.append(('state', 'in', ['draft', 'sent']))
+        if active_filters.get('sales_orders'): and_tuples.append(('state', 'in', ['sale', 'done']))
+        if active_filters.get('to_invoice'): and_tuples.append(('invoice_status', '=', 'to invoice'))
 
+        if custom_domain_list:
+            for c_filter in custom_domain_list:
+                val = c_filter['value']
+                f_type = c_filter.get('type')
+                if f_type in ['integer', 'float', 'monetary'] and isinstance(val, str) and val.replace('.', '',
+                                                                                                       1).isdigit():
+                    val = float(val)
+                elif f_type == 'boolean':
+                    val = True if str(val) == '1' else False
+                and_tuples.append((c_filter['field'], c_filter['operator'], val))
+
+        final_domain_list = [time_domain]
+        prev_domain_list = [prev_time_domain]
+
+        if and_tuples:
+            final_domain_list.append(and_tuples)
+            prev_domain_list.append(and_tuples)
+
+        if search_query:
+            search_domain = ['|', ('name', 'ilike', search_query), ('partner_id.name', 'ilike', search_query)]
+            final_domain_list.append(search_domain)
+            prev_domain_list.append(search_domain)
+
+        nav_domain = expression.AND(final_domain_list)
         all_period_orders = self.env['sale.order'].search(nav_domain)
 
         if state and state != 'all':
@@ -86,18 +144,32 @@ class SalesDashboard(models.Model):
         else:
             orders = all_period_orders.filtered(lambda o: o.state != 'cancel')
 
-        total_revenue = sum(orders.mapped('amount_total'))
+        # 1. Total Revenue & AOV (Untaxed)
+        total_revenue = sum(orders.mapped('amount_untaxed'))
         total_orders = len(orders)
         aov = total_revenue / total_orders if total_orders > 0 else 0
 
-        prev_base_domain = expression.AND([prev_time_domain, extra_domain])
-        prev_nav_domain = expression.AND([prev_base_domain, native_domain]) if native_domain else prev_base_domain
+        prev_nav_domain = expression.AND(prev_domain_list)
+        # 1. توحيد الفلتر عشان يقارن نفس حالات الأوردرات ببعضها
+        if state and state != 'all':
+            prev_orders = self.env['sale.order'].search(prev_nav_domain).filtered(
+                lambda o: o.state in (['draft', 'sent'] if state == 'quotation' else ['sale', 'done']))
+        else:
+            prev_orders = self.env['sale.order'].search(prev_nav_domain).filtered(lambda o: o.state != 'cancel')
 
-        prev_orders = self.env['sale.order'].search(prev_nav_domain).filtered(
-            lambda o: o.state in ['sale', 'done'])
-        prev_revenue = sum(prev_orders.mapped('amount_total'))
-        sales_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
 
+        # حساب الإيراد
+        prev_revenue = sum(prev_orders.mapped('amount_untaxed'))
+
+        # حساب نسبة النمو
+        if prev_revenue > 0:
+            sales_growth = ((total_revenue - prev_revenue) / prev_revenue) * 100
+        elif total_revenue > 0:
+            sales_growth = 100.0
+        else:
+            sales_growth = 0.0
+
+        # 2. Cost, Discount & Profit
         total_cost = 0
         total_discount = 0
         for order in orders:
@@ -110,33 +182,31 @@ class SalesDashboard(models.Model):
         gross_profit = total_revenue - total_cost
         profit_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
 
-        # تم إرجاع الكود الأصلي لحساب المديونية والفواتير لحل مشكلة الأصفار
+        # 3. To Invoice Amount (شامل الضريبة عشان يطابق شاشة أودو)
+        orders_to_invoice = orders.filtered(lambda o: o.invoice_status == 'to invoice')
+        total_invoiced = sum(orders_to_invoice.mapped('amount_total'))
+
+        # 4. Outstanding Debt (إجمالي ديون العملاء الظاهرين في الداش بورد من أي فاتورة)
+        valid_partners = orders.mapped('partner_id').ids
         unpaid_domain = [('move_type', '=', 'out_invoice'), ('state', '=', 'posted'),
-                         ('payment_state', 'in', ['not_paid', 'partial']), ('invoice_date', '>=', current_date_start)]
-        if user_id and user_id != 'all': unpaid_domain.append(('invoice_user_id', '=', int(user_id)))
-        if company_id and company_id != 'all': unpaid_domain.append(('company_id', '=', int(company_id)))
+                         ('payment_state', 'in', ['not_paid', 'partial'])]
 
-        # ربط الـ Search Bar بالفواتير بطريقة آمنة
-        if native_domain:
-            valid_partners = orders.mapped('partner_id').ids
-            if valid_partners:
-                unpaid_domain.append(('partner_id', 'in', valid_partners))
+        if valid_partners:
+            unpaid_domain.append(('partner_id', 'in', valid_partners))
+        else:
+            unpaid_domain.append(('id', '=', -1))  # لو مفيش عملاء، المديونية صفر
 
-        account_moves = self.env['account.move'].search(unpaid_domain)
-        outstanding_receivables = sum(account_moves.mapped('amount_residual'))
+        unpaid_invoices = self.env['account.move'].search(unpaid_domain)
+        outstanding_receivables = sum(unpaid_invoices.mapped('amount_residual'))
 
-        invoiced_domain = [('move_type', '=', 'out_invoice'), ('state', '=', 'posted'),
-                           ('invoice_date', '>=', current_date_start)]
-        if user_id and user_id != 'all': invoiced_domain.append(('invoice_user_id', '=', int(user_id)))
-        if company_id and company_id != 'all': invoiced_domain.append(('company_id', '=', int(company_id)))
+        # Domain to open records when clicking "To Invoice" cards
+        to_invoice_domain = expression.AND([nav_domain, [('invoice_status', '=', 'to invoice')]])
 
-        if native_domain:
-            valid_partners = orders.mapped('partner_id').ids
-            if valid_partners:
-                invoiced_domain.append(('partner_id', 'in', valid_partners))
+        # Domain to open outstanding invoices
+        unpaid_domain = [('id', 'in', unpaid_invoices.ids)] if unpaid_invoices else [('id', '=', -1)]
 
-        total_invoiced = sum(self.env['account.move'].search(invoiced_domain).mapped('amount_total'))
 
+        # 4. Win Rate
         total_quotes = len(all_period_orders)
         won_quotes = len(all_period_orders.filtered(lambda o: o.state in ['sale', 'done']))
         lost_quotes = total_quotes - won_quotes
@@ -150,11 +220,11 @@ class SalesDashboard(models.Model):
 
         for order in orders:
             c_name = order.partner_id.name or 'Unknown'
-            customer_sales[c_name] = customer_sales.get(c_name, 0) + order.amount_total
+            customer_sales[c_name] = customer_sales.get(c_name, 0) + order.amount_untaxed
             day_key = order.date_order.strftime('%Y-%m-%d')
-            if day_key in daily_sales: daily_sales[day_key] += order.amount_total
+            if day_key in daily_sales: daily_sales[day_key] += order.amount_untaxed
             u_name = order.user_id.name or 'Unknown'
-            salesperson_sales[u_name] = salesperson_sales.get(u_name, 0) + order.amount_total
+            salesperson_sales[u_name] = salesperson_sales.get(u_name, 0) + order.amount_untaxed
             for line in order.order_line:
                 p_name = line.product_id.name or 'Unknown'
                 product_sales[p_name] = product_sales.get(p_name, 0) + line.product_uom_qty
@@ -166,11 +236,26 @@ class SalesDashboard(models.Model):
         sorted_salespersons = sorted(salesperson_sales.items(), key=lambda x: x[1], reverse=True)[:5]
         sorted_categories = sorted(category_sales.items(), key=lambda x: x[1], reverse=True)[:5]
 
+        dynamic_chart_labels = []
+        dynamic_chart_data = []
+        if group_by_list:
+            dynamic_chart_dict = {}
+            for order in orders:
+                label_parts = []
+                for gb in group_by_list:
+                    display_val = self._get_field_display_value(order, gb)
+                    label_parts.append(str(display_val))
+                label = " / ".join(label_parts) if label_parts else order.name
+                dynamic_chart_dict[label] = dynamic_chart_dict.get(label, 0) + order.amount_untaxed
+
+            dynamic_chart_labels = list(dynamic_chart_dict.keys())
+            dynamic_chart_data = [round(val, 2) for val in dynamic_chart_dict.values()]
+
         return {
             'total_revenue': round(total_revenue, 2), 'total_orders': total_orders, 'aov': round(aov, 2),
             'sales_growth': round(sales_growth, 2), 'gross_profit': round(gross_profit, 2),
             'profit_margin': round(profit_margin, 2), 'total_discount': round(total_discount, 2),
-            'outstanding_receivables': round(outstanding_receivables, 2), 'total_invoiced': round(total_invoiced, 2),
+            'outstanding_receivables': outstanding_receivables, 'total_invoiced': round(total_invoiced, 2),
             'win_rate': round(win_rate, 1), 'won_quotes': won_quotes, 'lost_quotes': lost_quotes,
             'customer_labels': [i[0] for i in sorted_customers], 'customer_data': [i[1] for i in sorted_customers],
             'product_labels': [i[0] for i in sorted_products], 'product_data': [i[1] for i in sorted_products],
@@ -178,7 +263,8 @@ class SalesDashboard(models.Model):
             'salesperson_labels': [i[0] for i in sorted_salespersons],
             'salesperson_data': [i[1] for i in sorted_salespersons],
             'category_labels': [i[0] for i in sorted_categories], 'category_data': [i[1] for i in sorted_categories],
-            'nav_domain': nav_domain, 'unpaid_domain': unpaid_domain, 'invoiced_domain': invoiced_domain
+            'dynamic_chart_labels': dynamic_chart_labels, 'dynamic_chart_data': dynamic_chart_data,
+            'nav_domain': nav_domain, 'to_invoice_domain': to_invoice_domain
         }
 
     @api.model
@@ -188,27 +274,54 @@ class SalesDashboard(models.Model):
         team_id, category_id = kwargs.get('team_id'), kwargs.get('category_id')
         country_id, company_id = kwargs.get('country_id'), kwargs.get('company_id')
         detailed_excel = kwargs.get('detailed_excel', False)
-        native_domain = kwargs.get('native_domain', [])
 
-        domain = []
-        if date_from and date_to: domain += [('date_order', '>=', f"{date_from} 00:00:00"),
-                                             ('date_order', '<=', f"{date_to} 23:59:59")]
-        if warehouse_id and warehouse_id != 'all': domain.append(('warehouse_id', '=', int(warehouse_id)))
-        if user_id and user_id != 'all': domain.append(('user_id', '=', int(user_id)))
-        if team_id and team_id != 'all': domain.append(('team_id', '=', int(team_id)))
-        if category_id and category_id != 'all': domain.append(
+        search_query = kwargs.get('search_query', '')
+        active_filters = kwargs.get('active_filters', {})
+        custom_domain_list = kwargs.get('custom_domain', [])
+
+        and_tuples = []
+        if date_from and date_to: and_tuples += [('date_order', '>=', f"{date_from} 00:00:00"),
+                                                 ('date_order', '<=', f"{date_to} 23:59:59")]
+        if warehouse_id and warehouse_id != 'all': and_tuples.append(('warehouse_id', '=', int(warehouse_id)))
+        if user_id and user_id != 'all': and_tuples.append(('user_id', '=', int(user_id)))
+        if team_id and team_id != 'all': and_tuples.append(('team_id', '=', int(team_id)))
+        if category_id and category_id != 'all': and_tuples.append(
             ('order_line.product_id.categ_id', 'child_of', int(category_id)))
-        if country_id and country_id != 'all': domain.append(('partner_id.country_id', '=', int(country_id)))
-        if company_id and company_id != 'all': domain.append(('company_id', '=', int(company_id)))
+        if country_id and country_id != 'all': and_tuples.append(('partner_id.country_id', '=', int(country_id)))
+        if company_id and company_id != 'all': and_tuples.append(('company_id', '=', int(company_id)))
 
-        domain = expression.AND([domain, native_domain]) if native_domain else domain
+        if active_filters.get('my_orders'): and_tuples.append(('user_id', '=', self.env.uid))
+        if active_filters.get('quotations'): and_tuples.append(('state', 'in', ['draft', 'sent']))
+        if active_filters.get('sales_orders'): and_tuples.append(('state', 'in', ['sale', 'done']))
+        if active_filters.get('to_invoice'): and_tuples.append(('invoice_status', '=', 'to invoice'))
 
-        orders = self.env['sale.order'].search(domain)
+        if custom_domain_list:
+            for c_filter in custom_domain_list:
+                val = c_filter['value']
+                f_type = c_filter.get('type')
+                if f_type in ['integer', 'float', 'monetary'] and isinstance(val, str) and val.replace('.', '',
+                                                                                                       1).isdigit():
+                    val = float(val)
+                elif f_type == 'boolean':
+                    val = True if str(val) == '1' else False
+                and_tuples.append((c_filter['field'], c_filter['operator'], val))
+
+        final_domain_list = []
+        if and_tuples:
+            final_domain_list.append(and_tuples)
+
+        if search_query:
+            search_domain = ['|', ('name', 'ilike', search_query), ('partner_id.name', 'ilike', search_query)]
+            final_domain_list.append(search_domain)
+
+        domain = expression.AND(final_domain_list) if final_domain_list else []
+
+        all_orders = self.env['sale.order'].search(domain)
         if state and state != 'all':
-            orders = orders.filtered(
+            orders = all_orders.filtered(
                 lambda o: o.state in (['draft', 'sent'] if state == 'quotation' else ['sale', 'done']))
         else:
-            orders = orders.filtered(lambda o: o.state != 'cancel')
+            orders = all_orders.filtered(lambda o: o.state != 'cancel')
 
         export_group = kwargs.get('export_group', 'partner_id')
         export_measures = kwargs.get('export_measures', ['revenue'])
@@ -230,7 +343,6 @@ class SalesDashboard(models.Model):
                     if line_key not in pivot_data:
                         pivot_data[line_key] = {'revenue': 0, 'qty': 0, 'profit': 0, 'discount': 0, 'orders': set(),
                                                 'lines': []}
-
                     pivot_data[line_key]['revenue'] += line.price_subtotal
                     pivot_data[line_key]['qty'] += line.product_uom_qty
                     profit = line.price_subtotal - (line.product_id.standard_price * line.product_uom_qty)
@@ -244,18 +356,18 @@ class SalesDashboard(models.Model):
             else:
                 if key not in pivot_data: pivot_data[key] = {'revenue': 0, 'qty': 0, 'profit': 0, 'discount': 0,
                                                              'orders': set(), 'lines': []}
-                pivot_data[key]['revenue'] += order.amount_total
+                pivot_data[key]['revenue'] += order.amount_untaxed
                 pivot_data[key]['orders'].add(order.id)
                 order_profit, order_disc, order_qty = 0, 0, 0
                 for line in order.order_line:
                     order_qty += line.product_uom_qty
                     order_profit += (line.price_subtotal - (line.product_id.standard_price * line.product_uom_qty))
                     if line.discount > 0: order_disc += (line.price_unit * line.product_uom_qty) * (line.discount / 100)
-                pivot_data[key]['qty'] += order_qty;
-                pivot_data[key]['profit'] += order_profit;
+                pivot_data[key]['qty'] += order_qty
+                pivot_data[key]['profit'] += order_profit
                 pivot_data[key]['discount'] += order_disc
                 if detailed_excel: pivot_data[key]['lines'].append(
-                    {'name': order.name, 'revenue': order.amount_total, 'qty': order_qty, 'profit': order_profit,
+                    {'name': order.name, 'revenue': order.amount_untaxed, 'qty': order_qty, 'profit': order_profit,
                      'discount': order_disc, 'date': str(order.date_order.date())})
 
         output = io.BytesIO()
