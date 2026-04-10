@@ -10,5 +10,30 @@
           action="action_purchase_dashboard_client"
           sequence="1"/>
 
+<record id="view_purchase_dashboard_search" model="ir.ui.view">
+    <field name="name">purchase.dashboard.search</field>
+    <field name="model">purchase.order</field>
+    <field name="arch" type="xml">
+        <search>
+            <field name="name" string="Order Reference"/>
+            <field name="partner_id" string="Vendor"/>
+
+            <field name="price_variance" string="Savings Ratio"/>
+
+            <separator/>
+
+            <filter string="Orders with Savings" name="has_savings"
+                    domain="[('price_variance', '>', 0)]"/>
+
+            <filter string="Loss Orders" name="loss_orders"
+                    domain="[('price_variance', '&lt;', 0)]"/>
+
+            <group expand="0" string="Group By">
+                <filter string="Vendor" name="vendor" context="{'group_by': 'partner_id'}"/>
+            </group>
+        </search>
+    </field>
+</record>
+
     </data>
 </odoo>

@@ -6,16 +6,40 @@ from odoo.exceptions import UserError
 class PurchaseOrderExtension(models.Model):
     _inherit = 'purchase.order'
 
-    price_variance = fields.Float(string="Price Variance", compute="_compute_custom_stats", store=True)
-    touches_count = fields.Integer(string="Touches Count", default=0)
+    price_variance = fields.Float(string="Price Variance", compute="_compute_price_variance", store=True)
+    po_lead_time = fields.Float(string='PO Lead Time (Days)',compute="_compute_po_lead_time",store=True)
     is_emergency = fields.Boolean(string="Is Emergency", compute="_compute_is_emergency", store=True)
+    # ///////////////////////////////////////////////////////////////////////////
 
-    @api.depends('order_line.price_unit')
-    def _compute_custom_stats(self):
+    # compute variance
+    @api.depends('order_line.price_unit', 'requisition_id')
+    def _compute_price_variance(self):
         for rec in self:
+            total_saving = 0.0
+            count = 0
 
-            rec.price_variance = 0.0
+            # إذا كان الأمر مرتبط باتفاقية شراء
+            if rec.requisition_id:
+                for line in rec.order_line:
+                    # البحث عن السطر المناسب في الاتفاقية لنفس المنتج
+                    blanket_line = rec.requisition_id.line_ids.filtered(lambda l: l.product_id == line.product_id)
 
+                    if blanket_line and blanket_line[0].price_unit > 0:
+                        blanket_price = blanket_line[0].price_unit
+                        market_price = line.price_unit
+
+
+                        if market_price > 0:
+                            # معادلة التوفير: (سعر السوق - سعر الاتفاقية) / سعر السوق
+                            line_saving = ((market_price - blanket_price) / market_price)
+                            total_saving += line_saving
+                            count += 1
+
+                rec.price_variance = (total_saving / count ) if count > 0 else 0.0
+            else:
+                rec.price_variance = 0.0
+    # ///////////////////////////////////////////////////////////////////////////
+    # compute emergency
     @api.depends('date_approve', 'date_planned')
     def _compute_is_emergency(self):
         for rec in self:
@@ -25,10 +49,44 @@ class PurchaseOrderExtension(models.Model):
                 rec.is_emergency = diff < 2
             else:
                 rec.is_emergency = False
+
+    # ///////////////////////////////////////////////////////////////////////////
+
+    # Lead time (performance of employees)
+    @api.depends('state', 'date_approve', 'create_date')
+    def _compute_po_lead_time(self):
+        for rec in self:
+            if rec.state in ['purchase', 'done'] and rec.date_approve and rec.create_date:
+                # حساب الفرق بين تاريخ الاعتماد وتاريخ الإنشاء
+                diff = rec.date_approve - rec.create_date
+                # تحويل الفرق لأيام (الساعات يتم تحويلها لكسر عشري)
+                rec.po_lead_time = diff.total_seconds() / 86400.0
+            else:
+                rec.po_lead_time = 0.0
+
+ # ///////////////////////////////////////////////////////////////////////////
+
 class PurchaseDashboard(models.Model):
     _name = 'wb.po.dashboard'
     _description = 'Purchase Dashboard'
 
+    @api.model
+    def _get_employee_performance(self, domain):
+        e_group = self.env['purchase.order'].read_group(
+            domain,
+            ['user_id', 'po_lead_time:avg'],
+            ['user_id']
+        )
+        names = []
+        delays = []
+        sorted_group = sorted(e_group, key=lambda x: x.get('po_lead_time') or 0, reverse=True)[:5]
+
+        for e in sorted_group:
+            if e.get('user_id'):
+                names.append(e['user_id'][1])
+                delays.append(round(e.get('po_lead_time') or 0, 2))
+        return {'names': names, 'delays': delays}
+    # ///////////////////////////////////////////////////////////
     @api.model
     def get_purchase_stats(self, start_date=None, end_date=None, **kwargs):
         if isinstance(start_date, str) and start_date:
@@ -51,27 +109,28 @@ class PurchaseDashboard(models.Model):
             ('state', 'in', ['purchase', 'done'])
         ]
 
-        res = self.env['purchase.order'].read_group(base_domain, ['price_variance:avg', 'touches_count:sum'], [])
+        res = self.env['purchase.order'].read_group(base_domain, ['price_variance:avg','po_lead_time:avg'], [])
         data = res[0] if res else {}
         total_orders = self.env['purchase.order'].search_count(base_domain)
 
         delay_stats = self._get_delay_analysis(base_domain)
-        vendor_perf = self._get_vendor_performance(base_domain)
+        employee_perf = self._get_employee_performance(base_domain)
 
         return {
             'stats': {
                 'avg_savings': round(data.get('price_variance', 0) * 100, 2),
-                'stability_rate': round((data.get('touches_count', 0) / (total_orders or 1)), 2),
+                'avg_lead_time': round(data.get('po_lead_time', 0.0), 2),
                 'emergency_count': self.env['purchase.order'].search_count(base_domain + [('is_emergency', '=', True)]),
                 'total_orders': total_orders,
                 'total_delay_days': round(delay_stats['avg_total_delay'], 2),
             },
             'late_vendor_names': delay_stats['late_names'],
             'late_vendor_values': delay_stats['late_values'],
-            'vendor_labels': vendor_perf['labels'],
-            'chart_vendor_data': vendor_perf['values'],
+            'employee_names': employee_perf['names'],
+            'employee_delays': employee_perf['delays'],
         }
 
+      # vendor delay in delivery (performance of vendors)
     @api.model
     def _get_delay_analysis(self, domain):
         orders = self.env['purchase.order'].search(domain)
@@ -100,3 +159,7 @@ class PurchaseDashboard(models.Model):
         labels = [v['partner_id'][1] for v in v_group if v.get('partner_id')]
         values = [round(v.get('price_variance', 0) * 100, 2) for v in v_group]
         return {'labels': labels, 'values': values}
+
+
+
+

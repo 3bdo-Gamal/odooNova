@@ -20,9 +20,20 @@
                 box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
             }
 
+             /* Inputs and Search */
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; padding: 8px;}
+            .wb-input:focus { border-color: #3b82f6; outline: none; }
+
+            /* Native Search Bar Customization */
+            .wb-native-search .o_searchview { background: #f8fafc; border-radius: 9999px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); padding: 4px 18px; transition: all 0.3s;}
+            .wb-native-search .o_searchview:focus-within { background: #ffffff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+             /* Card Styles */
             .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
             .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+            .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
 
+             /* Icon Box Styles */
             .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
             .icon-primary { background: #eff6ff; color: #3b82f6; }
             .icon-success { background: #f0fdf4; color: #22c55e; }
@@ -52,7 +63,7 @@
 
 
                     <div class="d-flex gap-2">
-                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white" t-on-click="excelsheet">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white" t-on-click="downloadCustomExcel">
                             <i class="fa fa-file-excel-o me-2"></i> Export Excel
                         </button>
                         <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white" t-on-click="downloadPdf">
@@ -66,7 +77,7 @@
 
                 <div class="row mb-4">
                     <div class="col-xl-3 col-md-6 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('savings')">
                             <div class="wb-icon-box icon-primary me-3">
                                 <t t-if="state.stats.avg_savings != 0">
                                     <i class="fa fa-line-chart"></i>
@@ -78,16 +89,20 @@
                             <div>
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Price Variance Status</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_savings"/>%</h4>
-                                <small t-attf-class="fw-bold {{ state.stats.avg_savings > 0 ? 'text-danger' : 'text-success' }}">
-                                    <t t-if="state.stats.avg_savings > 0">Alert!</t>
-                                    <t t-else="">Healthy</t>
+                                <small t-attf-class="fw-bold {{ state.stats.avg_savings > 0 ? 'text-primary' : 'text-danger' }}">
+                                    <t t-if="state.stats.avg_savings > 0">Saving:
+                                        <t t-esc="state.stats.avg_savings"/>%
+                                    </t>
+                                    <t t-else="">No Saving</t>
                                 </small>
+
+
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-3 col-md-6 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('emergency')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-bolt"></i></div>
                             <div>
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Urgent Requests</p>
@@ -97,17 +112,17 @@
                     </div>
 
                     <div class="col-xl-3 col-md-6 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('lead_time')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-edit"></i></div>
                             <div>
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Modification Rate</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="(state.stats.stability_rate * 100).toFixed(1)"/>%</h4>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Lead Time</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_lead_time"/> Days</h4>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-xl-3 col-md-6 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('delay')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-clock-o"></i></div>
                             <div>
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Delivery Delay</p>
@@ -118,16 +133,29 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-12">
+
+                    <div class="col-6">
                         <div class="wb-card p-4">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Top 5 Late Vendors</h5>
+                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Top 5 Late Vendors (Avg Days)</h5>
                             </div>
                             <div style="height: 400px; position: relative;">
                                 <canvas t-ref="delays_chart_container"></canvas>
                             </div>
                         </div>
                     </div>
+
+                       <div class="col-6">
+                        <div class="wb-card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Slowest 5 Employees (Avg Days)</h5>
+                            </div>
+                            <div style="height: 400px; position: relative;">
+                                <canvas t-ref="employee_chart_container"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
