@@ -2,7 +2,6 @@ from odoo import models, fields, api
 from datetime import datetime, timedelta, date
 from odoo.exceptions import UserError
 
-# 1. إضافة الحقول للموديل الأصلي للمشتريات
 class PurchaseOrderExtension(models.Model):
     _inherit = 'purchase.order'
 
@@ -17,11 +16,9 @@ class PurchaseOrderExtension(models.Model):
         for rec in self:
             total_saving = 0.0
             count = 0
-
-            # إذا كان الأمر مرتبط باتفاقية شراء
             if rec.requisition_id:
                 for line in rec.order_line:
-                    # البحث عن السطر المناسب في الاتفاقية لنفس المنتج
+
                     blanket_line = rec.requisition_id.line_ids.filtered(lambda l: l.product_id == line.product_id)
 
                     if blanket_line and blanket_line[0].price_unit > 0:
@@ -30,7 +27,6 @@ class PurchaseOrderExtension(models.Model):
 
 
                         if market_price > 0:
-                            # معادلة التوفير: (سعر السوق - سعر الاتفاقية) / سعر السوق
                             line_saving = ((market_price - blanket_price) / market_price)
                             total_saving += line_saving
                             count += 1
@@ -44,7 +40,7 @@ class PurchaseOrderExtension(models.Model):
     def _compute_is_emergency(self):
         for rec in self:
             if rec.date_approve and rec.date_planned:
-                # حساب الفرق بالأيام
+
                 diff = (rec.date_planned.date() - rec.date_approve.date()).days
                 rec.is_emergency = diff < 2
             else:
@@ -59,7 +55,7 @@ class PurchaseOrderExtension(models.Model):
             if rec.state in ['purchase', 'done'] and rec.date_approve and rec.create_date:
                 # حساب الفرق بين تاريخ الاعتماد وتاريخ الإنشاء
                 diff = rec.date_approve - rec.create_date
-                # تحويل الفرق لأيام (الساعات يتم تحويلها لكسر عشري)
+
                 rec.po_lead_time = diff.total_seconds() / 86400.0
             else:
                 rec.po_lead_time = 0.0
@@ -70,6 +66,42 @@ class PurchaseDashboard(models.Model):
     _name = 'wb.po.dashboard'
     _description = 'Purchase Dashboard'
 
+    # /////////////////////////////////////////////////////////////////////////////
+    # Vendor Concentration Risk
+    @api.model
+    def _get_vendor_concentration_data(self, domain):
+
+        v_group = self.env['purchase.order'].read_group(
+            domain,
+            ['partner_id', 'amount_total:sum'],
+            ['partner_id'],
+            orderby='amount_total desc'
+        )
+
+        labels = []
+        values = []
+        other_amount = 0.0
+
+        for i, v in enumerate(v_group):
+            if v.get('partner_id'):
+                if i < 5:
+                    labels.append(v['partner_id'][1])
+                    values.append(v['amount_total'])
+                else:
+                    other_amount += v['amount_total']
+
+        if other_amount > 0:
+            labels.append('other vendors')
+            values.append(round(other_amount, 2))
+
+        total_spend = sum(values)
+        max_risk = (max(values) / total_spend * 100) if total_spend > 0 else 0
+
+        return {'labels': labels, 'values': values,'max_risk': round(max_risk, 1)}
+
+
+    # /////////////////////////////////////////////////////////////////////////////
+    # Lead time (performance of employees)
     @api.model
     def _get_employee_performance(self, domain):
         e_group = self.env['purchase.order'].read_group(
@@ -111,8 +143,8 @@ class PurchaseDashboard(models.Model):
 
         res = self.env['purchase.order'].read_group(base_domain, ['price_variance:avg','po_lead_time:avg'], [])
         data = res[0] if res else {}
-        total_orders = self.env['purchase.order'].search_count(base_domain)
-
+        # total_orders = self.env['purchase.order'].search_count(base_domain)
+        vendor_risk = self._get_vendor_concentration_data(base_domain)
         delay_stats = self._get_delay_analysis(base_domain)
         employee_perf = self._get_employee_performance(base_domain)
 
@@ -121,13 +153,16 @@ class PurchaseDashboard(models.Model):
                 'avg_savings': round(data.get('price_variance', 0) * 100, 2),
                 'avg_lead_time': round(data.get('po_lead_time', 0.0), 2),
                 'emergency_count': self.env['purchase.order'].search_count(base_domain + [('is_emergency', '=', True)]),
-                'total_orders': total_orders,
+                # 'total_orders': total_orders,
                 'total_delay_days': round(delay_stats['avg_total_delay'], 2),
+                'max_risk': vendor_risk['max_risk'],
             },
             'late_vendor_names': delay_stats['late_names'],
             'late_vendor_values': delay_stats['late_values'],
             'employee_names': employee_perf['names'],
             'employee_delays': employee_perf['delays'],
+            'vendor_spending_labels': vendor_risk['labels'],
+            'vendor_spending_values': vendor_risk['values'],
         }
 
       # vendor delay in delivery (performance of vendors)

@@ -9,7 +9,8 @@ import { useSubEnv } from "@odoo/owl";
 const { Component, onWillStart, onMounted, useState, useRef } = owl;
 
 export class PurchaseDashboard extends Component {
-    static components = { SearchBar };
+    static components = {SearchBar};
+
     setup() {
         this.orm = useService("orm");
         this.actionService = useService("action");
@@ -17,19 +18,20 @@ export class PurchaseDashboard extends Component {
         this.userService = useService("user");
 
         this.searchModel = new SearchModel(this.env, {
-        resModel: "purchase.order",
-        user: this.userService,
-        orm: this.orm,
-        view: this.viewService,
-    });
+            resModel: "purchase.order",
+            user: this.userService,
+            orm: this.orm,
+            view: this.viewService,
+        });
 
         useSubEnv({
-        searchModel: this.searchModel,
-    });
+            searchModel: this.searchModel,
+        });
 
 
         this.employeeRef = useRef("employee_chart_container");
-        this.delayRef = useRef("delays_chart_container"); // مرجع الرسم البياني
+        this.delayRef = useRef("delays_chart_container");
+        this.vendorChartRef = useRef("vendorChartCanvas");
 
         const today = new Date();
         const lastWeek = new Date(today);
@@ -46,17 +48,29 @@ export class PurchaseDashboard extends Component {
                 avg_savings: 0,
                 avg_lead_time: 0.0,
                 emergency_count: 0,
-                total_orders: 0,
                 total_delay_days: 0,
+                max_risk: 0.0,
+
+                vendor_spending_labels: [],
+                vendor_spending_values: [],
+
+                late_vendor_names: [],
+                late_vendor_values: [],
+                employee_names: [],
+                employee_delays: [],
+
                 start_date: savedStartDate,
                 end_date: savedEndDate,
                 today_date: todayStr,
-                show_total_orders: true,
+
+                // show_total_orders: true,
                 show_avg_savings: true,
                 show_avg_lead_time: true,
                 show_emergency_count: true,
                 show_total_delay_days: true,
+                show_max_risk: true,
             },
+            top_vendor_name: "",
             showSidebar: false,
         });
 
@@ -65,23 +79,18 @@ export class PurchaseDashboard extends Component {
 
 
         onWillStart(async () => {
-    //         await this.searchModel.load({
-    //         resModel: "purchase.order",
-    //         views: [[await this.env.ref("app_one.view_purchase_dashboard_search"), "search"]],
-    // });
+
             const viewData = await this.orm.searchRead("ir.model.data", [
-        ["module", "=", "app_one"],
-        ["name", "=", "view_purchase_dashboard_search"]
-    ], ["res_id"]);
+                ["module", "=", "app_one"],
+                ["name", "=", "view_purchase_dashboard_search"]
+            ], ["res_id"]);
 
-    const viewId = viewData.length > 0 ? viewData[0].res_id : false;
+            const viewId = viewData.length > 0 ? viewData[0].res_id : false;
 
-    // 2. تحميل الـ searchModel باستخدام الـ ID الرقمي
-    await this.searchModel.load({
-        resModel: "purchase.order",
-        views: [[viewId, "search"]],
-    });
-
+            await this.searchModel.load({
+                resModel: "purchase.order",
+                views: [[viewId, "search"]],
+            });
 
 
             await loadJS("/web/static/lib/Chart/Chart.js");
@@ -99,79 +108,97 @@ export class PurchaseDashboard extends Component {
 
 //     //////////////////////////////////////////////////////////////
 
-openKpiAction(type) {
-    let actionData = {
-        type: 'ir.actions.act_window',
-        res_model: 'purchase.order',
-        views: [[false, 'list'], [false, 'pivot'], [false, 'form']],
-        view_mode: 'tree,pivot,form',
-        target: 'current',
-        context: {}
-    };
-    let activeDomain = [
+    openKpiAction(type,vendorName = null) {
+        let actionData = {
+            type: 'ir.actions.act_window',
+            res_model: 'purchase.order',
+            views: [[false, 'list'], [false, 'pivot'], [false, 'form']],
+            view_mode: 'tree,pivot,form',
+            target: 'current',
+            context: {}
+        };
+        let activeDomain = [
 
-        ['date_order', '>=', this.state.stats.start_date],
-        ['date_order', '<=', this.state.stats.end_date]
-    ];
-    switch(type) {
-       case 'savings':
-            actionData.name = 'Saving Analysis';
-            actionData.res_model = 'purchase.requisition';
-            actionData.view_mode = 'tree,form';
-            actionData.views = [[false, 'list'], [false, 'form']];
-            actionData.context = {
-                'search_default_ongoing': 1,
-        'pivot_row_groupby': ['product_id'], // تجميع بالمنتج
-        'pivot_measures': ['price_variance'],
-            };
-            actionData.domain = [
-        ['state', '!=', 'cancel'],
-        ['type_id.exclusive', '=', 'exclusive']
-    ];
-            break;
+            ['date_order', '>=', this.state.stats.start_date],
+            ['date_order', '<=', this.state.stats.end_date]
+        ];
+        switch (type||vendorName) {
+            case 'savings':
+                actionData.name = 'Saving Analysis';
+                actionData.res_model = 'purchase.requisition';
+                actionData.view_mode = 'tree,form';
+                actionData.views = [[false, 'list'], [false, 'form']];
+                actionData.context = {
+                    'search_default_ongoing': 1,
+                    'pivot_row_groupby': ['product_id'], // تجميع بالمنتج
+                    'pivot_measures': ['price_variance'],
+                };
+                actionData.domain = [
+                    ['state', '!=', 'cancel'],
+                    ['type_id.exclusive', '=', 'exclusive']
+                ];
+                break;
 
 
-        case 'emergency':
-            actionData.name = 'Uragant Orders';
-            actionData.view_mode = 'tree,form';
-            actionData.context = { 'pivot_measures': ['is_emergency'],};
-            actionData.domain = [...activeDomain,['is_emergency', '=', true], ['state', '!=', 'cancel']];
-            break;
+            case 'emergency':
+                actionData.name = 'Uragant Orders';
+                actionData.view_mode = 'tree,form';
+                actionData.context = {'pivot_measures': ['is_emergency'],};
+                actionData.domain = [...activeDomain, ['is_emergency', '=', true], ['state', '!=', 'cancel']];
+                break;
 
-           case 'lead_time':
-            actionData.name = 'Avg Lead Time';
-            actionData.view_mode = 'pivot,tree';
-            actionData.domain = [...activeDomain,['state', 'in', ['purchase', 'done']], ['date_approve', '!=', false]];
-            actionData.context = {
-                 'pivot_row_groupby': ['user_id'], // التجميع حسب الموظف (المستخدم)
-                 'pivot_measures': ['po_lead_time'], // قياس وقت الاعتماد
-    };
-        break;
+            case 'lead_time':
+                actionData.name = 'Avg Lead Time';
+                actionData.view_mode = 'pivot,tree';
+                actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']], ['date_approve', '!=', false]];
+                actionData.context = {
+                    'pivot_row_groupby': ['user_id'],
+                    'pivot_measures': ['po_lead_time'],
+                };
+                break;
 
-        case 'delay':
-            actionData.name = 'Vendor Delivery Delay';
-            actionData.view_mode = 'pivot,tree';
-            actionData.domain = [...activeDomain,['state', 'in', ['purchase', 'done']]];
-            actionData.context = {
-                'pivot_row_groupby': ['partner_id'],
-                'pivot_measures': ['vendor_delays'],
-            };
-            break;
+            case 'delay':
+                actionData.name = 'Vendor Delivery Delay';
+                actionData.view_mode = 'pivot,tree';
+                actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']]];
+                actionData.context = {
+                    'pivot_row_groupby': ['partner_id'],
+                    'pivot_measures': ['vendor_delays'],
+                };
+                break;
 
-        default:
-            actionData.views = [[false, 'tree'], [false, 'form']];
-            actionData.view_mode = 'tree,form';
-            actionData.name = 'Purchase Orders';
+            case 'vendor_max_risk':
+                const targetVendor = vendorName || this.state.top_vendor_name;
+                actionData.name = 'Top Concentrated Vendor: ' + (targetVendor || '');
+                actionData.view_mode = 'pivot,tree,form';
+                if (targetVendor) {
+                    actionData.domain = [...activeDomain,
+                                        ['partner_id', '=', targetVendor],
+                                        ['state', 'in', ['purchase', 'done']]];
+                } else {
+                    actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']]];
+                }
+
+                actionData.context = {
+                  'pivot_row_groupby': ['partner_id'],
+                    'pivot_measures': ['amount_total'],
+                };
+
+                break;
+
+
+            default:
+                actionData.views = [[false, 'tree'], [false, 'form']];
+                actionData.view_mode = 'tree,form';
+                actionData.name = 'Purchase Orders';
+        }
+
+        this.actionService.doAction(actionData);
     }
-
-    this.actionService.doAction(actionData);
-}
-
-
 
 
     async downloaddata() {
-         const searchDomain = this.searchModel.domain || [];
+        const searchDomain = this.searchModel.domain || [];
         try {
             if (this.state.stats.start_date > this.state.stats.end_date) {
                 alert("Start date must be before end date");
@@ -190,12 +217,18 @@ openKpiAction(type) {
                 this.state.stats.emergency_count = data.stats.emergency_count;
                 this.state.stats.total_orders = data.stats.total_orders;
                 this.state.stats.total_delay_days = data.stats.total_delay_days;
+                this.state.stats.max_risk = data.stats.max_risk;
 
                 this.employeeNames = data.employee_names;
                 this.employeeDelays = data.employee_delays;
                 this.lateVendorNames = data.late_vendor_names;
                 this.lateVendorValues = data.late_vendor_values;
+                this.vendorSpendingLabels = data.vendor_spending_labels;
+                this.vendorSpendingValues = data.vendor_spending_values
 
+                if (data.vendor_spending_labels && data.vendor_spending_labels.length > 0) {
+                        this.state.top_vendor_name = data.vendor_spending_labels[0];
+                }
 
             }
         } catch (e) {
@@ -204,6 +237,7 @@ openKpiAction(type) {
             throw e;
         }
     }
+    ////////////////////////////////////////////////////////////////////////////////////
 
     async onChangeStartDate(ev) {
         this.state.stats.start_date = ev.target.value;
@@ -224,68 +258,80 @@ openKpiAction(type) {
     }
 
     async onChangePeriod() {
-    const period = this.state.stats.period;
+        const period = this.state.stats.period;
 
-    const today = new Date();
-    const formatDate = (date) => date.toISOString().split('T')[0];
+        const today = new Date();
+        const formatDate = (date) => date.toISOString().split('T')[0];
 
-    if (period !== "0") {
-        const startDate = new Date();
-        startDate.setDate(today.getDate() - parseInt(period));
+        if (period !== "0") {
+            const startDate = new Date();
+            startDate.setDate(today.getDate() - parseInt(period));
 
-        this.state.stats.start_date = formatDate(startDate);
-        this.state.stats.end_date = formatDate(today);
+            this.state.stats.start_date = formatDate(startDate);
+            this.state.stats.end_date = formatDate(today);
+        }
+
+        await this.downloaddata();
+        this.renderChart();
     }
 
-    await this.downloaddata();
-    this.renderChart();
-}
-
-
-     async downloadCustomExcel() {
+    ////////////////////////////////////////////////////////////////////////////////////
+    async downloadCustomExcel() {
         const data = await this.orm.call("wb.po.dashboard", "get_purchase_stats", [], {
             start_date: this.state.stats.start_date,
             end_date: this.state.stats.end_date,
         });
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Purchase Order Pivot Data');
-        worksheet.columns = [ {width: 35}, {width: 25} ];
+        worksheet.columns = [{width: 35}, {width: 25}];
         worksheet.addRow(["From Date", this.state.stats.start_date]);
         worksheet.addRow(["To Date", this.state.stats.end_date]);
         const headerRow = worksheet.addRow(["Key Performance Indicator", "Value"]);
         headerRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'} };
-            cell.font = { color: {argb: 'FFFFFFFF'}, bold: true, size: 13 };
+            cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'}};
+            cell.font = {color: {argb: 'FFFFFFFF'}, bold: true, size: 13};
         });
 
         if (this.state.stats.show_avg_savings) worksheet.addRow(["Price Variance Status", data.stats.avg_savings + "%"]);
         if (this.state.stats.show_avg_lead_time) worksheet.addRow(["Avg Lead Time", data.stats.avg_lead_time + " Day(s)"]);
         if (this.state.stats.show_emergency_count) worksheet.addRow(["Urgent Requests", data.stats.emergency_count]);
         if (this.state.stats.show_total_delay_days) worksheet.addRow(["Avg Delivery Delay", data.stats.total_delay_days + "Day(s)"]);
-        // if (this.state.stats.show_total_orders) worksheet.addRow(["Total Orders", data.stats.total_orders + " Day(s)"]);
-
-
+        if (this.state.stats.show_max_risk) worksheet.addRow(["Total Orders", data.stats.max_risk + " %"]);
 
 
         if (data.late_vendor_names && data.late_vendor_values) {
-             const headerRow = worksheet.addRow(["Top 5 Late Vendors", "Value"]);
-             headerRow.eachCell((cell) => {
-                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'} };
-                     cell.font = { color: {argb: 'FFFFFFFF'}, bold: true, size: 13 };
-                     });
+            const headerRow = worksheet.addRow(["Top 5 Late Vendors", "Value"]);
+            headerRow.eachCell((cell) => {
+                cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'}};
+                cell.font = {color: {argb: 'FFFFFFFF'}, bold: true, size: 13};
+            });
             for (let i = 0; i < data.late_vendor_names.length; i++) {
-                    worksheet.addRow([data.late_vendor_names[i], data.late_vendor_values[i]]);
+                worksheet.addRow([data.late_vendor_names[i], data.late_vendor_values[i]]);
             }
         }
 
-                if (data.employee_names && data.employee_delays) {
-             const headerRow = worksheet.addRow(["Top 5 Late Vendors", "Value"]);
-             headerRow.eachCell((cell) => {
-                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'} };
-                     cell.font = { color: {argb: 'FFFFFFFF'}, bold: true, size: 13 };
-                     });
+        if (data.employee_names && data.employee_delays) {
+            const headerRow = worksheet.addRow(["Top 5 Late Employees", "Value"]);
+            headerRow.eachCell((cell) => {
+                cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'}};
+                cell.font = {color: {argb: 'FFFFFFFF'}, bold: true, size: 13};
+            });
             for (let i = 0; i < data.employee_names.length; i++) {
-                    worksheet.addRow([data.employee_names[i], data.employee_delays[i]]);
+                worksheet.addRow([data.employee_names[i], data.employee_delays[i]]);
+            }
+        }
+
+        if (data.vendor_spending_labels && data.vendor_spending_values) {
+            const headerRow = worksheet.addRow(["Vendor Concentration", "Percentage (%)"]);
+            headerRow.eachCell((cell) => {
+                cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'}};
+                cell.font = {color: {argb: 'FFFFFFFF'}, bold: true, size: 13};
+            });
+            const totalAmount = data.vendor_spending_values.reduce((a, b) => a + b, 0);
+            for (let i = 0; i < data.vendor_spending_labels.length; i++) {
+                let rawValue = data.vendor_spending_values[i];
+                let percentage = totalAmount > 0 ? ((rawValue / totalAmount) * 100).toFixed(1) : 0;
+                worksheet.addRow([data.vendor_spending_labels[i],percentage + "%"]);
             }
         }
 
@@ -307,10 +353,8 @@ openKpiAction(type) {
 
         doc.setFontSize(11);
         doc.setTextColor(50, 50, 50);
-        let currentY = 30;
-        currentY += 7;
-        doc.text(`From Date: ${this.state.stats.start_date}      To Date: ${this.state.stats.end_date}`, 14, currentY);
-        currentY += 7;
+        doc.text(`From Date: ${this.state.stats.start_date}      To Date: ${this.state.stats.end_date}`, 14, 30);
+
 
         const kpiBody = [
             ["Total Orders", this.state.stats.total_orders],
@@ -318,40 +362,77 @@ openKpiAction(type) {
             ["Urgent Requests", this.state.stats.emergency_count],
             ["Price Variance Status", this.state.stats.avg_savings + "%"],
             ["Avg Delivery Delay", this.state.stats.total_delay_days + "Day(s)"],
+            ["Max Vendor Concentration", this.state.stats.max_risk + "%"],
 
 
         ];
         doc.autoTable({
-            startY: currentY + 3,
+            startY: 40,
             head: [['Key Performance Indicator', 'Value']],
             body: kpiBody,
             headStyles: {fillColor: [0, 123, 255], fontSize: 12},
             styles: {fontSize: 11, cellPadding: 4},
             alternateRowStyles: {fillColor: [245, 245, 245]}
         });
-
-        const chartBody = [];
+        // late vendor
+        let currentY = doc.lastAutoTable.finalY+ 15;
+        const lateVendorBody = [];
         if (this.lateVendorNames && this.lateVendorValues) {
-            for (let i = 0; i < this.lateVendorNames.length; i++) {
-                chartBody.push([this.lateVendorNames[i], this.lateVendorValues[i] + " Day(s)"]);
+        for (let i = 0; i < this.lateVendorNames.length; i++) {
+            lateVendorBody.push([this.lateVendorNames[i], this.lateVendorValues[i] + " Day(s)"]);
             }
         }
-        if (this.employeeNames && this.employeeDelays) {
-            for (let i = 0; i < this.employeeNames.length; i++) {
-                chartBody.push([this.employeeNames[i], this.employeeDelays[i] + " Day(s)"]);
-            }
+
+        doc.autoTable({
+        startY: currentY,
+        head: [['Top 5 Late Vendors', 'Avg Delay Days']],
+        body: lateVendorBody,
+        headStyles: { fillColor: [255, 193, 7], textColor: [0, 0, 0] }, // لون أصفر مثل الرسمة
+        styles: { fontSize: 11, cellPadding: 4 }
+    });
+
+         // late employees
+         currentY = doc.lastAutoTable.finalY + 15;
+    const employeeBody = [];
+    if (this.employeeNames && this.employeeDelays) {
+        for (let i = 0; i < this.employeeNames.length; i++) {
+            employeeBody.push([this.employeeNames[i], this.employeeDelays[i] + " Day(s)"]);
         }
-            doc.autoTable({
-                startY: doc.lastAutoTable.finalY + 15,
-                head: [[`Top 5 Late Vendors`, 'Number of days']],
-                body: chartBody,
-                headStyles: {fillColor: [0, 123, 255], fontSize: 12},
-                styles: {fontSize: 11, cellPadding: 4},
-                alternateRowStyles: {fillColor: [245, 245, 245]}
-            });
-        doc.save(`PO_Analysis_${this.state.today_date}.pdf`);
+    }
+        doc.autoTable({
+        startY: currentY,
+        head: [['Slowest 5 Employees', 'Avg Lead Time']],
+        body: employeeBody,
+        headStyles: { fillColor: [239, 68, 68] },
+        styles: { fontSize: 11, cellPadding: 4 }
+    });
+
+       //concentration vendor
+       currentY = doc.lastAutoTable.finalY + 15;
+    const concentrationBody = [];
+    if (this.vendorSpendingLabels && this.vendorSpendingValues) {
+        const totalAmount = this.vendorSpendingValues.reduce((a, b) => a + b, 0);
+
+        for (let i = 0; i < this.vendorSpendingLabels.length; i++) {
+            let val = this.vendorSpendingValues[i];
+            let percentage = totalAmount > 0 ? ((val / totalAmount) * 100).toFixed(1) : 0;
+            concentrationBody.push([this.vendorSpendingLabels[i], percentage + "%"]);
+        }
     }
 
+       doc.autoTable({
+        startY: currentY,
+        head: [['Vendor Concentration', 'Percentage (%)']],
+        body: concentrationBody,
+        headStyles: { fillColor: [78, 115, 223] },
+        styles: { fontSize: 11, cellPadding: 4 }
+    });
+        doc.save(`PO_Analysis_${this.state.today_date}.pdf`);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////
+
+
+    // /////////////////////////////////////////////////////////////////////////////////////////////
     // Charts
     renderChart() {
         const delayCtx = this.delayRef.el;
@@ -375,6 +456,16 @@ openKpiAction(type) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick:(event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const vendorName = this.vendorSpendingLabels[index];
+
+                            if (vendorName && vendorName !== 'Other Vendors') {
+                                this.openKpiAction("delay",vendorName);
+                            }
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true
@@ -384,9 +475,9 @@ openKpiAction(type) {
             });
         }
 
-    //     ///////////////////////////////////////////////////
+        //     ///////////////////////////////////////////////////
 
-       const ctx = this.employeeRef.el;
+        const ctx = this.employeeRef.el;
 
         if (ctx && this.employeeDelays) {
             if (ctx.chartInstance) {
@@ -407,6 +498,16 @@ openKpiAction(type) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick:(event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const vendorName = this.vendorSpendingLabels[index];
+
+                            if (vendorName && vendorName !== 'Other Vendors') {
+                                this.openKpiAction("lead_time",vendorName);
+                            }
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true
@@ -417,9 +518,57 @@ openKpiAction(type) {
             });
         }
 
-    }
+        //     ////////////////////////////////////////////////////////////
+        //     pie chart
+        const vctx = this.vendorChartRef.el;
+        if (vctx && this.vendorSpendingValues) {
+            if (vctx.chartInstance) {
+                vctx.chartInstance.destroy();
+            }
+            vctx.chartInstance = new window.Chart(vctx, {
+                type: 'pie',
+                data: {
+                    labels: this.vendorSpendingLabels,
+                    datasets: [{
+                        data: this.vendorSpendingValues,
+                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick:(event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const vendorName = this.vendorSpendingLabels[index];
 
+                            if (vendorName && vendorName !== 'Other Vendors') {
+                                this.openKpiAction("vendor_max_risk",vendorName);
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    let value = context.raw;
+                                    let total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                    let percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return label + ': ' + percentage;
+                                }
+                            }
+                        },
+                        legend: {position: 'bottom'}
+                    }
+                }
+            });
+        }
+    }
 }
+
+
+
 
 
 PurchaseDashboard.template = "purchase_orders_dashboard_template";
