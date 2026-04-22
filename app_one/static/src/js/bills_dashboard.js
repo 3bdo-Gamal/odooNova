@@ -35,31 +35,29 @@ export class PurchaseBillsDashboard extends Component {
             showSidebar: true,
             showExportModal: false,
 
-
-            filter_options: { vendors: [], journals: [], categories: [], locations: [] },
+            filter_options: { vendors: [], journals: [], payment_terms: [], categories: [], locations: [] },
             filters: {
                 vendor_id: savedState.vendor_id || "all",
                 journal_id: savedState.journal_id || "all",
+                payment_term_id: savedState.payment_term_id || "all",
                 category_id: savedState.category_id || "all",
                 location_id: savedState.location_id || "all"
             },
-                period: "30", // (Last Month) Default value
-    date_from: "",
-    date_to: "",
-    kpi_data: {
-        cards: { total_bills_count: 0, total_bills_amount: "$0", upcoming_payables: "$0", avg_dpo: 0, late_bills_ratio: 0, wo_po_ratio: 0 },
-        tables: { qty_variance_pivot: [] },
-        charts: { trend: {}, status: {}, vendor: {}, lead_time: {}, price_var: {} }
-    },
-    active_filters: {
-        state_posted: false, state_draft: false, pay_not_paid: false,
-        pay_paid: false, is_overdue: false, has_po: false, no_po: false
-    }
-});
+            period: "30",
+            date_from: "",
+            date_to: "",
+            kpi_data: {
+                cards: { total_bills_count: 0, total_bills_amount: "$0", upcoming_payables: "$0", avg_dpo: 0, late_bills_ratio: 0, wo_po_ratio: 0 },
+                tables: { qty_variance_pivot: [] },
+                charts: { trend: {}, status: {}, vendor: {}, lead_time: {}, price_var: {} }
+            },
+            active_filters: {
+                state_posted: false, state_draft: false, pay_not_paid: false,
+                pay_paid: false, is_overdue: false, has_po: false, no_po: false
+            }
+        });
 
-
-
-        // تفعيل الـ Search Model الأصلي لأودو (شريط البحث بالسهم والاقتراحات)
+        // Initialize the Native Odoo Search Model
         this.searchModel = new SearchModel(this.env, { user: useService("user"), orm: this.orm, view: this.viewService });
         useSubEnv({ searchModel: this.searchModel });
 
@@ -67,26 +65,21 @@ export class PurchaseBillsDashboard extends Component {
             await loadJS("/web/static/lib/Chart/Chart.js");
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js");
 
-            // جلب الموردين واليوميات من الداتا بيز
+            // Fetch Sidebar filter options
             this.state.filter_options = await this.orm.call("wb.purchase.bills.dashboard", "get_filter_options", []);
 
             try {
-                // جلب الـ Search View الخاص بفواتير الموردين
                 const views = await this.orm.call("account.move", "get_views", [], { views: [[false, "search"]], options: { toolbar: false, action_id: false } });
-
-                // تنظيف الـ View من الجروب باي ليكون فلتر فقط
-                let cleanSearchArch = views.views.search.arch.replace(/<group[^>]*>.*?<\/group>/gis, '').replace(/<filter [^>]*context="\{[^}]*'group_by'[^}]*\}"[^>]*\/>/gis, '');
 
                 await this.searchModel.load({
                     resModel: "account.move",
-                    context: { default_move_type: 'in_invoice' }, // التركيز على فواتير المشتريات فقط
+                    context: { default_move_type: 'in_invoice' },
                     searchViewId: views.views.search.id,
-                    searchViewArch: cleanSearchArch,
+                    searchViewArch: views.views.search.arch,
                     searchViewFields: views.models["account.move"],
-                    searchMenuTypes: ["filter"] // إظهار الفلاتر فقط في السهم الجانبي
+                    searchMenuTypes: ["filter", "favorite"]
                 });
 
-                // تحديث البيانات عند أي تغيير في شريط البحث
                 this.searchModel.addEventListener("update", () => { this.fetchData(); });
             } catch (error) {
                 console.error("Search model error:", error);
@@ -116,13 +109,14 @@ export class PurchaseBillsDashboard extends Component {
     toggleSidebar() { this.state.showSidebar = !this.state.showSidebar; }
     openExportModal() { this.state.showExportModal = true; }
     closeExportModal() { this.state.showExportModal = false; }
+
     async applyDateFilter() {
-        this.state.period = "0"; // تصفير الـ Period عند استخدام التواريخ المخصصة
+        this.state.period = "0";
         await this.fetchData();
     }
 
     async onChangePeriod() {
-        this.state.date_from = ""; // تصفير التواريخ المخصصة عند استخدام الـ Period
+        this.state.date_from = "";
         this.state.date_to = "";
         await this.fetchData();
     }
@@ -133,33 +127,31 @@ export class PurchaseBillsDashboard extends Component {
     }
 
     async fetchData(dateFrom = null, dateTo = null) {
+        const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
 
-    const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
-
-    try {
-        const kwargs = {
+        try {
+            const kwargs = {
                 period: parseInt(this.state.period) || 0,
                 date_from: this.state.date_from || false,
                 date_to: this.state.date_to || false,
                 vendor_id: this.state.filters.vendor_id,
                 journal_id: this.state.filters.journal_id,
+                payment_term_id: this.state.filters.payment_term_id,
                 category_id: this.state.filters.category_id,
                 location_id: this.state.filters.location_id,
                 active_filters: this.state.active_filters,
                 native_domain: searchDomain
-        };
+            };
 
-        const data = await this.orm.call("wb.purchase.bills.dashboard", "get_dashboard_data", [], kwargs);
-        if (data) {
-            this.state.kpi_data = data;
-            this.renderCharts();
-        }
-    } catch (error) { console.error("Error:", error); }
+            const data = await this.orm.call("wb.purchase.bills.dashboard", "get_dashboard_data", [], kwargs);
+            if (data) {
+                this.state.kpi_data = data;
+                this.renderCharts();
+            }
+        } catch (error) { console.error("Error:", error); }
 
         if(!dateFrom) dateFrom = this.filterRefs.date_from.el ? this.filterRefs.date_from.el.value : this.defaultDateFrom;
         if(!dateTo) dateTo = this.filterRefs.date_to.el ? this.filterRefs.date_to.el.value : this.defaultDateTo;
-
-
     }
 
     async onApplyFilter() {
@@ -172,11 +164,16 @@ export class PurchaseBillsDashboard extends Component {
         const dateTo = this.filterRefs.date_to.el ? this.filterRefs.date_to.el.value : "";
         const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
 
+        // FIXED: Added all the missing filters to the Excel Export
         const attachmentId = await this.orm.call("wb.purchase.bills.dashboard", "export_bills_excel", [], {
+            period: parseInt(this.state.period) || 0,
             date_from: dateFrom,
             date_to: dateTo,
             vendor_id: this.state.filters.vendor_id,
             journal_id: this.state.filters.journal_id,
+            payment_term_id: this.state.filters.payment_term_id,
+            category_id: this.state.filters.category_id,
+            location_id: this.state.filters.location_id,
             active_filters: this.state.active_filters,
             native_domain: searchDomain
         });
@@ -272,15 +269,22 @@ export class PurchaseBillsDashboard extends Component {
             domain.push(['move_id.invoice_date', '>=', dateFrom], ['move_id.invoice_date', '<=', dateTo]);
         }
 
+        // Apply Sidebar Dropdown Filters to the Drill-down Actions
         if (this.state.filters.vendor_id !== "all") {
             if (res_model === 'account.move') domain.push(['partner_id', '=', parseInt(this.state.filters.vendor_id)]);
             else domain.push(['move_id.partner_id', '=', parseInt(this.state.filters.vendor_id)]);
         }
-
         if (this.state.filters.journal_id !== "all") {
             if (res_model === 'account.move') domain.push(['journal_id', '=', parseInt(this.state.filters.journal_id)]);
             else domain.push(['move_id.journal_id', '=', parseInt(this.state.filters.journal_id)]);
         }
+
+        // FIXED: Added Payment Term Filter for drill-down action
+        if (this.state.filters.payment_term_id !== "all") {
+            if (res_model === 'account.move') domain.push(['invoice_payment_term_id', '=', parseInt(this.state.filters.payment_term_id)]);
+            else domain.push(['move_id.invoice_payment_term_id', '=', parseInt(this.state.filters.payment_term_id)]);
+        }
+
         if (this.state.filters.category_id !== "all") {
             if (res_model === 'account.move') domain.push(['invoice_line_ids.product_id.categ_id', 'child_of', parseInt(this.state.filters.category_id)]);
             else domain.push(['product_id.categ_id', 'child_of', parseInt(this.state.filters.category_id)]);
@@ -290,7 +294,6 @@ export class PurchaseBillsDashboard extends Component {
             else domain.push(['purchase_line_id.order_id.picking_type_id.default_location_dest_id', 'child_of', parseInt(this.state.filters.location_id)]);
         }
 
-        // دمج الدومين الخاص بشريط البحث (Native Search Bar)
         const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
         if (searchDomain.length > 0) {
             domain = domain.concat(searchDomain);

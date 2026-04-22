@@ -17,10 +17,12 @@
         'views/inventory_view.xml',
         'views/hr_view.xml',
         'views/PO.xml',
+        'views/bills_search.xml'
     ],
 
     "assets": {
         "web.assets_backend": [
+            # "app_one/static/lib/html2pdf.bundle.min.js"
             "app_one/static/src/js/bills_dashboard.js",
             "app_one/static/src/xml/bills_dashboard.xml",
             "app_one/static/src/js/dashboard.js",

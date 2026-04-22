@@ -14,8 +14,17 @@
             .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
             /* Header Styles */
-            .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); }
-
+.wb-glassy-header {
+                position: relative;
+                z-index: 1050;
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 1.25rem;
+                padding: 1rem 1.5rem;
+                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+            }
             /* Card Styles */
             .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
             .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
@@ -37,9 +46,24 @@
             .wb-input:focus { border-color: #3b82f6; outline: none; }
 
             /* Native Search Bar Customization */
-            .wb-native-search .o_searchview { background: #f8fafc; border-radius: 9999px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); padding: 4px 18px; transition: all 0.3s;}
-            .wb-native-search .o_searchview:focus-within { background: #ffffff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
+            /* Native Search Bar Customization */
+            .wb-native-search {
+                position: relative;
+                z-index: 1060;
+            }
+            .wb-native-search .o_searchview {
+                background: #f8fafc;
+                border-radius: 9999px;
+                border: 1px solid #e2e8f0;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+                padding: 4px 18px;
+                transition: all 0.3s;
+            }
+            .wb-native-search .o_searchview:focus-within {
+                background: #ffffff;
+                border-color: #93c5fd;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
             /* Chart Hints and Modals */
             .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
             .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
@@ -386,6 +410,17 @@
                             </t>
                         </select>
                     </div>
+<!--                    Payment terms Filter-->
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Payment Terms</label>
+                        <select class="form-select wb-input" t-model="state.filters.payment_term_id" t-on-change="onApplyFilter">
+                            <option value="all">⏳ All Payment Terms</option>
+                            <t t-foreach="state.filter_options?.payment_terms || []" t-as="pt" t-key="pt.id">
+                                <option t-att-value="pt.id"><t t-esc="pt.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Product Category</label>
                         <select class="form-select wb-input" t-model="state.filters.category_id" t-on-change="onApplyFilter">
