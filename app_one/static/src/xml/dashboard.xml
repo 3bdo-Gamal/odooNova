@@ -409,17 +409,25 @@
                         </div>
                     </div>
                     <div class="row mb-4">
-                        <div class="col-lg-4 mb-4">
+                        <div class="col-lg-5 mb-4">
                             <div class="wb-card p-4 h-100">
-                                <h5 class="fw-bold text-dark mb-4"><i class="fa fa-bar-chart me-2 text-primary"></i>Workload Analysis</h5>
-                                <div style="height: 350px; position: relative;">
-                                    <canvas class="my_dashboard_chart"></canvas>
-                                </div>
-                            </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Workload Analysis</h5>
+        <select class="form-select form-select-sm w-auto wb-input rounded-pill px-3" t-model="state.top_workload" t-on-change="onChangeTopFilter">
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="15">Top 15</option>
+            <option value="1000">All</option>
+        </select>
+    </div>
+    <div style="height: 350px; position: relative;">
+        <canvas class="my_dashboard_chart"></canvas>
+    </div>
+</div>
                         </div>
-                        <div class="col-lg-8 mb-4">
+                        <div class="col-lg-7 mb-4">
                             <div class="wb-card p-4 h-100">
-                                <h5 class="fw-bold text-dark mb-4"><i class="fa fa-dot-circle-o me-2 text-indigo"></i>Productivity vs Workload (Correlation Analytics)</h5>
+                                <h5 class="fw-bold text-dark mb-4"><i class="fa fa-dot-circle-o me-2 text-indigo"></i>Productivity vs Workload </h5>
                                 <div style="height: 350px; position: relative;">
                                     <canvas class="scatter_analytics_chart"></canvas>
                                 </div>
@@ -439,35 +447,6 @@
         </div>
     </div>
 </div>
-<t t-if="state.dept_stats_cards and state.dept_stats_cards.length > 0">
-    <h6 class="fw-bold text-dark mb-3 mt-4"><i class="fa fa-users me-2 text-primary"></i>Explain Anova diagram</h6>
-    <div class="row mb-4">
-        <t t-foreach="state.dept_stats_cards" t-as="stat" t-key="stat.department">
-            <div class="col-md-4 mb-3">
-                <div class="wb-card p-3 h-100">
-                    <h6 class="fw-bold text-dark border-bottom pb-2 mb-2 text-truncate"><t t-esc="stat.department"/></h6>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted text-sm">Average Productivity:</span>
-                        <strong><t t-esc="stat.prod_mean"/>%</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted text-sm" title="Higher % means tasks are unfairly distributed between employees">
-                            Workload Inequality <i class="fa fa-info-circle text-info"></i> :
-                        </span>
-                        <strong><t t-esc="stat.work_std"/>%</strong>
-                    </div>
-                    <div class="d-flex justify-content-between border-top pt-1 mt-1">
-                        <span class="text-muted text-sm" title="Higher % means a huge gap between employee  performers">
-                            Performance Gap <i class="fa fa-info-circle text-info"></i> :
-                        </span>
-                        <strong><t t-esc="stat.prod_var"/>%</strong>
-                    </div>
-
-                </div>
-            </div>
-        </t>
-    </div>
-</t>
                      </div>
                 </div>
                       <div class="row mb-4">
@@ -495,7 +474,7 @@
         <div class="mt-3 d-flex justify-content-center border-top pt-3">
             <small class="text-muted">
                 <i class="fa fa-info-circle me-1"></i>
-                This dual-axis chart correlates workforce stability with overall productivity output over time.
+                This chart correlates workforce stability with overall productivity output over time.
             </small>
         </div>
     </div>

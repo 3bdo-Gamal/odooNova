@@ -72,6 +72,7 @@ export class HrDashboard extends Component {
             pdf_sales: false,
             prod_trend_labels: [],
             prod_trend_data: [],
+            top_workload: "5",
         });
 
         this.last_valid_start = savedStartDate;
@@ -119,7 +120,8 @@ export class HrDashboard extends Component {
                 filters: this.state.filters,
                 search_query: this.state.search_query,
                 active_filters: this.state.active_filters,
-                group_by_list: this.state.group_by_list
+                group_by_list: this.state.group_by_list,
+                top_workload: this.state.top_workload
             });
 
             if (data) {
@@ -168,7 +170,10 @@ export class HrDashboard extends Component {
             throw e;
         }
     }
-
+    async onChangeTopFilter(ev) {
+        await this.downloaddata();
+        this.renderChart();
+    }
     async onChangePeriod(ev) {
         this.state.period = ev.target.value;
         sessionStorage.setItem("hr_dashboard_period", this.state.period);
@@ -644,87 +649,131 @@ showWorkloadDisparity() {
         if (attachmentId) { window.location = `/web/content/${attachmentId}?download=true`; }
     }
 
-    async downloadPdf() {
-        this.state.showPdfModal = false;
-        const {jsPDF} = window.jspdf;
-        const doc = new jsPDF();
+ async downloadPdf() {
+    this.state.showPdfModal = false;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
-        let departmentName = "All Departments";
-        if (this.state.filters.department_id) {
-            const selectedDept = this.state.departments.find(d => d.id == this.state.filters.department_id);
-            if (selectedDept) {
-                departmentName = selectedDept.name;
-            }
+    let departmentName = "All Departments";
+    if (this.state.filters.department_id) {
+        const selectedDept = this.state.departments.find(d => d.id == this.state.filters.department_id);
+        if (selectedDept) {
+            departmentName = selectedDept.name;
         }
+    }
 
-        doc.setFontSize(22);
-        doc.setTextColor(0, 123, 255);
-        doc.text("HR Analysis", 14, 20);
+    doc.setFontSize(22);
+    doc.setTextColor(0, 123, 255);
+    doc.text("HR Analysis", 14, 20);
 
-        doc.setFontSize(11);
-        doc.setTextColor(50, 50, 50);
-        let currentY = 30;
-        doc.text(`Department: ${departmentName}`, 14, currentY);
+    doc.setFontSize(11);
+    doc.setTextColor(50, 50, 50);
+    let currentY = 30;
+    doc.text(`Department: ${departmentName}`, 14, currentY);
+    currentY += 7;
+    doc.text(`From Date: ${this.state.start_date || ''}      To Date: ${this.state.end_date || ''}`, 14, currentY);
+    currentY += 7;
+    if (this.state.search_query) {
+        doc.text(`Employee Name: ${this.state.search_query}`, 14, currentY);
         currentY += 7;
-        doc.text(`From Date: ${this.state.start_date || ''}      To Date: ${this.state.end_date || ''}`, 14, currentY);
-        currentY += 7;
-        if (this.state.search_query) {
-            doc.text(`Employee Name: ${this.state.search_query}`, 14, currentY);
-            currentY += 7;
-        }
+    }
 
-        const kpiBody = [];
-        if (this.state.pdf_emp) {
-            kpiBody.push(["Total Employees", this.state.employee_count]);
-            kpiBody.push(["Employee Turnover", this.state.emp_turnover + "%"]);
+    const kpiBody = [];
+    if (this.state.pdf_emp) {
+        kpiBody.push(["Total Employees", this.state.employee_count]);
+        kpiBody.push(["Employee Turnover", this.state.emp_turnover + "%"]);
+    }
+    if (this.state.pdf_workload) {
+        kpiBody.push(["Total Workload", this.state.workload_hours + " Hrs"]);
+        kpiBody.push(["Completed Tasks", this.state.tasks_complete]);
+        kpiBody.push(["Productivity", this.state.production_kpi + "%"]);
+    }
+    if (this.state.pdf_att) {
+        kpiBody.push(["Employee Attendances", this.state.attendance + "%"]);
+        kpiBody.push(["Employee Vocations", this.state.average_leaves + "%"]);
+        kpiBody.push(["Employee absenteeism", this.state.absence + "%"]);
+    }
+    if (this.state.pdf_sales) {
+        kpiBody.push(["Sales Done/Employee", this.state.sales_per_emp]);
+    }
+
+    doc.autoTable({
+        startY: currentY + 3,
+        head: [['Key Performance Indicator', 'Value']],
+        body: kpiBody.length > 0 ? kpiBody : [["No KPIs selected", "-"]],
+        headStyles: { fillColor: [0, 123, 255], fontSize: 12 },
+        styles: { fontSize: 11, cellPadding: 4 },
+        alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    const chartBody = [];
+    if (this.chartLabels && this.chartData) {
+        for (let i = 0; i < this.chartLabels.length; i++) {
+            chartBody.push([this.chartLabels[i], this.chartData[i] + " Hrs"]);
         }
-        if (this.state.pdf_workload) {
-            kpiBody.push(["Total Workload", this.state.workload_hours + " Hrs"]);
-            kpiBody.push(["Completed Tasks", this.state.tasks_complete]);
-            kpiBody.push(["Productivity", this.state.production_kpi + "%"]);
-        }
-        if (this.state.pdf_att) {
-            kpiBody.push(["Employee Attendances", this.state.attendance + "%"]);
-            kpiBody.push(["Employee Vocations", this.state.average_leaves + "%"]);
-            kpiBody.push(["Employee absenteeism", this.state.absence + "%"]);
-        }
-        if (this.state.pdf_sales) {
-            kpiBody.push(["Sales Done/Employee", this.state.sales_per_emp]);
+    }
+
+    if (chartBody.length > 0) {
+        let groupByTitle = 'Employee';
+        if (this.state.group_by_list && this.state.group_by_list.length > 0) {
+            groupByTitle = this.state.group_by_list.map(g => g.replace('_', ' ').toUpperCase()).join(' / ');
         }
 
         doc.autoTable({
-            startY: currentY + 3,
-            head: [['Key Performance Indicator', 'Value']],
-            body: kpiBody.length > 0 ? kpiBody : [["No KPIs selected", "-"]],
-            headStyles: {fillColor: [0, 123, 255], fontSize: 12},
-            styles: {fontSize: 11, cellPadding: 4},
+            startY: doc.lastAutoTable.finalY + 15,
+            head: [[`Workload Analysis (${groupByTitle})`, 'Hours Assigned']],
+            body: chartBody,
+            headStyles: { fillColor: [0, 123, 255], fontSize: 12 },
+            styles: { fontSize: 11, cellPadding: 4 },
+            alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+    }
+
+    if (this.state.dept_stats_cards && this.state.dept_stats_cards.length > 0) {
+        const analyticsBody = [];
+        this.state.dept_stats_cards.forEach(dept => {
+            analyticsBody.push([
+                dept.department,
+                dept.prod_mean + "%",          // Average Productivity
+                dept.work_std + "%",           // Workload Inequality
+                dept.prod_var                  // Performance Gap
+            ]);
+        });
+        let startYForAnalytics = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+        doc.setFontSize(14);
+        doc.setTextColor(0, 123, 255);
+        doc.text("Departmental Analytical Insights", 14, startYForAnalytics);
+
+        doc.autoTable({
+            startY: startYForAnalytics + 5,
+            head: [['Department', 'Average Productivity', 'Workload Inequality', 'Performance Gap']],
+            body: analyticsBody,
+            headStyles: {fillColor: [23, 162, 184], fontSize: 11},
+            styles: {fontSize: 10, cellPadding: 4, halign: 'center'},
+            columnStyles: {0: {halign: 'left'}},
             alternateRowStyles: {fillColor: [245, 245, 245]}
         });
 
-        const chartBody = [];
-        if (this.chartLabels && this.chartData) {
-            for (let i = 0; i < this.chartLabels.length; i++) {
-                chartBody.push([this.chartLabels[i], this.chartData[i] + " Hrs"]);
-            }
-        }
+        let finalY = doc.lastAutoTable.finalY + 10;
+           //جزء توضيح العنوانين اللي في الجدول ال Workload Inequality و ال Performance Gap
+        doc.setFontSize(9);
+        doc.setTextColor(80, 80, 80);
+        doc.text("For Clarification:", 14, finalY);
+        finalY += 5;
+        doc.text(" Workload Inequality (>100%): Indicates extreme imbalance in task distribution among employees.", 18, finalY);
+        finalY += 5;
+        doc.text(" Performance Gap: Measures the variance in productivity levels within the same department.", 18, finalY);
+        finalY += 8;
 
-        if (chartBody.length > 0) {
-            let groupByTitle = 'Employee';
-            if (this.state.group_by_list && this.state.group_by_list.length > 0) {
-                groupByTitle = this.state.group_by_list.map(g => g.replace('_', ' ').toUpperCase()).join(' / ');
-            }
-
-            doc.autoTable({
-                startY: doc.lastAutoTable.finalY + 15,
-                head: [[`Workload Analysis (${groupByTitle})`, 'Hours Assigned']],
-                body: chartBody,
-                headStyles: {fillColor: [0, 123, 255], fontSize: 12},
-                styles: {fontSize: 11, cellPadding: 4},
-                alternateRowStyles: {fillColor: [245, 245, 245]}
-            });
+        // workload congistion بضفها لو موجود فيها موظفين كملاحظه مش بحطها  في التقرير الا لو كانت موجود فيها موظفين بس
+        if (this.state.bottleneck_emps && this.state.bottleneck_emps > 0) {
+            doc.setFontSize(10);
+            doc.setTextColor(220, 53, 69);
+            doc.text(`* Critical Insight: Identified ${this.state.bottleneck_emps} employees as potential bottlenecks (High Workload, Low Completion).`, 14, finalY);
         }
-        doc.save(`HR_Analysis_${this.state.today_date}.pdf`);
     }
+    doc.save(`HR_Analysis_${this.state.today_date}.pdf`);
+}
 
     renderChart() {
         const self = this;
