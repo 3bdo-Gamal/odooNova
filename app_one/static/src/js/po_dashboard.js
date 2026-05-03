@@ -28,8 +28,8 @@ export class PurchaseDashboard extends Component {
             searchModel: this.searchModel,
         });
 
-
-        this.employeeRef = useRef("employee_chart_container");
+const savedPeriod = sessionStorage.getItem("hr_dashboard_period") || "30";
+        this.orderRef = useRef("state_chart_container");
         this.delayRef = useRef("delays_chart_container");
         this.vendorChartRef = useRef("vendorChartCanvas");
 
@@ -41,37 +41,55 @@ export class PurchaseDashboard extends Component {
         const lastWeekStr = formatDate(lastWeek);
         const savedStartDate = sessionStorage.getItem("po_dashboard_start") || lastWeekStr;
         const savedEndDate = sessionStorage.getItem("po_dashboard_end") || todayStr;
+        const savedSidebar = sessionStorage.getItem("po_dashboard_sidebar") !== "false";
 
         this.state = useState({
             stats: {
+                filter_options: {
+                vendors: [],
+                categories: [],
+                locations: []
+},
+filters: {
+    vendor_id: "all",
+    category_id: "all",
+    location_id: "all"
+},
+active_filters: {
+    state_posted: false,
+    state_draft: false,
+    pay_paid: false
+},
+
                 employeeData: [],
                 avg_savings: 0,
                 avg_lead_time: 0.0,
                 emergency_count: 0,
                 total_delay_days: 0,
                 max_risk: 0.0,
-
+                automation_rate:0.0,
+                period: savedPeriod,
                 vendor_spending_labels: [],
                 vendor_spending_values: [],
-
+                vendor_name: [],
+                order_state_data: [],
                 late_vendor_names: [],
                 late_vendor_values: [],
-                employee_names: [],
-                employee_delays: [],
 
                 start_date: savedStartDate,
                 end_date: savedEndDate,
                 today_date: todayStr,
 
-                // show_total_orders: true,
                 show_avg_savings: true,
                 show_avg_lead_time: true,
                 show_emergency_count: true,
                 show_total_delay_days: true,
                 show_max_risk: true,
+                show_automation_rate:true,
+
             },
-            top_vendor_name: "",
-            showSidebar: false,
+   top_vendor_name: "",
+             showSidebar: savedSidebar,
         });
 
         this.last_valid_start = savedStartDate;
@@ -79,6 +97,9 @@ export class PurchaseDashboard extends Component {
 
 
         onWillStart(async () => {
+
+            const options = await this.orm.call("wb.po.dashboard", "get_filter_options", []);
+            this.state.stats.filter_options = options;
 
             const viewData = await this.orm.searchRead("ir.model.data", [
                 ["module", "=", "app_one"],
@@ -105,6 +126,13 @@ export class PurchaseDashboard extends Component {
             this.renderChart();
         });
     }
+
+//     //////////////////////////////////////////////////////////////
+toggleSidebar() {
+        this.state.showSidebar = !this.state.showSidebar;
+        sessionStorage.setItem("po_dashboard_sidebar", this.state.showSidebar);
+    }
+
 
 //     //////////////////////////////////////////////////////////////
 
@@ -183,7 +211,12 @@ export class PurchaseDashboard extends Component {
                   'pivot_row_groupby': ['partner_id'],
                     'pivot_measures': ['amount_total'],
                 };
+                break;
 
+            case 'automation_rate':
+                actionData.name = 'PO Automation Rate';
+                actionData.view_mode = 'pivot,tree';
+                actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']]];
                 break;
 
 
@@ -198,6 +231,21 @@ export class PurchaseDashboard extends Component {
 
 
     async downloaddata() {
+        if (this.state.stats.period === "0" || this.state.stats.period === 0) {
+            if (this.state.stats.start_date && this.state.stats.end_date) {
+                const start = new Date(this.state.stats.start_date);
+                const end = new Date(this.state.stats.end_date);
+                const td = new Date(this.state.stats.today_date);
+                if (start > end || start > td || end > td) {
+                    alert("Invalid Date Range! Reverting to last valid dates.");
+                    this.state.stats.start_date = this.last_valid_start;
+                    this.state.stats.end_date = this.last_valid_end;
+                    sessionStorage.setItem("hr_dashboard_start", this.last_valid_start || "");
+                    sessionStorage.setItem("hr_dashboard_end", this.last_valid_end || "");
+                    return;
+                }
+            }
+        }
         const searchDomain = this.searchModel.domain || [];
         try {
             if (this.state.stats.start_date > this.state.stats.end_date) {
@@ -205,9 +253,12 @@ export class PurchaseDashboard extends Component {
                 return;
             }
             const data = await this.orm.call("wb.po.dashboard", "get_purchase_stats", [], {
-                domain: searchDomain,
+                domain: this.searchModel.domain || [],
                 start_date: this.state.stats.start_date,
                 end_date: this.state.stats.end_date,
+                vendor_id: this.state.stats.filters.vendor_id,
+            category_id: this.state.stats.filters.category_id,
+            active_filters: this.state.stats.active_filters,
 
             });
 
@@ -218,13 +269,16 @@ export class PurchaseDashboard extends Component {
                 this.state.stats.total_orders = data.stats.total_orders;
                 this.state.stats.total_delay_days = data.stats.total_delay_days;
                 this.state.stats.max_risk = data.stats.max_risk;
+                this.state.stats.automation_rate = data.stats.automation_rate;
 
-                this.employeeNames = data.employee_names;
-                this.employeeDelays = data.employee_delays;
+
                 this.lateVendorNames = data.late_vendor_names;
                 this.lateVendorValues = data.late_vendor_values;
                 this.vendorSpendingLabels = data.vendor_spending_labels;
-                this.vendorSpendingValues = data.vendor_spending_values
+                this.vendorSpendingValues = data.vendor_spending_values;
+                this.orderStateData= data.order_state_data || { draft: [], purchase: [], done: [], cancel: [] };
+                this.vendorNames= data.vendor_name || [];
+
 
                 if (data.vendor_spending_labels && data.vendor_spending_labels.length > 0) {
                         this.state.top_vendor_name = data.vendor_spending_labels[0];
@@ -237,6 +291,20 @@ export class PurchaseDashboard extends Component {
             throw e;
         }
     }
+    // //////////////////////////////////////////////////////////////////////////////
+
+    // تبديل حالة الفلاتر السريعة (Switches)
+    async toggleFilter(filterName) {
+    this.state.stats.active_filters[filterName] = !this.state.stats.active_filters[filterName];
+    await this.downloaddata();
+    this.renderChart();
+}
+
+    // دالة تحديث البيانات عند تغيير أي فلتر
+    async onApplyFilter() {
+    await this.downloaddata();
+    this.renderChart();
+}
     ////////////////////////////////////////////////////////////////////////////////////
 
     async onChangeStartDate(ev) {
@@ -296,7 +364,9 @@ export class PurchaseDashboard extends Component {
         if (this.state.stats.show_avg_lead_time) worksheet.addRow(["Avg Lead Time", data.stats.avg_lead_time + " Day(s)"]);
         if (this.state.stats.show_emergency_count) worksheet.addRow(["Urgent Requests", data.stats.emergency_count]);
         if (this.state.stats.show_total_delay_days) worksheet.addRow(["Avg Delivery Delay", data.stats.total_delay_days + "Day(s)"]);
-        if (this.state.stats.show_max_risk) worksheet.addRow(["Total Orders", data.stats.max_risk + " %"]);
+        if (this.state.stats.show_max_risk) worksheet.addRow(["Total Orders", data.stats.max_risk + " %"])
+        if (this.state.stats.show_automation_rate) worksheet.addRow(["Automation Rate", data.stats.automation_rate + " %"]);
+
 
 
         if (data.late_vendor_names && data.late_vendor_values) {
@@ -310,19 +380,9 @@ export class PurchaseDashboard extends Component {
             }
         }
 
-        if (data.employee_names && data.employee_delays) {
-            const headerRow = worksheet.addRow(["Top 5 Late Employees", "Value"]);
-            headerRow.eachCell((cell) => {
-                cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'}};
-                cell.font = {color: {argb: 'FFFFFFFF'}, bold: true, size: 13};
-            });
-            for (let i = 0; i < data.employee_names.length; i++) {
-                worksheet.addRow([data.employee_names[i], data.employee_delays[i]]);
-            }
-        }
 
         if (data.vendor_spending_labels && data.vendor_spending_values) {
-            const headerRow = worksheet.addRow(["Vendor Concentration", "Percentage (%)"]);
+            const headerRow = worksheet.addRow(["Top 5 Vendor Concentration", "Percentage (%)"]);
             headerRow.eachCell((cell) => {
                 cell.fill = {type: 'pattern', pattern: 'solid', fgColor: {argb: '17ac39'}};
                 cell.font = {color: {argb: 'FFFFFFFF'}, bold: true, size: 13};
@@ -363,6 +423,8 @@ export class PurchaseDashboard extends Component {
             ["Price Variance Status", this.state.stats.avg_savings + "%"],
             ["Avg Delivery Delay", this.state.stats.total_delay_days + "Day(s)"],
             ["Max Vendor Concentration", this.state.stats.max_risk + "%"],
+            ["Automation Rate", this.state.stats.automation_rate + "%"],
+
 
 
         ];
@@ -374,6 +436,7 @@ export class PurchaseDashboard extends Component {
             styles: {fontSize: 11, cellPadding: 4},
             alternateRowStyles: {fillColor: [245, 245, 245]}
         });
+
         // late vendor
         let currentY = doc.lastAutoTable.finalY+ 15;
         const lateVendorBody = [];
@@ -382,7 +445,6 @@ export class PurchaseDashboard extends Component {
             lateVendorBody.push([this.lateVendorNames[i], this.lateVendorValues[i] + " Day(s)"]);
             }
         }
-
         doc.autoTable({
         startY: currentY,
         head: [['Top 5 Late Vendors', 'Avg Delay Days']],
@@ -391,22 +453,24 @@ export class PurchaseDashboard extends Component {
         styles: { fontSize: 11, cellPadding: 4 }
     });
 
-         // late employees
-         currentY = doc.lastAutoTable.finalY + 15;
-    const employeeBody = [];
-    if (this.employeeNames && this.employeeDelays) {
-        for (let i = 0; i < this.employeeNames.length; i++) {
-            employeeBody.push([this.employeeNames[i], this.employeeDelays[i] + " Day(s)"]);
+         // ///////////////////////////////////////////////////////////////////////////////////////////
+     // state of order for each vendor
+        currentY = doc.lastAutoTable.finalY+ 15;
+        const orderStateBody = [];
+        if (this.vendorNames && this.orderStateData) {
+        for (let i = 0; i < this.vendorNames.length; i++) {
+            lateVendorBody.push([this.vendorNames[i], this.orderStateData[i] + " Day(s)"]);
+            }
         }
-    }
         doc.autoTable({
         startY: currentY,
-        head: [['Slowest 5 Employees', 'Avg Lead Time']],
-        body: employeeBody,
-        headStyles: { fillColor: [239, 68, 68] },
+        head: [['State of Order', 'Avg Delay Days']],
+        body: orderStateBody,
+        headStyles: { fillColor: [255, 200, 7], textColor: [0, 0, 0] },
         styles: { fontSize: 11, cellPadding: 4 }
     });
 
+        // /////////////////////////////////////////////////////////////////////////////
        //concentration vendor
        currentY = doc.lastAutoTable.finalY + 15;
     const concentrationBody = [];
@@ -419,7 +483,6 @@ export class PurchaseDashboard extends Component {
             concentrationBody.push([this.vendorSpendingLabels[i], percentage + "%"]);
         }
     }
-
        doc.autoTable({
         startY: currentY,
         head: [['Vendor Concentration', 'Percentage (%)']],
@@ -429,8 +492,6 @@ export class PurchaseDashboard extends Component {
     });
         doc.save(`PO_Analysis_${this.state.today_date}.pdf`);
     }
-    ////////////////////////////////////////////////////////////////////////////////////
-
 
     // /////////////////////////////////////////////////////////////////////////////////////////////
     // Charts
@@ -448,7 +509,7 @@ export class PurchaseDashboard extends Component {
                 data: {
                     labels: this.lateVendorNames,
                     datasets: [{
-                        label: 'Delivery delays (Avg Days)',
+                        label: 'Delivery delays',
                         data: this.lateVendorValues,
                         backgroundColor: "#ffc107",
                     }]
@@ -469,51 +530,43 @@ export class PurchaseDashboard extends Component {
                     scales: {
                         y: {
                             beginAtZero: true
-                        }
+                        },
+                        x: { ticks: { autoSkip: false } }
                     }
                 }
             });
         }
 
         //     ///////////////////////////////////////////////////
+        //state of order - bar chart
+         const Ctx = this.orderRef.el;
 
-        const ctx = this.employeeRef.el;
-
-        if (ctx && this.employeeDelays) {
-            if (ctx.chartInstance) {
-                ctx.chartInstance.destroy();
+        if (Ctx && this.orderStateData) {
+            if (Ctx.chartInstance) {
+                Ctx.chartInstance.destroy();
             }
 
 
-            ctx.chartInstance = new window.Chart(ctx, {
+            Ctx.chartInstance = new window.Chart(Ctx, {
                 type: "bar",
                 data: {
-                    labels: this.employeeNames,
-                    datasets: [{
-                        label: 'Slowest 5 Employees (Avg Days)',
-                        data: this.employeeDelays,
-                        backgroundColor: "#ef4444",
-                    }]
+                    labels: this.vendorNames,
+                    datasets: [
+                       { label: 'Draft', data: this.orderStateData.draft, backgroundColor: '#adb5bd' },
+                       { label: 'Confirmed', data:this.orderStateData.purchase, backgroundColor: '#007bff' },
+                       { label: 'Done', data: this.orderStateData.done, backgroundColor: '#28a745' },
+                        {label: 'Cancelled',data:  this.orderStateData.cancel, backgroundColor: '#dc3545' }
+        ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    onClick:(event, elements) => {
-                        if (elements.length > 0) {
-                            const index = elements[0].index;
-                            const vendorName = this.vendorSpendingLabels[index];
 
-                            if (vendorName && vendorName !== 'Other Vendors') {
-                                this.openKpiAction("lead_time",vendorName);
-                            }
-                        }
-                    },
                     scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    indexAxis: 'y'
+
+                           x: {stacked: true},
+                           y: {stacked: true, beginAtZero: true}
+                    }
                 }
             });
         }

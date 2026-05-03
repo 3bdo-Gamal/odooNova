@@ -77,7 +77,7 @@
 <!--/////////////////////////////////////////////////////////////////////-->
                 <!-- cards-->
                 <div class="row mb-4">
-                    <div class="col-xl-3 col-md-6 mb-3">
+                    <div class=" col-md-4 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('savings')">
                             <div class="wb-icon-box icon-primary me-3">
                                 <t t-if="state.stats.avg_savings != 0">
@@ -102,7 +102,7 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('emergency')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-bolt"></i></div>
                             <div>
@@ -112,7 +112,7 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('lead_time')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-edit"></i></div>
                             <div>
@@ -122,7 +122,7 @@
                         </div>
                     </div>
 
-                    <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('delay')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-clock-o"></i></div>
                             <div>
@@ -132,7 +132,7 @@
                         </div>
                     </div>
 
-                     <div class="col-xl-3 col-md-6 mb-3">
+                     <div class="col-md-4 mb-3">
                         <div class="wb-card p-4 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('vendor_max_risk')" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-pie-chart"></i></div>
                             <div>
@@ -141,6 +141,19 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('automation_rate')" style="cursor: pointer;">
+                            <div class="wb-icon-box icon-primary me-3"><i class="fa fa-cogs"></i></div>
+                            <div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">PO Automation Rate</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.automation_rate"/>%</h4>
+                            </div>
+                        </div>
+                    </div>
+
+
+
                 </div>
 <!--/////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
 
@@ -150,7 +163,7 @@
                     <div class="col-6">
                         <div class="wb-card p-4">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Top 5 Late Vendors (Avg Days)</h5>
+                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Top 5 Late Vendors</h5>
                             </div>
                             <div style="height: 400px; position: relative;">
                                 <canvas t-ref="delays_chart_container" class="cursor-pointer"></canvas>
@@ -158,22 +171,23 @@
                         </div>
                     </div>
 
-                       <div class="col-6">
+
+                    <div class="col-6">
                         <div class="wb-card p-4">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Slowest 5 Employees (Avg Days)</h5>
+                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>State order for each Vendors(top 5)</h5>
                             </div>
                             <div style="height: 400px; position: relative;">
-                                <canvas t-ref="employee_chart_container" class="cursor-pointer"></canvas>
+                                <canvas t-ref="state_chart_container" class="cursor-pointer"></canvas>
                             </div>
                         </div>
                     </div>
 
-                </div>
 
+                </div>
                   <div class="wb-card p-4 mt-5">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-pie-chart me-2 text-primary"></i>Vendor Concentration</h5>
+                                <h5 class="fw-bold text-dark m-0"><i class="fa fa-pie-chart me-2 text-primary"></i>Top 5 Vendor Concentration</h5>
                             </div>
                             <div style="height: 400px; position: relative;">
                                 <canvas t-ref="vendorChartCanvas" class="cursor-pointer"></canvas>
@@ -186,7 +200,9 @@
             <div class="wb-sidebar" t-if="state.showSidebar">
                 <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
                     <h5 class="fw-bold text-dark mb-0"><i class="fa fa-sliders text-primary me-2"></i>Filters</h5>
-                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="() => state.showSidebar = false"><i class="fa fa-times"></i></button>
+                    <button class="btn btn-sm btn-light border rounded-circle"  t-on-click="toggleSidebar" style="transition: transform 0.2s;">
+                        <i class="fa fa-times"></i>
+                    </button>
                 </div>
 
                 <div class="wb-sidebar-scroll">
@@ -210,9 +226,108 @@
                             <label class="text-xs fw-bold text-dark mb-1">To</label>
                             <input type="date" class="form-control wb-input" t-model="state.stats.end_date" t-on-change="onChangeEndDate"/>
                         </div>
+                         <hr class="text-muted opacity-25"/>
+
+<!-- 2. Dynamic Selection Filters -->
+
+<!-- Vendor Filter -->
+                        <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Vendor</label>
+                        <select class="form-select wb-input" t-model="state.stats.filters.vendor_id" t-on-change="onApplyFilter">
+                            <option value="all">🏢 All Vendors</option>
+                            <t t-foreach="state.stats.filter_options?.vendors || []" t-as="vendor" t-key="vendor.id">
+                                <option t-att-value="vendor.id"><t t-esc="vendor.name"/></option>
+                            </t>
+                        </select>
                     </div>
-                </div>
-            </div>
+<!-- Category Filter -->
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Journal</label>
+                        <select class="form-select wb-input" t-model="state.stats.filters.journal_id" t-on-change="onApplyFilter">
+                            <option value="all">📓 All Journals</option>
+                            <t t-foreach="state.stats.filter_options?.journals || []" t-as="journal" t-key="journal.id">
+                                <option t-att-value="journal.id"><t t-esc="journal.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Product Category</label>
+                        <select class="form-select wb-input" t-model="state.stats.filters.category_id" t-on-change="onApplyFilter">
+                            <option value="all">📁 All Categories</option>
+                            <t t-foreach="state.stats.filter_options?.categories || []" t-as="cat" t-key="cat.id">
+                                <option t-att-value="cat.id"><t t-esc="cat.name"/></option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Location</label>
+                        <select class="form-select wb-input" t-model="state.stats.filters.location_id" t-on-change="onApplyFilter">
+                            <option value="all">📍 All Locations</option>
+                            <t t-foreach="state.stats.filter_options?.locations || []" t-as="loc" t-key="loc.id">
+                                <option t-att-value="loc.id"><t t-esc="loc.display_name"/></option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <hr class="text-muted opacity-25"/>
+<!-- Quick Filters -->
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Quick Filters</label>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_posted"
+                                   t-att-checked="state.stats.active_filters.state_posted"
+                                   t-on-change="() => this.toggleFilter('state_posted')"/>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_posted">Posted Bills Only</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_draft"
+                                   t-att-checked="state.stats.active_filters.state_draft"
+                                   t-on-change="() => this.toggleFilter('state_draft')"/>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_draft">Draft Bills</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_paid"
+                                   t-att-checked="state.stats.active_filters.pay_paid"
+                                   t-on-change="() => this.toggleFilter('pay_paid')"/>
+                            <label class="form-check-label text-success fw-bold mb-0" for="f_paid">Fully Paid</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_not_paid"
+                                   t-att-checked="state.stats.active_filters.pay_not_paid"
+                                   t-on-change="() => this.toggleFilter('pay_not_paid')"/>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_not_paid">Not Paid</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_overdue"
+                                   t-att-checked="state.stats.active_filters.is_overdue"
+                                   t-on-change="() => this.toggleFilter('is_overdue')"/>
+                            <label class="form-check-label text-danger fw-bold mb-0" for="f_overdue">Overdue</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_has_po"
+                                   t-att-checked="state.stats.active_filters.has_po"
+                                   t-on-change="() => this.toggleFilter('has_po')"/>
+                            <label class="form-check-label text-primary fw-bold mb-0" for="f_has_po">With PO</label>
+                        </div>
+
+                        <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_no_po"
+                                   t-att-checked="state.stats.active_filters.no_po"
+                                   t-on-change="() => this.toggleFilter('no_po')"/>
+                            <label class="form-check-label text-warning fw-bold mb-0" for="f_no_po">Without PO (Maverick)</label>
+                        </div>
+                    </div>
+
+    </div>
+ </div>
+          </div>
         </div>
     </t>
 </templates>
