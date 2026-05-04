@@ -127,7 +127,7 @@ export class InvoicingDashboardClient extends Component {
             if (this.customerChartRef.el.chartInstance) this.customerChartRef.el.chartInstance.destroy();
             this.customerChartRef.el.chartInstance = new window.Chart(this.customerChartRef.el, {
                 type: 'bar',
-                data: { labels: this.state.customer_labels, datasets: [{ label: 'Unpaid Amount (Debt)', data: this.state.customer_data, backgroundColor: '#ef4444', borderRadius: 4 }] },
+                data: { labels: this.state.customer_labels, datasets: [{ label: 'Unpaid Amount (Debt)', data: this.state.customer_data, backgroundColor: '#4f46e5ff', borderRadius: 4 }] },
                 options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
             });
         }

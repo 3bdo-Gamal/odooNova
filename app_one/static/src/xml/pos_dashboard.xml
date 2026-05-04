@@ -198,7 +198,7 @@
         <option value="30">📅 Last Month (30 Days)</option>
         <option value="90">📅 Last 3 Months (90 Days)</option>
         <option value="180">📅 Last 6 Months (180 Days)</option>
-        <option value="365">📅 Last Year (36 5 Days)</option>
+        <option value="365">📅 Last Year (365 Days)</option>
     </select>
 
     <div class="p-3 bg-light rounded-3 border border-light">
