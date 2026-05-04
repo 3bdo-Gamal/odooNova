@@ -1,489 +1,893 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="InventoryDashboardClientTemplate">
-        <style>
-            .wb-inv-wrapper {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f0f4f8;
-            }
-            .wb-inv-main { flex-grow: 1; overflow-y: auto; padding: 2rem; }
-            .wb-inv-sidebar {
-                width: 340px; flex-shrink: 0; display: flex; flex-direction: column;
-                background: #ffffff; border-left: 1px solid #e2e8f0;
-                box-shadow: -4px 0 15px rgba(0,0,0,0.04); z-index: 10; height: 100%;
-            }
-            .wb-inv-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
+<t t-name="InventoryDashboardClientTemplate">
+<style>
+/* LAYOUT */
+.wb-inv-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
+}
+.wb-inv-main { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
+.wb-inv-sidebar {
+    width: 350px; flex-shrink: 0; display: flex; flex-direction: column;
+    background: #fff; border-left: 1px solid #e2e8f0;
+    box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%;
+}
+.wb-inv-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
-            .wb-glassy-header {
-                background: rgba(255,255,255,0.7);
-                backdrop-filter: blur(12px);
-                border: 1px solid rgba(255,255,255,0.9);
-                border-radius: 1.25rem;
-                padding: 1rem 1.5rem;
-                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.04);
-            }
+/* HEADER */
+.wb-glassy-header {
+    background: rgba(255,255,255,0.6); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 1.25rem; padding: 1rem 1.5rem;
+    box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); position: relative; z-index: 10;
+}
 
-            .wb-kpi-card {
-                background: #fff; border-radius: 16px;
-                border: 1px solid rgba(0,0,0,0.05);
-                box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-                transition: all 0.3s ease; padding: 1.25rem;
-            }
-            .wb-kpi-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
-            .wb-kpi-card.clickable { cursor: pointer; }
-            .wb-kpi-card.clickable:hover { border-color: #6366f1; }
+/* KPI CARDS */
+.wb-kpi-card {
+    background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; padding: 1.1rem;
+}
+.wb-kpi-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+.wb-kpi-card.clickable { cursor: pointer; }
+.wb-kpi-card.clickable:hover { border-color: #4f46e5; }
 
-            .wb-icon-box {
-                width: 48px; height: 48px; border-radius: 12px;
-                display: flex; align-items: center; justify-content: center; font-size: 20px;
-            }
-            .icon-indigo  { background: #eef2ff; color: #4f46e5; }
-            .icon-emerald { background: #ecfdf5; color: #10b981; }
-            .icon-cyan    { background: #ecfeff; color: #06b6d4; }
-            .icon-amber   { background: #fffbeb; color: #f59e0b; }
-            .icon-red     { background: #fef2f2; color: #ef4444; }
-            .icon-violet  { background: #f5f3ff; color: #7c3aed; }
-            .icon-slate   { background: #f1f5f9; color: #475569; }
-            .icon-teal    { background: #f0fdfa; color: #14b8a6; }
+/* ICON BOXES */
+.wb-icon-box {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.icon-indigo  { background: #eef2ff; color: #4f46e5; }
+.icon-emerald { background: #ecfdf5; color: #10b981; }
+.icon-cyan    { background: #ecfeff; color: #06b6d4; }
+.icon-amber   { background: #fffbeb; color: #f59e0b; }
+.icon-red     { background: #fef2f2; color: #ef4444; }
+.icon-violet  { background: #f5f3ff; color: #7c3aed; }
+.icon-slate   { background: #f1f5f9; color: #475569; }
+.icon-teal    { background: #f0fdfa; color: #14b8a6; }
+.icon-green   { background: #f0fdf4; color: #16a34a; }
+.icon-orange  { background: #fff7ed; color: #ea580c; }
 
-            .wb-chart-card {
-                background: #fff; border-radius: 16px;
-                border: 1px solid rgba(0,0,0,0.05);
-                box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-                padding: 1.5rem;
-            }
-            .wb-chart-title { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin-bottom: 1.25rem; }
-            .chart-hint { font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-left: 6px; }
+/* CHART CARDS */
+.wb-chart-card {
+    background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02); padding: 1.5rem;
+}
+.wb-chart-title { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin-bottom: 1.25rem; }
+.chart-hint { font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-left: 6px; }
 
-            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; transition: all 0.2s; font-size: 0.875rem; }
-            .wb-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12); outline: none; }
+/* INPUTS */
+.wb-input { border-radius: 10px; border: 1px solid #cbd5e1; transition: all 0.2s; font-size: 0.875rem; }
+.wb-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.12); outline: none; }
 
-            .wb-modal-overlay {
-                position: fixed; top:0; left:0; right:0; bottom:0;
-                background: rgba(15,23,42,0.6); backdrop-filter: blur(5px);
-                z-index: 1050; display: flex; align-items: center; justify-content: center;
-            }
-            .wb-modal-content {
-                background: white; border-radius: 20px; width: 100%; max-width: 640px;
-                box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);
-                animation: modalFadeIn 0.3s ease-out;
-            }
-            @keyframes modalFadeIn {
-                from { opacity: 0; transform: scale(0.95) translateY(10px); }
-                to   { opacity: 1; transform: scale(1) translateY(0); }
-            }
-            .badge-kpi {
-                font-size: 0.7rem; padding: 3px 8px; border-radius: 999px; font-weight: 600;
-            }
-        </style>
+/* SEARCH BAR */
+.wb-search-dropdown-btn {
+    background-color: transparent; border-color: #ccc !important; width: 40px;
+    margin: -2px -5px -2px 0; border-top-right-radius: 4px !important;
+    border-bottom-right-radius: 4px !important; box-shadow: none;
+    transition: background-color 0.2s ease-in-out;
+}
+.wb-search-dropdown-btn:hover,
+.wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
+.custom-submenu {
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 8px; padding: 10px; margin-top: 5px;
+}
 
-        <div class="wb-inv-wrapper">
+/* MODALS */
+.wb-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15,23,42,0.6); backdrop-filter: blur(5px);
+    z-index: 1040; display: flex; align-items: center; justify-content: center;
+}
+.wb-modal-content {
+    background: white; border-radius: 20px; width: 100%; max-width: 650px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); animation: modalFadeIn 0.3s ease-out;
+}
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
 
-            <!-- ===== EXPORT MODAL ===== -->
-            <t t-if="state.showExportModal">
-                <div class="wb-modal-overlay">
-                    <div class="wb-modal-content">
-                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light"
-                             style="border-radius: 20px 20px 0 0;">
-                            <h5 class="fw-bold text-dark mb-0">
-                                <i class="fa fa-file-excel-o text-success me-2"></i>Export Inventory Excel
-                            </h5>
-                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal">
-                                <i class="fa fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="p-4">
-                            <!-- Group By -->
-                            <div class="mb-4">
-                                <label class="fw-bold text-muted text-xs text-uppercase mb-2">Group Data By (Rows)</label>
-                                <select class="form-select wb-input" t-model="state.export_group">
-                                    <option value="product">📦 Product</option>
-                                    <option value="category">📁 Product Category</option>
-                                    <option value="location">📍 Location</option>
-                                    <option value="warehouse">🏭 Warehouse</option>
-                                </select>
-                            </div>
+/* LOADING OVERLAY */
+.wb-loading-overlay {
+    position: absolute; inset: 0; z-index: 20;
+    background: rgba(244,246,249,0.75); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 1rem; pointer-events: all;
+}
+.wb-spinner {
+    width: 48px; height: 48px; border: 4px solid #e2e8f0;
+    border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-                            <!-- Detailed Toggle -->
-                            <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
-                                <div>
-                                    <h6 class="fw-bold mb-1 text-dark">
-                                        <i class="fa fa-sitemap text-primary me-2"></i>Detailed Excel
-                                    </h6>
-                                    <small class="text-muted">Includes expandable/collapsible stock move lines per group.</small>
-                                </div>
-                                <div class="form-check form-switch fs-4 m-0">
-                                    <input class="form-check-input shadow-sm" type="checkbox" t-model="state.detailed_excel"/>
-                                </div>
-                            </div>
+/* PDF PRINT AREA */
+#inv_print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+.inv-print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #4f46e5; padding-bottom: 10px; }
+.inv-print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
+.inv-print-title { font-size: 16px; font-weight: bold; color: #334155; }
+.inv-print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
+</style>
 
-                            <!-- Measures -->
-                            <div class="mb-2">
-                                <label class="fw-bold text-muted text-xs text-uppercase mb-3">Select Measures (Columns)</label>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
-                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_qty" t-model="state.meas_qty"/>
-                                            <label class="form-check-label text-dark fw-bold" for="meas_qty">Qty On Hand</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
-                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_value" t-model="state.meas_value"/>
-                                            <label class="form-check-label text-dark fw-bold" for="meas_value">Stock Value (EGP)</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
-                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_cogs" t-model="state.meas_cogs"/>
-                                            <label class="form-check-label text-dark fw-bold" for="meas_cogs">COGS (EGP)</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
-                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_turnover" t-model="state.meas_turnover"/>
-                                            <label class="form-check-label text-dark fw-bold" for="meas_turnover">Turnover Rate</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
-                                            <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_cat" t-model="state.meas_category"/>
-                                            <label class="form-check-label text-dark fw-bold" for="meas_cat">Category Column</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
-                            <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closeExportModal">Cancel</button>
-                            <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" t-on-click="downloadInventoryExcel">
-                                <i class="fa fa-download me-2"></i>Download Excel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </t>
+<!-- HIDDEN PDF PRINT AREA -->
+<div id="inv_print_report_area" style="display:none;">
+    <div class="inv-print-header">
+        <h1 style="margin:0;">Inventory Performance Report</h1>
+        <p style="color:#64748b;margin-top:5px;">
+            Generated on: <t t-esc="new Date().toLocaleDateString()"/>
+        </p>
+    </div>
+    <div t-if="state.pdf_stock" class="inv-print-row">
+        <span class="inv-print-title">Stock On Hand</span>
+        <span class="inv-print-value"><t t-esc="state.stock_on_hand"/> Units</span>
+    </div>
+    <div t-if="state.pdf_value" class="inv-print-row">
+        <span class="inv-print-title">Total Stock Value</span>
+        <span class="inv-print-value"><t t-esc="state.stock_value_fmt"/> EGP</span>
+    </div>
+    <div t-if="state.pdf_cogs" class="inv-print-row">
+        <span class="inv-print-title">COGS (Period)</span>
+        <span class="inv-print-value"><t t-esc="state.cogs_fmt"/> EGP</span>
+    </div>
+    <div t-if="state.pdf_cogs" class="inv-print-row">
+        <span class="inv-print-title">Received Value (Period)</span>
+        <span class="inv-print-value"><t t-esc="state.received_value_fmt"/> EGP</span>
+    </div>
+    <div t-if="state.pdf_turnover" class="inv-print-row">
+        <span class="inv-print-title">Inventory Turnover (Annualized)</span>
+        <span class="inv-print-value"><t t-esc="state.inventory_turnover"/></span>
+    </div>
+    <div t-if="state.pdf_turnover" class="inv-print-row">
+        <span class="inv-print-title">Days Inventory Outstanding (DIO)</span>
+        <span class="inv-print-value"><t t-esc="state.dio"/></span>
+    </div>
+    <div t-if="state.pdf_low_stock" class="inv-print-row">
+        <span class="inv-print-title">Low Stock Alerts</span>
+        <span class="inv-print-value" style="color:#dc2626;"><t t-esc="state.low_stock_count"/> Items</span>
+    </div>
+    <div t-if="state.pdf_dead" class="inv-print-row">
+        <span class="inv-print-title">Dead Stock</span>
+        <span class="inv-print-value"><t t-esc="state.dead_stock_count"/> Items</span>
+    </div>
+    <div style="margin-top:40px;text-align:center;color:#94a3b8;font-size:12px;">
+        * Report generated automatically from Odoo Inventory Dashboard.
+    </div>
+</div>
 
-            <!-- ===== MAIN CONTENT ===== -->
-            <div class="wb-inv-main">
+<div class="wb-inv-wrapper">
 
-                <!-- Header -->
-                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing:-0.5px;">
-                            <i class="fa fa-cubes text-indigo me-2" style="color:#4f46e5;"></i>Inventory Analytics
-                        </h3>
-                        <p class="text-muted mb-0" style="font-size:0.85rem;">
-                            Track stock levels, movements, and inventory health.
-                        </p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white"
-                                t-on-click="openExportModal" style="transition:all 0.2s;">
-                            <i class="fa fa-file-excel-o me-2"></i>Export Excel
-                        </button>
-                        <button class="btn btn-white border shadow-sm rounded-pill px-3 fw-bold text-danger bg-white"
-                                t-on-click="resetFilters" style="transition:all 0.2s;">
-                            <i class="fa fa-refresh me-1"></i>Reset
-                        </button>
-                        <button class="btn btn-dark shadow-sm rounded-circle d-flex align-items-center justify-content-center"
-                                style="width:42px;height:42px;background:#1e293b;border:none;"
-                                t-on-click="toggleSidebar" title="Toggle Filters">
-                            <i class="fa fa-sliders"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- ===== ROW 1: KPI Cards ===== -->
-                <div class="row g-3 mb-4">
-
-                    <!-- Stock On Hand -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
-                             t-on-click="openStockDetails">
-                            <div class="wb-icon-box icon-indigo me-3"><i class="fa fa-cubes"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Stock On Hand</p>
-                                <h4 class="fw-bold mb-0 text-dark">
-                                    <t t-esc="state.stock_on_hand"/>
-                                    <span class="text-muted fw-normal" style="font-size:0.8rem;"> Units</span>
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Stock Value -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
-                             t-on-click="openProductList">
-                            <div class="wb-icon-box icon-emerald me-3"><i class="fa fa-money"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Stock Value</p>
-                                <h4 class="fw-bold mb-0 text-dark">
-                                    <t t-esc="state.stock_value_fmt"/>
-                                    <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- COGS -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card d-flex align-items-center h-100">
-                            <div class="wb-icon-box icon-amber me-3"><i class="fa fa-shopping-cart"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">COGS (Period)</p>
-                                <h4 class="fw-bold mb-0 text-dark">
-                                    <t t-esc="state.cogs_fmt"/>
-                                    <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Total Products -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
-                             t-on-click="openProductList">
-                            <div class="wb-icon-box icon-cyan me-3"><i class="fa fa-tags"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Products</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_products"/></h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== ROW 2: More KPIs ===== -->
-                <div class="row g-3 mb-4">
-
-                    <!-- Inventory Turnover -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card d-flex align-items-center h-100">
-                            <div class="wb-icon-box icon-violet me-3"><i class="fa fa-refresh"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Inventory Turnover</p>
-                                <h4 class="fw-bold mb-0" style="color:#7c3aed;"><t t-esc="state.inventory_turnover"/></h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- DIO -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card d-flex align-items-center h-100">
-                            <div class="wb-icon-box icon-teal me-3"><i class="fa fa-calendar"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">DIO (Days in Stock)</p>
-                                <h4 class="fw-bold mb-0" style="color:#14b8a6;"><t t-esc="state.dio"/></h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Low Stock -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card clickable d-flex align-items-center h-100"
-                             t-on-click="openLowStock">
-                            <div class="wb-icon-box icon-red me-3"><i class="fa fa-exclamation-triangle"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Low Stock Alerts</p>
-                                <h4 class="fw-bold mb-0 text-danger">
-                                    <t t-esc="state.low_stock_count"/>
-                                    <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dead Stock -->
-                    <div class="col-xl-3 col-md-6">
-                        <div class="wb-kpi-card d-flex align-items-center h-100">
-                            <div class="wb-icon-box icon-slate me-3"><i class="fa fa-archive"></i></div>
-                            <div>
-                                <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Dead Stock (No Movement)</p>
-                                <h4 class="fw-bold mb-0 text-secondary">
-                                    <t t-esc="state.dead_stock_count"/>
-                                    <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
-                                </h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== ROW 3: Stock Movement Trend ===== -->
-                <div class="row g-3 mb-4">
-                    <div class="col-12">
-                        <div class="wb-chart-card">
-                            <div class="wb-chart-title">
-                                <i class="fa fa-line-chart me-2" style="color:#4f46e5;"></i>
-                                Stock Movement Trend (In vs Out)
-                                <span class="chart-hint">(Qty over selected period)</span>
-                            </div>
-                            <div style="height:300px; position:relative;">
-                                <canvas t-ref="trend_chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== ROW 4: ABC + Top Products ===== -->
-                <div class="row g-3 mb-4">
-                    <div class="col-lg-5">
-                        <div class="wb-chart-card h-100">
-                            <div class="wb-chart-title">
-                                <i class="fa fa-pie-chart me-2" style="color:#10b981;"></i>
-                                ABC Analysis (Stock Value by Category)
-                            </div>
-                            <div style="height:300px; position:relative;">
-                                <canvas t-ref="abc_chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-7">
-                        <div class="wb-chart-card h-100">
-                            <div class="wb-chart-title">
-                                <i class="fa fa-bar-chart me-2" style="color:#4f46e5;"></i>
-                                Top Products by Quantity Out
-                                <span class="chart-hint">(Click bar to view moves)</span>
-                            </div>
-                            <div style="height:300px; position:relative;">
-                                <canvas t-ref="top_product_chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ===== ROW 5: Stock by Location ===== -->
-                <div class="row g-3 mb-4">
-                    <div class="col-12">
-                        <div class="wb-chart-card">
-                            <div class="wb-chart-title">
-                                <i class="fa fa-map-marker me-2" style="color:#06b6d4;"></i>
-                                Stock Distribution by Location
-                                <span class="chart-hint">(Click bar to view stock details)</span>
-                            </div>
-                            <div style="height:280px; position:relative;">
-                                <canvas t-ref="location_chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div><!-- end main -->
-
-            <!-- ===== SIDEBAR FILTERS ===== -->
-            <div class="wb-inv-sidebar" t-if="state.showSidebar">
-                <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        <i class="fa fa-sliders me-2 fs-5" style="color:#4f46e5;"></i>
-                        <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
-                    </div>
-                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar">
-                        <i class="fa fa-times"></i>
+    <!-- EXPORT EXCEL MODAL -->
+    <t t-if="state.showExportModal">
+        <div class="wb-modal-overlay">
+            <div class="wb-modal-content">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius:20px 20px 0 0;">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa fa-file-excel-o text-success me-2"/>
+                        Export Inventory Excel
+                    </h5>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal">
+                        <i class="fa fa-times"/>
                     </button>
                 </div>
-
-                <div class="wb-inv-sidebar-scroll">
-
-                    <!-- Time Period -->
+                <div class="p-4">
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
-                        <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
-                            <option value="0" disabled="1">-- Custom Dates --</option>
-                            <option value="7">📅 Last 7 Days</option>
-                            <option value="30">📅 Last 30 Days</option>
-                            <option value="90">📅 Last 3 Months</option>
-                            <option value="180">📅 Last 6 Months</option>
-                            <option value="365">📅 Last Year</option>
+                        <label class="fw-bold text-muted text-uppercase mb-2" style="font-size:0.72rem;">Group Data By (Rows)</label>
+                        <select class="form-select wb-input" t-model="state.export_group">
+                            <option value="product">&#128230; Product</option>
+                            <option value="category">&#128193; Product Category</option>
+                            <option value="location">&#128205; Location</option>
+                            <option value="warehouse">&#127981; Warehouse</option>
                         </select>
-                        <div class="p-3 bg-light rounded-3 border">
-                            <label class="text-xs fw-bold text-dark mb-2">
-                                <i class="fa fa-calendar me-1"></i> Custom Range
-                            </label>
-                            <input type="date" class="form-control wb-input form-control-sm mb-2"
-                                   t-model="state.date_from" t-on-change="applyDateFilter"/>
-                            <input type="date" class="form-control wb-input form-control-sm"
-                                   t-model="state.date_to" t-on-change="applyDateFilter"/>
+                    </div>
+                    <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="fw-bold mb-1 text-dark">
+                                <i class="fa fa-sitemap text-primary me-2"/>
+                                Detailed Excel
+                            </h6>
+                            <small class="text-muted">Includes expandable stock move lines per group.</small>
+                        </div>
+                        <div class="form-check form-switch fs-4 m-0">
+                            <input class="form-check-input shadow-sm" type="checkbox" t-model="state.detailed_excel"/>
                         </div>
                     </div>
-                    <hr class="text-muted opacity-25"/>
-
-                    <!-- Filters -->
-                    <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Filter Dimensions</label>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Warehouse</label>
-                            <select class="form-select wb-input" t-model="state.warehouse_id" t-on-change="onChangeFilter">
-                                <option value="all">🏭 All Warehouses</option>
-                                <t t-foreach="state.filter_warehouses" t-as="wh" t-key="wh.id">
-                                    <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
-                                </t>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Product</label>
-                            <select class="form-select wb-input" t-model="state.product_id" t-on-change="onChangeFilter">
-                                <option value="all">📦 All Products</option>
-                                <t t-foreach="state.filter_products" t-as="p" t-key="p.id">
-                                    <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
-                                </t>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Product Category</label>
-                            <select class="form-select wb-input" t-model="state.category_id" t-on-change="onChangeFilter">
-                                <option value="all">📁 All Categories</option>
-                                <t t-foreach="state.filter_categories" t-as="cat" t-key="cat.id">
-                                    <option t-att-value="cat.id"><t t-esc="cat.name"/></option>
-                                </t>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Location</label>
-                            <select class="form-select wb-input" t-model="state.location_id" t-on-change="onChangeFilter">
-                                <option value="all">📍 All Locations</option>
-                                <t t-foreach="state.filter_locations" t-as="loc" t-key="loc.id">
-                                    <option t-att-value="loc.id"><t t-esc="loc.complete_name"/></option>
-                                </t>
-                            </select>
-                        </div>
-
-                    </div>
-
-                    <!-- Quick Stats Summary -->
-                    <hr class="text-muted opacity-25"/>
-                    <div class="mb-3">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Quick Summary</label>
-                        <div class="p-3 bg-light rounded-3 border">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-xs text-muted">Stock On Hand</span>
-                                <span class="text-xs fw-bold text-dark"><t t-esc="state.stock_on_hand"/> Units</span>
+                    <div class="mb-2">
+                        <label class="fw-bold text-muted text-uppercase mb-3" style="font-size:0.72rem;">Select Measures (Columns)</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_qty" t-model="state.meas_qty"/>
+                                    <label class="form-check-label text-dark fw-bold" for="meas_qty">Qty On Hand</label>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-xs text-muted">Stock Value</span>
-                                <span class="text-xs fw-bold text-dark"><t t-esc="state.stock_value_fmt"/> EGP</span>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_value" t-model="state.meas_value"/>
+                                    <label class="form-check-label text-dark fw-bold" for="meas_value">Stock Value (EGP)</label>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-xs text-muted">Turnover Rate</span>
-                                <span class="text-xs fw-bold text-dark"><t t-esc="state.inventory_turnover"/></span>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_cogs" t-model="state.meas_cogs"/>
+                                    <label class="form-check-label text-dark fw-bold" for="meas_cogs">COGS (EGP)</label>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-xs text-muted">Days in Stock (DIO)</span>
-                                <span class="text-xs fw-bold text-dark"><t t-esc="state.dio"/></span>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_turnover" t-model="state.meas_turnover"/>
+                                    <label class="form-check-label text-dark fw-bold" for="meas_turnover">Turnover Rate</label>
+                                </div>
                             </div>
-                            <div class="d-flex justify-content-between">
-                                <span class="text-xs text-muted">Low Stock Items</span>
-                                <span class="text-xs fw-bold text-danger"><t t-esc="state.low_stock_count"/></span>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch fs-6 p-2 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="meas_cat" t-model="state.meas_category"/>
+                                    <label class="form-check-label text-dark fw-bold" for="meas_cat">Category Column</label>
+                                </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
-            </div><!-- end sidebar -->
-
-        </div><!-- end wrapper -->
+                <div class="p-3 border-top bg-light text-end" style="border-radius:0 0 20px 20px;">
+                    <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closeExportModal">Cancel</button>
+                    <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" t-on-click="downloadInventoryExcel">
+                        <i class="fa fa-download me-2"/>
+                        Download Excel
+                    </button>
+                </div>
+            </div>
+        </div>
     </t>
+
+    <!-- PDF MODAL -->
+    <t t-if="state.showPdfModal">
+        <div class="wb-modal-overlay">
+            <div class="wb-modal-content">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius:20px 20px 0 0;">
+                    <h5 class="fw-bold text-dark mb-0">
+                        <i class="fa fa-file-pdf-o text-danger me-2"/>
+                        Print Inventory Report
+                    </h5>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closePdfModal">
+                        <i class="fa fa-times"/>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <p class="text-muted mb-3">Select the KPIs to include in the PDF report:</p>
+                    <div class="list-group shadow-sm">
+                        <label class="list-group-item d-flex gap-3 py-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_stock" style="font-size:1.3em;"/>
+                            <span>
+                                <strong class="d-block text-dark">Stock On Hand</strong>
+                                <small class="text-muted">Total units across internal locations.</small>
+                            </span>
+                        </label>
+                        <label class="list-group-item d-flex gap-3 py-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_value" style="font-size:1.3em;"/>
+                            <span>
+                                <strong class="d-block text-dark">Stock Value</strong>
+                                <small class="text-muted">Ending inventory value at standard cost.</small>
+                            </span>
+                        </label>
+                        <label class="list-group-item d-flex gap-3 py-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_cogs" style="font-size:1.3em;"/>
+                            <span>
+                                <strong class="d-block text-dark">COGS &amp; Received Value</strong>
+                                <small class="text-muted">Outbound and inbound cost for the period.</small>
+                            </span>
+                        </label>
+                        <label class="list-group-item d-flex gap-3 py-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_turnover" style="font-size:1.3em;"/>
+                            <span>
+                                <strong class="d-block text-dark">Turnover &amp; DIO</strong>
+                                <small class="text-muted">Annualized inventory turnover rate and days outstanding.</small>
+                            </span>
+                        </label>
+                        <label class="list-group-item d-flex gap-3 py-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_low_stock" style="font-size:1.3em;"/>
+                            <span>
+                                <strong class="d-block text-dark">Low Stock Alerts</strong>
+                                <small class="text-muted">Count of items at or below reorder point.</small>
+                            </span>
+                        </label>
+                        <label class="list-group-item d-flex gap-3 py-3">
+                            <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_dead" style="font-size:1.3em;"/>
+                            <span>
+                                <strong class="d-block text-dark">Dead Stock</strong>
+                                <small class="text-muted">Items with no movement in selected period.</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="p-3 border-top bg-light text-end" style="border-radius:0 0 20px 20px;">
+                    <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closePdfModal">Cancel</button>
+                    <button class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" t-on-click="printCleanPDF">
+                        <i class="fa fa-print me-2"/>
+                        Print PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- MAIN CONTENT -->
+    <div class="wb-inv-main">
+
+        <!-- Loading overlay -->
+        <t t-if="state.isLoading">
+            <div class="wb-loading-overlay">
+                <div class="text-center">
+                    <div class="wb-spinner mb-3"/>
+                    <p class="text-muted fw-bold" style="font-size:0.85rem;">Refreshing data&#8230;</p>
+                </div>
+            </div>
+        </t>
+
+        <!-- GLASSY HEADER -->
+        <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 gap-4">
+
+            <!-- Title -->
+            <div class="flex-shrink-0">
+                <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing:-0.5px;">
+                    <i class="fa fa-cubes me-2" style="color:#4f46e5;"/>
+                    Inventory Analytics
+                </h3>
+                <p class="text-muted mb-0" style="font-size:0.85rem;">Track stock levels, movements, and inventory health.</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex-grow-1 d-flex justify-content-center mx-4" style="max-width:600px;">
+                <div class="shadow-sm d-flex align-items-stretch w-100"
+                     style="background:#fff;border-radius:9999px;border:1px solid #e2e8f0;min-height:38px;padding:0 10px;">
+                    <div class="d-flex align-items-center justify-content-center" style="width:30px;">
+                        <i class="fa fa-search text-muted"/>
+                    </div>
+
+                    <!-- Active tokens -->
+                    <div class="d-flex flex-wrap flex-grow-1 align-items-center gap-1 py-1" style="min-height:36px;">
+
+                        <!-- Favorite token -->
+                        <t t-if="state.active_favorite_name">
+                            <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                 style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                <span class="px-2 py-1 text-white" style="background-color:#ffc107;">
+                                    <i class="fa fa-star"/>
+                                </span>
+                                <span class="px-2 fw-bold text-dark"><t t-esc="state.active_favorite_name"/></span>
+                                <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="clearFavorite"/>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <!-- Search query token -->
+                            <t t-if="state.search_query">
+                                <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                     style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                    <span class="px-2 py-1 bg-primary text-white"><i class="fa fa-search"/></span>
+                                    <span class="px-2"><t t-esc="state.search_query"/></span>
+                                    <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="clearSearchQuery"/>
+                                </div>
+                            </t>
+                            <!-- Quick filter tokens -->
+                            <t t-if="state.active_filters.low_stock">
+                                <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                     style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                    <span class="px-2 py-1" style="background-color:#0d9488;color:white;"><i class="fa fa-filter"/></span>
+                                    <span class="px-2">Low Stock</span>
+                                    <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="() => this.toggleFilter('low_stock')"/>
+                                </div>
+                            </t>
+                            <t t-if="state.active_filters.dead_stock">
+                                <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                     style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                    <span class="px-2 py-1" style="background-color:#0d9488;color:white;"><i class="fa fa-filter"/></span>
+                                    <span class="px-2">Dead Stock</span>
+                                    <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="() => this.toggleFilter('dead_stock')"/>
+                                </div>
+                            </t>
+                            <t t-if="state.active_filters.no_reorder">
+                                <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                     style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                    <span class="px-2 py-1" style="background-color:#0d9488;color:white;"><i class="fa fa-filter"/></span>
+                                    <span class="px-2">No Reorder Rule</span>
+                                    <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="() => this.toggleFilter('no_reorder')"/>
+                                </div>
+                            </t>
+                            <!-- Custom domain tokens -->
+                            <t t-foreach="state.custom_domain" t-as="cf" t-key="cf_index">
+                                <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                     style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                    <span class="px-2 py-1" style="background-color:#0d9488;color:white;">
+                                        <t t-esc="cf.label"/>
+                                        <t t-esc="cf.operator"/>
+                                        <t t-esc="cf.value"/>
+                                    </span>
+                                    <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="() => this.removeCustomFilter(cf_index)"/>
+                                </div>
+                            </t>
+                            <!-- Group by tokens -->
+                            <t t-foreach="state.group_by_list" t-as="gb" t-key="gb">
+                                <div class="badge d-flex align-items-center p-0 overflow-hidden"
+                                     style="background-color:#eef2f6;border:1px solid #d3dbe3;color:#495057;border-radius:3px;">
+                                    <span class="px-2 py-1" style="background-color:#4f46e5;color:white;"><i class="fa fa-bars"/></span>
+                                    <span class="px-2 text-capitalize"><t t-esc="gb"/></span>
+                                    <i class="fa fa-times px-2" style="cursor:pointer;" t-on-click="() => this.removeGroupBy(gb)"/>
+                                </div>
+                            </t>
+                        </t>
+
+                        <input type="text" class="border-0 fw-bold flex-grow-1 px-1"
+                               t-on-keyup="onSearchKeyUp"
+                               placeholder="Search product or location..."
+                               style="box-shadow:none;background:transparent;min-width:150px;outline:none;height:26px;"/>
+                    </div>
+
+                    <!-- Dropdown: Filters / Group By / Favorites -->
+                    <div class="dropdown d-flex align-items-stretch">
+                        <button class="btn border-0 d-flex align-items-center justify-content-center wb-search-dropdown-btn bg-transparent"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                            <i class="fa fa-caret-down" style="color:#495057;font-size:14px;"/>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0"
+                             style="width:800px;border-radius:12px;border:1px solid #ccc;z-index:9999;">
+                            <div class="row g-0">
+
+                                <!-- Column 1: Filters -->
+                                <div class="col-4 border-end p-3">
+                                    <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1">
+                                        <i class="fa fa-filter me-2 text-muted"/>Filters
+                                    </h6>
+                                    <a class="dropdown-item px-2 py-1 rounded" href="#"
+                                       t-on-click.prevent="() => this.toggleFilter('low_stock')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.low_stock ? 'text-dark' : 'opacity-0' }}"/>
+                                        Low Stock Only
+                                    </a>
+                                    <a class="dropdown-item px-2 py-1 rounded" href="#"
+                                       t-on-click.prevent="() => this.toggleFilter('dead_stock')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.dead_stock ? 'text-dark' : 'opacity-0' }}"/>
+                                        Dead Stock Only
+                                    </a>
+                                    <a class="dropdown-item px-2 py-1 rounded" href="#"
+                                       t-on-click.prevent="() => this.toggleFilter('no_reorder')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.active_filters.no_reorder ? 'text-dark' : 'opacity-0' }}"/>
+                                        No Reorder Rule
+                                    </a>
+                                    <div class="dropdown-divider"/>
+                                    <button class="btn btn-sm text-start w-100 fw-bold text-primary px-2"
+                                            t-on-click.prevent="toggleCustomFilterMenu">
+                                        Add Custom Filter
+                                        <i t-attf-class="fa {{ state.show_custom_filter_menu ? 'fa-caret-down' : 'fa-caret-right' }}"/>
+                                    </button>
+                                    <div t-if="state.show_custom_filter_menu" class="custom-submenu" t-on-click.stop="">
+                                        <select class="form-select form-select-sm mb-2" t-model="state.cf_field"
+                                                t-on-change="() => state.cf_value = ''">
+                                            <t t-foreach="state.model_fields" t-as="f" t-key="f.name">
+                                                <option t-att-value="f.name"><t t-esc="f.string"/></option>
+                                            </t>
+                                        </select>
+                                        <select class="form-select form-select-sm mb-2" t-model="state.cf_operator">
+                                            <option value="=">=</option>
+                                            <option value="!=">!=</option>
+                                            <option value="ilike">contains</option>
+                                            <option value="gt">&#62;</option>
+                                            <option value="lt">&#60;</option>
+                                        </select>
+                                        <input type="text" class="form-control form-control-sm mb-2"
+                                               t-model="state.cf_value" placeholder="Value..."/>
+                                        <button class="btn btn-sm btn-primary w-100" t-on-click="addCustomFilter">Apply</button>
+                                    </div>
+                                </div>
+
+                                <!-- Column 2: Group By -->
+                                <div class="col-4 border-end p-3">
+                                    <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1">
+                                        <i class="fa fa-bars me-2 text-muted"/>Group By
+                                    </h6>
+                                    <a class="dropdown-item px-2 py-1 rounded" href="#"
+                                       t-on-click.prevent="() => this.toggleGroupBy('category')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('category') ? 'text-dark' : 'opacity-0' }}"/>
+                                        Category
+                                    </a>
+                                    <a class="dropdown-item px-2 py-1 rounded" href="#"
+                                       t-on-click.prevent="() => this.toggleGroupBy('location')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('location') ? 'text-dark' : 'opacity-0' }}"/>
+                                        Location
+                                    </a>
+                                    <a class="dropdown-item px-2 py-1 rounded" href="#"
+                                       t-on-click.prevent="() => this.toggleGroupBy('warehouse')">
+                                        <i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('warehouse') ? 'text-dark' : 'opacity-0' }}"/>
+                                        Warehouse
+                                    </a>
+                                    <div class="dropdown-divider"/>
+                                    <button class="btn btn-sm text-start w-100 fw-bold text-primary px-2"
+                                            t-on-click.prevent="toggleCustomGroupMenu">
+                                        Add Custom Group
+                                        <i t-attf-class="fa {{ state.show_custom_group_menu ? 'fa-caret-down' : 'fa-caret-right' }}"/>
+                                    </button>
+                                    <div t-if="state.show_custom_group_menu" class="custom-submenu" t-on-click.stop="">
+                                        <select class="form-select form-select-sm mb-2" t-model="state.cg_field">
+                                            <t t-foreach="state.model_fields" t-as="f" t-key="f.name">
+                                                <option t-att-value="f.name"><t t-esc="f.string"/></option>
+                                            </t>
+                                        </select>
+                                        <button class="btn btn-sm btn-primary w-100" t-on-click="addCustomGroupBy">Apply</button>
+                                    </div>
+                                </div>
+
+                                <!-- Column 3: Favorites -->
+                                <div class="col-4 p-3">
+                                    <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1">
+                                        <i class="fa fa-star me-2 text-muted"/>Favorites
+                                    </h6>
+                                    <div class="px-1 mb-3">
+                                        <button class="btn btn-light w-100 text-start py-1 border-0 bg-light"
+                                                t-on-click.prevent="toggleSaveMenu">
+                                            Save current search
+                                            <i t-attf-class="fa {{ state.show_save_menu ? 'fa-caret-down' : 'fa-caret-left' }}"/>
+                                        </button>
+                                        <t t-if="state.show_save_menu">
+                                            <div class="mt-2" style="font-size:13px;" t-on-click.stop="">
+                                                <input type="text"
+                                                       class="form-control form-control-sm border-0 border-bottom rounded-0 shadow-none mb-2 px-1"
+                                                       t-model="state.favorite_name"
+                                                       style="border-color:#666 !important;"/>
+                                                <div class="form-check mb-1">
+                                                    <input class="form-check-input" type="checkbox" id="inv_fav_default"
+                                                           t-model="state.is_default_fav" t-on-change="onDefaultCheckboxChange"/>
+                                                    <label class="form-check-label text-muted" for="inv_fav_default">Default filter</label>
+                                                </div>
+                                                <div class="form-check mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="inv_fav_shared"
+                                                           t-model="state.is_shared_fav" t-on-change="onSharedCheckboxChange"/>
+                                                    <label class="form-check-label text-muted" for="inv_fav_shared">Shared</label>
+                                                </div>
+                                                <button class="btn btn-sm w-100 text-white fw-bold"
+                                                        style="background-color:#4f46e5;" t-on-click="saveFavoriteUI">Save</button>
+                                            </div>
+                                        </t>
+                                    </div>
+                                    <div class="dropdown-divider"/>
+                                    <t t-foreach="state.saved_favorites" t-as="fav" t-key="fav.id">
+                                        <div class="dropdown-item px-2 py-1 rounded d-flex justify-content-between align-items-center"
+                                             style="cursor:pointer;">
+                                            <span t-on-click="() => this.loadFavorite(fav)" class="flex-grow-1">
+                                                <i class="fa fa-star text-warning me-2"/>
+                                                <t t-esc="fav.name"/>
+                                            </span>
+                                            <i class="fa fa-trash text-muted ms-2"
+                                               t-on-click.stop="() => this.deleteFavorite(fav.id)"/>
+                                        </div>
+                                    </t>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="d-flex gap-2 flex-shrink-0">
+                <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white text-nowrap"
+                        t-on-click="openExportModal">
+                    <i class="fa fa-file-excel-o me-2"/>Custom Excel
+                </button>
+                <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white text-nowrap"
+                        t-on-click="openPdfModal">
+                    <i class="fa fa-file-pdf-o me-2"/>Print PDF
+                </button>
+                <button class="btn btn-white border shadow-sm rounded-pill px-3 fw-bold text-muted bg-white"
+                        t-on-click="resetFilters" title="Reset all filters">
+                    <i class="fa fa-refresh me-1"/>Reset
+                </button>
+                <button class="btn btn-dark shadow-sm rounded-circle d-flex align-items-center justify-content-center"
+                        style="width:42px;height:42px;background:#1e293b;border:none;"
+                        t-on-click="toggleSidebar" title="Toggle Filters">
+                    <i class="fa fa-sliders text-white"/>
+                </button>
+            </div>
+
+        </div>
+        <!-- /header -->
+
+        <!-- ROW 1: Primary KPIs -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openStockDetails">
+                    <div class="wb-icon-box icon-indigo me-3"><i class="fa fa-cubes"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Stock On Hand</p>
+                        <h4 class="fw-bold mb-0 text-dark">
+                            <t t-esc="state.stock_on_hand"/>
+                            <span class="text-muted fw-normal" style="font-size:0.8rem;"> Units</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openProductList">
+                    <div class="wb-icon-box icon-emerald me-3"><i class="fa fa-money"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Stock Value</p>
+                        <h4 class="fw-bold mb-0 text-dark">
+                            <t t-esc="state.stock_value_fmt"/>
+                            <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card d-flex align-items-center h-100">
+                    <div class="wb-icon-box icon-amber me-3"><i class="fa fa-shopping-cart"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">COGS (Period)</p>
+                        <h4 class="fw-bold mb-0 text-dark">
+                            <t t-esc="state.cogs_fmt"/>
+                            <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card d-flex align-items-center h-100">
+                    <div class="wb-icon-box icon-green me-3"><i class="fa fa-truck"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Received Value (Period)</p>
+                        <h4 class="fw-bold mb-0 text-dark">
+                            <t t-esc="state.received_value_fmt"/>
+                            <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: Secondary KPIs -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card d-flex align-items-center h-100">
+                    <div class="wb-icon-box icon-violet me-3"><i class="fa fa-refresh"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Inventory Turnover</p>
+                        <h4 class="fw-bold mb-0" style="color:#7c3aed;"><t t-esc="state.inventory_turnover"/></h4>
+                        <small class="text-muted" style="font-size:0.7rem;">COGS &#247; Stock Value (annualized)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card d-flex align-items-center h-100">
+                    <div class="wb-icon-box icon-teal me-3"><i class="fa fa-calendar"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">DIO (Days in Stock)</p>
+                        <h4 class="fw-bold mb-0" style="color:#14b8a6;"><t t-esc="state.dio"/></h4>
+                        <small class="text-muted" style="font-size:0.7rem;">Avg Inv &#247; COGS &#215; Period Days</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openLowStock">
+                    <div class="wb-icon-box icon-red me-3"><i class="fa fa-exclamation-triangle"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Low Stock Alerts</p>
+                        <h4 class="fw-bold mb-0 text-danger">
+                            <t t-esc="state.low_stock_count"/>
+                            <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
+                        </h4>
+                        <small class="text-muted" style="font-size:0.7rem;">Below reorder point</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openDeadStock">
+                    <div class="wb-icon-box icon-slate me-3"><i class="fa fa-archive"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Dead Stock</p>
+                        <h4 class="fw-bold mb-0 text-secondary">
+                            <t t-esc="state.dead_stock_count"/>
+                            <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
+                        </h4>
+                        <small class="text-muted" style="font-size:0.7rem;">No movement in period</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Products -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openProductList">
+                    <div class="wb-icon-box icon-cyan me-3"><i class="fa fa-tags"/></div>
+                    <div>
+                        <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Products</p>
+                        <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_products"/></h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Movement Trend -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="wb-chart-card">
+                    <div class="wb-chart-title">
+                        <i class="fa fa-line-chart me-2" style="color:#4f46e5;"/>
+                        Stock Movement Trend (In vs Out)
+                        <span class="chart-hint">(Qty over selected period)</span>
+                    </div>
+                    <div style="height:300px;position:relative;">
+                        <canvas t-ref="trend_chart"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABC Analysis + Top Products -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-5">
+                <div class="wb-chart-card h-100">
+                    <div class="wb-chart-title">
+                        <i class="fa fa-pie-chart me-2" style="color:#10b981;"/>
+                        ABC Analysis (Stock Value by Category)
+                    </div>
+                    <div style="height:300px;position:relative;">
+                        <canvas t-ref="abc_chart"/>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="wb-chart-card h-100">
+                    <div class="wb-chart-title">
+                        <i class="fa fa-bar-chart me-2" style="color:#4f46e5;"/>
+                        Top Products by Quantity Out
+                        <span class="chart-hint">(Click bar to view moves)</span>
+                    </div>
+                    <div style="height:300px;position:relative;">
+                        <canvas t-ref="top_product_chart"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Distribution by Location -->
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="wb-chart-card">
+                    <div class="wb-chart-title">
+                        <i class="fa fa-map-marker me-2" style="color:#06b6d4;"/>
+                        Stock Distribution by Location
+                        <span class="chart-hint">(Click bar to view stock at that location)</span>
+                    </div>
+                    <div style="height:280px;position:relative;">
+                        <canvas t-ref="location_chart"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- /wb-inv-main -->
+
+    <!-- SIDEBAR FILTERS -->
+    <div class="wb-inv-sidebar" t-if="state.showSidebar">
+        <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="fa fa-sliders me-2 fs-5" style="color:#4f46e5;"/>
+                <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
+            </div>
+            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar">
+                <i class="fa fa-times"/>
+            </button>
+        </div>
+        <div class="wb-inv-sidebar-scroll">
+
+            <!-- Time Period -->
+            <div class="mb-4">
+                <label class="form-label text-muted fw-bold text-uppercase mb-2" style="font-size:0.72rem;">Time Period</label>
+                <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
+                    <option value="0" disabled="1">-- Custom Dates --</option>
+                    <option value="7">&#128197; Last 7 Days</option>
+                    <option value="30">&#128197; Last 30 Days</option>
+                    <option value="90">&#128197; Last 3 Months</option>
+                    <option value="180">&#128197; Last 6 Months</option>
+                    <option value="365">&#128197; Last Year</option>
+                </select>
+                <div class="p-3 bg-light rounded-3 border">
+                    <label class="fw-bold text-dark mb-2" style="font-size:0.75rem;">
+                        <i class="fa fa-calendar me-1"/>Custom Range
+                    </label>
+                    <input type="date" class="form-control wb-input form-control-sm mb-2"
+                           t-model="state.date_from" t-on-change="applyDateFilter"/>
+                    <input type="date" class="form-control wb-input form-control-sm"
+                           t-model="state.date_to" t-on-change="applyDateFilter"/>
+                </div>
+            </div>
+            <hr class="text-muted opacity-25"/>
+
+            <!-- Dimension Filters -->
+            <div class="mb-4">
+                <label class="form-label text-muted fw-bold text-uppercase mb-3" style="font-size:0.72rem;">Filter Dimensions</label>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Warehouse</label>
+                    <select class="form-select wb-input" t-model="state.warehouse_id" t-on-change="onChangeFilter">
+                        <option value="all">&#127981; All Warehouses</option>
+                        <t t-foreach="state.filter_warehouses" t-as="wh" t-key="wh.id">
+                            <option t-att-value="wh.id"><t t-esc="wh.name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Product</label>
+                    <select class="form-select wb-input" t-model="state.product_id" t-on-change="onChangeFilter">
+                        <option value="all">&#128230; All Products</option>
+                        <t t-foreach="state.filter_products" t-as="p" t-key="p.id">
+                            <option t-att-value="p.id"><t t-esc="p.display_name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Product Category</label>
+                    <select class="form-select wb-input" t-model="state.category_id" t-on-change="onChangeFilter">
+                        <option value="all">&#128193; All Categories</option>
+                        <t t-foreach="state.filter_categories" t-as="cat" t-key="cat.id">
+                            <option t-att-value="cat.id"><t t-esc="cat.name"/></option>
+                        </t>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Location</label>
+                    <select class="form-select wb-input" t-model="state.location_id" t-on-change="onChangeFilter">
+                        <option value="all">&#128205; All Locations</option>
+                        <t t-foreach="state.filter_locations" t-as="loc" t-key="loc.id">
+                            <option t-att-value="loc.id"><t t-esc="loc.complete_name"/></option>
+                        </t>
+                    </select>
+                </div>
+            </div>
+            <hr class="text-muted opacity-25"/>
+
+            <!-- Quick Summary -->
+            <div class="mb-3">
+                <label class="form-label text-muted fw-bold text-uppercase mb-2" style="font-size:0.72rem;">Quick Summary</label>
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">Stock On Hand</span>
+                        <span class="fw-bold text-dark" style="font-size:0.75rem;"><t t-esc="state.stock_on_hand"/> Units</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">Stock Value</span>
+                        <span class="fw-bold text-dark" style="font-size:0.75rem;"><t t-esc="state.stock_value_fmt"/> EGP</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">COGS</span>
+                        <span class="fw-bold text-dark" style="font-size:0.75rem;"><t t-esc="state.cogs_fmt"/> EGP</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">Received Value</span>
+                        <span class="fw-bold text-dark" style="font-size:0.75rem;"><t t-esc="state.received_value_fmt"/> EGP</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">Turnover Rate</span>
+                        <span class="fw-bold text-dark" style="font-size:0.75rem;"><t t-esc="state.inventory_turnover"/></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">Days in Stock (DIO)</span>
+                        <span class="fw-bold text-dark" style="font-size:0.75rem;"><t t-esc="state.dio"/></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted" style="font-size:0.75rem;">Low Stock Items</span>
+                        <span class="fw-bold text-danger" style="font-size:0.75rem;"><t t-esc="state.low_stock_count"/></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted" style="font-size:0.75rem;">Dead Stock Items</span>
+                        <span class="fw-bold text-secondary" style="font-size:0.75rem;"><t t-esc="state.dead_stock_count"/></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- /sidebar -->
+
+</div>
+<!-- /wrapper -->
+</t>
 </templates>
