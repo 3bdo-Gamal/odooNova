@@ -35,7 +35,12 @@ export class InvoicingDashboardClient extends Component {
 
             // Charts Data
             trend_labels: [], trend_invoiced_data: [], trend_collected_data: [],
-            customer_labels: [], customer_data: []
+            customer_labels: [], customer_data: [],
+
+            // Export & Modal States
+            showExportModal: false, showPdfModal: false, export_group: "journal_id", detailed_excel: false,
+            meas_invoiced: true, meas_collected: true, meas_unpaid: false,
+            pdf_invoiced: true, pdf_unpaid: true, pdf_ratios: true
         });
 
         this.searchModel = new SearchModel(this.env, { user: useService("user"), orm: this.orm, view: this.viewService });
@@ -43,6 +48,7 @@ export class InvoicingDashboardClient extends Component {
 
         onWillStart(async () => {
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js");
+            await loadJS("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js");
             await this.loadFilters();
 
             try {
@@ -105,8 +111,48 @@ export class InvoicingDashboardClient extends Component {
         });
     }
 
+    // --- Export Functions ---
+    openExportModal() { this.state.showExportModal = true; }
+    closeExportModal() { this.state.showExportModal = false; }
+    openPdfModal() { this.state.showPdfModal = true; }
+    closePdfModal() { this.state.showPdfModal = false; }
+
+    async downloadCustomExcel() {
+        this.state.showExportModal = false;
+        const measures = [];
+        if (this.state.meas_invoiced) measures.push('invoiced');
+        if (this.state.meas_collected) measures.push('collected');
+        if (this.state.meas_unpaid) measures.push('unpaid');
+        if (measures.length === 0) { alert("Please select at least one measure."); return; }
+
+        const searchDomain = this.env.searchModel ? this.env.searchModel.domain : [];
+        const kwargs = {
+            journal_id: this.state.journal_id, user_id: this.state.user_id,
+            company_id: this.state.company_id, payment_state: this.state.payment_state,
+            period: parseInt(this.state.period) || 0, date_from: this.state.date_from || false, date_to: this.state.date_to || false,
+            export_group: this.state.export_group, export_measures: measures, detailed_excel: this.state.detailed_excel, native_domain: searchDomain
+        };
+
+        // Ensure your Python model implements `export_custom_pivot_excel`
+        const attachmentId = await this.orm.call("wb.invoicing.dashboard", "export_custom_pivot_excel", [], kwargs);
+        if (attachmentId) { window.location = `/web/content/${attachmentId}?download=true`; }
+    }
+
+    printCleanPDF() {
+        this.state.showPdfModal = false;
+        const element = document.getElementById('print_report_area');
+        element.style.display = 'block';
+        const opt = {
+            margin: 0.5,
+            filename: `Invoicing_KPI_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        window.html2pdf().set(opt).from(element).save().then(() => { element.style.display = 'none'; });
+    }
+
     renderCharts() {
-        // Multi-line chart for Invoiced vs Collected
         if (this.trendChartRef.el) {
             if (this.trendChartRef.el.chartInstance) this.trendChartRef.el.chartInstance.destroy();
             this.trendChartRef.el.chartInstance = new window.Chart(this.trendChartRef.el, {
@@ -122,7 +168,6 @@ export class InvoicingDashboardClient extends Component {
             });
         }
 
-        // Bar chart for Top Customers by Debt
         if (this.customerChartRef.el) {
             if (this.customerChartRef.el.chartInstance) this.customerChartRef.el.chartInstance.destroy();
             this.customerChartRef.el.chartInstance = new window.Chart(this.customerChartRef.el, {
@@ -132,7 +177,6 @@ export class InvoicingDashboardClient extends Component {
             });
         }
 
-        // Doughnut chart for Status Ratios
         if (this.statusChartRef.el) {
             if (this.statusChartRef.el.chartInstance) this.statusChartRef.el.chartInstance.destroy();
             this.statusChartRef.el.chartInstance = new window.Chart(this.statusChartRef.el, {
@@ -143,4 +187,4 @@ export class InvoicingDashboardClient extends Component {
         }
     }
 }
-registry.category("actions").add("invoicing_dashboard_client_tag", InvoicingDashboardClient);
+registry.category("actions").add("invoicing_dashboard_client_tag", InvoicingDashboardClient);   

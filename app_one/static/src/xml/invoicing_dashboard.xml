@@ -20,11 +20,106 @@
             .wb-native-search .o_searchview { background: #f8fafc; border-radius: 9999px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); padding: 4px 18px; transition: all 0.3s;}
             .wb-native-search .o_searchview:focus-within { background: #ffffff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
             .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
+
+            /* Modal and PDF CSS */
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+            #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
+            .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
+            .print-title { font-size: 16px; font-weight: bold; color: #334155; }
+            .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
         </style>
 
         <div class="wb-dashboard-wrapper">
+
+            <!-- EXCEL MODAL -->
+            <t t-if="state.showExportModal">
+                <div class="wb-modal-overlay">
+                    <div class="wb-modal-content">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-excel-o text-success me-2"></i> Export Invoicing Excel</h5>
+                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="p-4">
+                            <div class="mb-4">
+                                <label class="fw-bold text-muted text-xs text-uppercase mb-2">Group Data By (Rows)</label>
+                                <select class="form-select wb-input" t-model="state.export_group">
+                                    <option value="journal_id">📓 Sales Journal</option>
+                                    <option value="user_id">👔 Salesperson</option>
+                                    <option value="partner_id">👥 Customer</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="fw-bold text-muted text-xs text-uppercase mb-3">Select Measures (Columns)</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_inv" t-model="state.meas_invoiced"/><label class="form-check-label text-dark fw-bold" for="meas_inv">Total Invoiced</label></div></div>
+                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_col" t-model="state.meas_collected"/><label class="form-check-label text-dark fw-bold" for="meas_col">Cash Collected</label></div></div>
+                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_unp" t-model="state.meas_unpaid"/><label class="form-check-label text-dark fw-bold" for="meas_unp">Unpaid Amount</label></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
+                            <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closeExportModal">Cancel</button>
+                            <button class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" t-on-click="downloadCustomExcel">
+                                <i class="fa fa-download me-2"></i> Download Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <!-- PDF MODAL -->
+            <t t-if="state.showPdfModal">
+                <div class="wb-modal-overlay">
+                    <div class="wb-modal-content">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-pdf-o text-danger me-2"></i> Print Invoicing Report</h5>
+                            <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closePdfModal"><i class="fa fa-times"></i></button>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted mb-3">Select the KPIs you want to include in the printed report:</p>
+                            <div class="list-group shadow-sm">
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_invoiced" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Invoicing &amp; Collection</strong><small class="text-muted">Total amount invoiced vs collected.</small></span>
+                                </label>
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_unpaid" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Debt &amp; Overdue</strong><small class="text-muted">Current accounts receivable &amp; overdue debts.</small></span>
+                                </label>
+                                <label class="list-group-item d-flex gap-3 py-3">
+                                  <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_ratios" style="font-size: 1.3em;"/>
+                                  <span><strong class="d-block text-dark">Health Ratios</strong><small class="text-muted">Paid/Unpaid ratios and Average Collection Time (DSO).</small></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
+                            <button class="btn btn-light border rounded-pill px-4 me-2 fw-bold" t-on-click="closePdfModal">Cancel</button>
+                            <button class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm" t-on-click="printCleanPDF"><i class="fa fa-print me-2"></i> Print PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <!-- HIDDEN PDF PRINT AREA -->
+            <div id="print_report_area" style="display: none;">
+                <div class="print-header">
+                    <h1 style="margin: 0; color: #1e293b;">Invoicing &amp; Collections Report</h1>
+                    <p style="color: #64748b; margin-top: 5px;">Generated on: <t t-esc="new Date().toLocaleDateString()"/></p>
+                </div>
+                <div t-if="state.pdf_invoiced" class="print-row"><span class="print-title">Total Invoiced Amount</span><span class="print-value"><t t-esc="state.total_invoiced_amount"/> EGP</span></div>
+                <div t-if="state.pdf_invoiced" class="print-row"><span class="print-title">Cash Collected</span><span class="print-value" style="color: #059669;"><t t-esc="state.cash_collected"/> EGP</span></div>
+                <div t-if="state.pdf_unpaid" class="print-row"><span class="print-title">Accounts Receivable (Unpaid)</span><span class="print-value" style="color: #b45309;"><t t-esc="state.unpaid_amount"/> EGP</span></div>
+                <div t-if="state.pdf_unpaid" class="print-row"><span class="print-title">Overdue Amount</span><span class="print-value" style="color: #dc2626;"><t t-esc="state.overdue_amount"/> EGP</span></div>
+                <div t-if="state.pdf_ratios" class="print-row"><span class="print-title">Paid Ratio</span><span class="print-value"><t t-esc="state.paid_ratio"/> %</span></div>
+                <div t-if="state.pdf_ratios" class="print-row"><span class="print-title">Avg Collection Time (DSO)</span><span class="print-value"><t t-esc="state.dso"/> Days</span></div>
+                <div t-if="state.pdf_ratios" class="print-row"><span class="print-title">Bad Debt Percentage</span><span class="print-value"><t t-esc="state.bad_debt_pct"/> %</span></div>
+            </div>
+
             <div class="wb-main-content">
-                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4">
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none">
                     <div>
                         <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
                             <i class="fa fa-money text-primary me-2"></i>Invoicing &amp; Collections
@@ -34,7 +129,11 @@
                     <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">
                         <SearchBar t-if="env.searchModel" />
                     </div>
+
+                    <!-- NEW EXCEL & PDF BUTTONS -->
                     <div class="d-flex gap-2">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white hover-bg-light text-nowrap" t-on-click="openExportModal" style="transition: all 0.2s;"><i class="fa fa-file-excel-o me-2"></i> Export Excel</button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white hover-bg-light text-nowrap" t-on-click="openPdfModal" style="transition: all 0.2s;"><i class="fa fa-file-pdf-o me-2"></i> Print PDF</button>
                         <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar" title="Toggle Filters"><i class="fa fa-sliders"></i></button>
                     </div>
                 </div>
@@ -118,7 +217,7 @@
                 </div>
             </div>
 
-            <div class="wb-sidebar" t-if="state.showSidebar">
+            <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
                 <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center"><i class="fa fa-sliders text-primary me-2 fs-5"></i><h5 class="fw-bold text-dark mb-0">Invoicing Filters</h5></div>
                     <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar"><i class="fa fa-times"></i></button>
