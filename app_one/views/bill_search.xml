@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_app_one_purchase_bills_search" model="ir.ui.view">
+        <field name="name">app.one.purchase.bills.search</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <search string="Search Purchase Bills">
+                <field name="name" string="Bill Reference"/>
+                <field name="partner_id" string="Vendor"/>
+                <field name="journal_id" string="Journal"/>
+
+                <filter string="My Bills" name="my_bills" domain="[('invoice_user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Posted" name="posted" domain="[('state', '=', 'posted')]"/>
+                <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancel')]"/>
+                <separator/>
+                <filter string="To Check" name="to_check" domain="[('to_check', '=', True)]"/>
+                <separator/>
+                <filter string="Unpaid" name="unpaid" domain="[('payment_state', 'in', ('not_paid', 'partial'))]"/>
+                <filter string="Paid" name="paid" domain="[('payment_state', 'in', ('paid', 'in_payment'))]"/>
+                <filter string="Reversed" name="reversed" domain="[('payment_state', '=', 'reversed')]"/>
+                <filter string="Overdue" name="overdue" domain="[('invoice_date_due', '&lt;', context_today().strftime('%Y-%m-%d')), ('state', '=', 'posted'), ('payment_state', 'in', ('not_paid', 'partial'))]"/>
+                <separator/>
+
+                <filter string="With PO" name="with_po" domain="[('invoice_line_ids.purchase_line_id', '!=', False)]"/>
+                <filter string="Without PO (Maverick)" name="without_po" domain="[('invoice_line_ids.purchase_line_id', '=', False)]"/>
+                <separator/>
+
+                <filter string="Bill Date" name="invoice_date" date="invoice_date"/>
+                <filter string="Accounting Date" name="accounting_date" date="date"/>
+                <filter string="Due Date" name="due_date" date="invoice_date_due"/>
+
+            </search>
+        </field>
+    </record>
+</odoo>

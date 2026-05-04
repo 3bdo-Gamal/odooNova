@@ -17,7 +17,7 @@
         'views/inventory_view.xml',
         'views/hr_view.xml',
         'views/PO.xml',
-        'views/bills_search.xml'
+        'views/bill_search.xml'
     ],
 
     "assets": {
