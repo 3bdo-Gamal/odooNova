@@ -16,7 +16,7 @@
             /* Header Styles */
 .wb-glassy-header {
                 position: relative;
-                z-index: 1050;
+                z-index: 10;
                 background: rgba(255, 255, 255, 0.6);
                 backdrop-filter: blur(12px);
                 -webkit-backdrop-filter: blur(12px);
@@ -49,7 +49,7 @@
             /* Native Search Bar Customization */
             .wb-native-search {
                 position: relative;
-                z-index: 1060;
+                z-index: 20;
             }
             .wb-native-search .o_searchview {
                 background: #f8fafc;
