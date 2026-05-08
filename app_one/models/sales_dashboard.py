@@ -14,7 +14,7 @@ class SalesDashboard(models.Model):
     _name = 'wb.sales.dashboard'
     _description = 'Sales KPI Dashboard'
 
-    # 1. Whitelist ثابت للحماية من تسريب الحقول
+    #  Whitelist
     ALLOWED_FIELDS = {
         'name', 'state', 'date_order', 'amount_total', 'amount_untaxed',
         'partner_id', 'user_id', 'team_id', 'company_id', 'warehouse_id',
@@ -42,7 +42,7 @@ class SalesDashboard(models.Model):
         countries = self.env['res.country'].search_read([], ['id', 'name'])
         companies = self.env['res.company'].search_read([], ['id', 'name'])
 
-        # تطبيق الـ Whitelist هنا لمنع إرسال حقول حساسة للـ JS
+        #  Whitelist
         fields_data = self.env['sale.order'].fields_get(list(self.ALLOWED_FIELDS))
         model_fields = []
         for fname, fdata in fields_data.items():
@@ -189,7 +189,7 @@ class SalesDashboard(models.Model):
             prev_domain_list.append(search_domain)
 
         nav_domain = expression.AND(final_domain_list)
-        # سيتم جلب الأوامر المفلترة مباشرة من الداتا بيز بفضل SQL Domain
+        #  SQL Domain
         orders = self.env['sale.order'].search(nav_domain)
 
         # 1. Total Revenue & AOV
@@ -223,7 +223,7 @@ class SalesDashboard(models.Model):
 
         for order in orders:
             for line in order.order_line:
-                # تخطي السطور الوهمية (أقسام/ملاحظات)
+
                 if line.display_type:
                     continue
 
@@ -306,7 +306,7 @@ class SalesDashboard(models.Model):
             for order in orders:
                 label_parts = []
                 for gb in group_by_list:
-                    # التحقق من أن الحقل مسموح به أمنياً
+
                     if gb not in self.ALLOWED_FIELDS:
                         continue
                     display_val = self._get_field_display_value(order, gb)
