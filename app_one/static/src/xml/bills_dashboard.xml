@@ -2,73 +2,84 @@
 <templates xml:space="preserve">
     <t t-name="purchase_bills_dashboard_template" owl="1">
         <style>
-            /* Glassmorphism and Modern UI Styles */
+            /* ── Layout ── */
             .wb-dashboard-wrapper {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
                 height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
             }
             .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
 
-            /* Sidebar Styles */
-            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+            /* ── Sidebar ── */
+            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease; }
             .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
 
-            /* Header Styles */
-.wb-glassy-header {
-                position: relative;
-                z-index: 10;
-                background: rgba(255, 255, 255, 0.6);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.8);
-                border-radius: 1.25rem;
-                padding: 1rem 1.5rem;
-                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+            /* ── Header (Matched to Sales Dashboard Design) ── */
+            .wb-glassy-header {
+                position: relative; z-index: 10;
+                background: rgba(255,255,255,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255,255,255,0.8); border-radius: 1.25rem;
+                padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
             }
-            /* Card Styles */
+
+            /* ── Cards ── */
             .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
             .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
             .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
 
-            /* Icon Box Styles */
+            /* ── Icon Boxes ── */
             .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
             .icon-primary { background: #eff6ff; color: #3b82f6; }
             .icon-success { background: #f0fdf4; color: #22c55e; }
-            .icon-info { background: #ecfeff; color: #06b6d4; }
+            .icon-info    { background: #ecfeff; color: #06b6d4; }
             .icon-warning { background: #fefce8; color: #eab308; }
-            .icon-danger { background: #fef2f2; color: #ef4444; }
-            .icon-dark { background: #f1f5f9; color: #334155; }
-            .icon-purple { background: #faf5ff; color: #a855f7; }
-            .icon-orange { background: #fff3cd; color: #fd7e14; }
+            .icon-danger  { background: #fef2f2; color: #ef4444; }
+            .icon-dark    { background: #f1f5f9; color: #334155; }
+            .icon-purple  { background: #faf5ff; color: #a855f7; }
 
-            /* Inputs and Search */
-            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; padding: 8px;}
+            /* ── Inputs ── */
+            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; padding: 8px; }
             .wb-input:focus { border-color: #3b82f6; outline: none; }
 
-            /* Native Search Bar Customization */
-            /* Native Search Bar Customization */
-            .wb-native-search {
-                position: relative;
-                z-index: 20;
-            }
-            .wb-native-search .o_searchview {
-                background: #f8fafc;
-                border-radius: 9999px;
-                border: 1px solid #e2e8f0;
-                box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-                padding: 4px 18px;
-                transition: all 0.3s;
-            }
-            .wb-native-search .o_searchview:focus-within {
-                background: #ffffff;
-                border-color: #93c5fd;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-            /* Chart Hints and Modals */
+            /* ── Native Search Bar Customization to look like Sales Pill ── */
+            .wb-native-search .o_searchview { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .wb-native-search .o_searchview_input_container { padding: 4px 8px; }
+
+            /* ── Chart hint ── */
             .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
-            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
-            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+
+            /* ── Modal ── */
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); animation: modalFadeIn 0.3s ease-out; }
             @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+            /* ── Info Icon Tooltip ── */
+            .wb-info-wrapper { position: relative; display: inline-flex; align-items: center; }
+            .wb-info-icon {
+                width: 18px; height: 18px; border-radius: 50%;
+                background: #e2e8f0; color: #64748b;
+                font-size: 11px; font-weight: 700; font-style: normal;
+                display: inline-flex; align-items: center; justify-content: center;
+                cursor: default; flex-shrink: 0;
+                transition: background 0.2s, color 0.2s;
+            }
+            .wb-info-icon:hover { background: #3b82f6; color: #fff; }
+            .wb-info-tooltip {
+                display: none; position: absolute;
+                top: calc(100% + 8px); right: 0;
+                background: #1e293b; color: #f1f5f9;
+                font-size: 12px; line-height: 1.5; font-weight: 400;
+                padding: 8px 12px; border-radius: 8px;
+                width: 220px; z-index: 999;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+                pointer-events: none;
+            }
+            .wb-info-tooltip::before {
+                content: ''; position: absolute; bottom: 100%; right: 6px;
+                border: 6px solid transparent; border-bottom-color: #1e293b;
+            }
+            .wb-info-wrapper:hover .wb-info-tooltip { display: block; }
+
+            /* ── Print area ── */
             #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
         </style>
 
@@ -94,157 +105,177 @@
                 </div>
             </t>
 
-            <div id="print_report_area" style="display: none; background: white; padding: 40px; color: #334155; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-
+            <div id="print_report_area" style="display:none;">
                 <div style="border-bottom: 3px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end;">
                     <div>
-                        <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: bold;">Purchase Bills Analytics</h1>
-                        <p style="margin: 8px 0 0 0; color: #64748b; font-size: 14px;">Comprehensive Vendor Liabilities &amp; Performance Report</p>
+                        <h1 style="margin:0; color:#0f172a; font-size:28px; font-weight:bold;">Purchase Bills Analytics</h1>
+                        <p style="margin:8px 0 0 0; color:#64748b; font-size:14px;">Comprehensive Vendor Liabilities &amp; Performance Report</p>
                     </div>
-                    <div style="text-align: right;">
-                        <p style="margin: 0; color: #0f172a; font-weight: bold; font-size: 14px;">Report Date</p>
-                        <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;"><t t-esc="new Date().toLocaleDateString()"/></p>
+                    <div style="text-align:right;">
+                        <p style="margin:0; color:#0f172a; font-weight:bold; font-size:14px;">Report Date</p>
+                        <p style="margin:4px 0 0 0; color:#64748b; font-size:14px;"><t t-esc="new Date().toLocaleDateString()"/></p>
                     </div>
                 </div>
-
-                <h3 style="color: #0f172a; font-size: 18px; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 10px;">1. Executive Summary (KPIs)</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 14px;">
+                <h3 style="color:#0f172a; font-size:18px; margin-bottom:15px; border-left:4px solid #3b82f6; padding-left:10px;">Executive Summary (KPIs)</h3>
+                <table style="width:100%; border-collapse:collapse; margin-bottom:40px; font-size:14px;">
                     <thead>
-                        <tr style="background-color: #f1f5f9;">
-                            <th style="padding: 12px 15px; text-align: left; border: 1px solid #cbd5e1; color: #334155; font-weight: bold; width: 60%;">Performance Metric</th>
-                            <th style="padding: 12px 15px; text-align: right; border: 1px solid #cbd5e1; color: #334155; font-weight: bold; width: 40%;">Current Value</th>
+                        <tr style="background-color:#f1f5f9;">
+                            <th style="padding:12px 15px; text-align:left; border:1px solid #cbd5e1; color:#334155; font-weight:bold; width:60%;">Metric</th>
+                            <th style="padding:12px 15px; text-align:right; border:1px solid #cbd5e1; color:#334155; font-weight:bold; width:40%;">Value</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Total Bills Count</td>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #0f172a;"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></td>
-                        </tr>
-                        <tr style="background-color: #f8fafc;">
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Total Billed Amount</td>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #10b981;"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Upcoming Payables</td>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #ef4444;"><t t-esc="state.kpi_data.cards.upcoming_payables"/></td>
-                        </tr>
-                        <tr style="background-color: #f8fafc;">
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Average Days Payable Outstanding (DPO)</td>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #3b82f6;"><t t-esc="state.kpi_data.cards.avg_dpo"/> Days</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Late Bills Ratio</td>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #f59e0b;"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</td>
-                        </tr>
-                        <tr style="background-color: #f8fafc;">
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1;">Maverick Spend (Bills Without PO)</td>
-                            <td style="padding: 12px 15px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #a855f7;"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</td>
-                        </tr>
+                        <tr><td style="padding:12px 15px; border:1px solid #cbd5e1;">Total Bills Count</td><td style="padding:12px 15px; border:1px solid #cbd5e1; text-align:right; font-weight:bold;"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></td></tr>
+                        <tr style="background:#f8fafc;"><td style="padding:12px 15px; border:1px solid #cbd5e1;">Total Billed Amount</td><td style="padding:12px 15px; border:1px solid #cbd5e1; text-align:right; font-weight:bold; color:#10b981;"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></td></tr>
+                        <tr><td style="padding:12px 15px; border:1px solid #cbd5e1;">Upcoming Payables</td><td style="padding:12px 15px; border:1px solid #cbd5e1; text-align:right; font-weight:bold; color:#ef4444;"><t t-esc="state.kpi_data.cards.upcoming_payables"/></td></tr>
+                        <tr style="background:#f8fafc;"><td style="padding:12px 15px; border:1px solid #cbd5e1;">Average DPO</td><td style="padding:12px 15px; border:1px solid #cbd5e1; text-align:right; font-weight:bold; color:#3b82f6;"><t t-esc="state.kpi_data.cards.avg_dpo"/> Days</td></tr>
+                        <tr><td style="padding:12px 15px; border:1px solid #cbd5e1;">Late Bills Ratio</td><td style="padding:12px 15px; border:1px solid #cbd5e1; text-align:right; font-weight:bold; color:#f59e0b;"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</td></tr>
+                        <tr style="background:#f8fafc;"><td style="padding:12px 15px; border:1px solid #cbd5e1;">Maverick Spend (No PO)</td><td style="padding:12px 15px; border:1px solid #cbd5e1; text-align:right; font-weight:bold; color:#a855f7;"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</td></tr>
                     </tbody>
                 </table>
-
-                <h3 style="color: #0f172a; font-size: 18px; margin-bottom: 15px; border-left: 4px solid #3b82f6; padding-left: 10px;">2. Applied Filters &amp; Parameters</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px; font-size: 13px;">
-                    <tbody>
-                        <tr>
-                            <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; width: 30%;">Time Period</td>
-                            <td style="padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: bold;">
-                                <t t-if="state.period and state.period != '0'">Last <t t-esc="state.period"/> Days</t>
-                                <t t-else="">Custom Range (<t t-esc="state.date_from || 'All'"/> to <t t-esc="state.date_to || 'All'" />)</t>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 50px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
-                    <p style="margin: 0;">* This analytical report is computer-generated securely from the Odoo Dashboard System.</p>
+                <div style="margin-top:50px; text-align:center; color:#94a3b8; font-size:12px; border-top:1px solid #e2e8f0; padding-top:20px;">
+                    <p style="margin:0;">* Computer-generated from Odoo Dashboard System.</p>
                 </div>
             </div>
 
-
-
             <div class="wb-main-content">
 
-                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none">
-                    <div>
-                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
+                <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
+
+                    <div class="flex-shrink-0">
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing:-0.5px;">
                             <i class="fa fa-shopping-cart text-primary me-2"></i>Purchase Bills Analytics
                         </h3>
-                        <p class="text-muted text-sm mb-0">Monitor vendor bills , spending trends, and accuracy.</p>
+                        <p class="text-muted text-sm mb-0">Monitor vendor bills, spending trends, and accuracy.</p>
                     </div>
 
-                    <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">
-                        <SearchBar t-if="env.searchModel" />
+                    <div class="flex-grow-1 d-flex justify-content-center d-print-none mx-4 wb-native-search" style="max-width: 600px;">
+                        <div class="shadow-sm d-flex align-items-stretch w-100" style="background: #ffffff; border-radius: 9999px; border: 1px solid #e2e8f0; min-height: 38px; padding: 0 10px;">
+                            <div class="d-flex align-items-center justify-content-center" style="width: 30px;"><i class="fa fa-search text-muted"></i></div>
+                            <div class="flex-grow-1 d-flex align-items-center w-100 border-0">
+                                <SearchBar t-if="env.searchModel" />
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white hover-bg-light text-nowrap" t-on-click="openExportModal" style="transition: all 0.2s;">
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white text-nowrap" t-on-click="openExportModal" style="transition:all 0.2s;">
                             <i class="fa fa-file-excel-o me-2"></i> Export Excel
                         </button>
-                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white hover-bg-light text-nowrap" t-on-click="printPDF" style="transition: all 0.2s;">
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white text-nowrap" t-on-click="printPDF" style="transition:all 0.2s;">
                             <i class="fa fa-file-pdf-o me-2"></i> Print PDF
                         </button>
-                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar" title="Toggle Filters">
+                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width:42px; height:42px; background:#1e293b; border:none;" t-on-click="toggleSidebar">
                             <i class="fa fa-sliders"></i>
                         </button>
                     </div>
                 </div>
 
-<!--                KPI Cards  -->
                 <div class="row mb-4">
 
-
                     <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('all')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-success me-3"><i class="fa fa-usd"></i></div>
-            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Amount</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></h4></div>
-        </div>
-    </div>
-       <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('all')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-dark me-3"><i class="fa fa-files-o"></i></div>
-            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Bills</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></h4></div>
-        </div>
-    </div>
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-success me-3"><i class="fa fa-usd"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Amount <span class="badge bg-light text-dark ms-1">Posted</span></p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Total value of all vendor bills matching the current filters. Click to view the full bills list.</div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('all_count')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-dark me-3"><i class="fa fa-files-o"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Bills</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Number of vendor bills matching the current filters. Click to view the full bills list.</div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('upcoming')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-danger me-3"><i class="fa fa-money"></i></div>
-            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Upcoming Payables</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.upcoming_payables"/></h4></div>
-        </div>
-    </div>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('upcoming')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-primary me-3"><i class="fa fa-money"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Upcoming Payables</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.upcoming_payables"/></h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Total residual amount on posted, unpaid bills whose due date is today or in the future. Click to see these bills.</div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('dpo')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-primary me-3"><i class="fa fa-calendar-check-o"></i></div>
-            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg DPO</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small></h4></div>
-        </div>
-    </div>
-</div>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('dpo')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-primary me-3"><i class="fa fa-calendar-check-o"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg DPO</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small></h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Average Days Payable Outstanding — average number of days between bill date and due date across all filtered bills.</div>
+                            </div>
+                        </div>
+                    </div>
 
-<div class="row mb-4">
-    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('late_bills')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-warning me-3"><i class="fa fa-exclamation-triangle"></i></div>
-            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Late Bills Ratio</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</h4></div>
-        </div>
-    </div>
+                </div>
 
-    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('wo_po')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-info me-3"><i class="fa fa-file-text-o"></i></div>
-            <div><p class="text-dark text-uppercase text-xs fw-bold mb-1">Bill Without PO</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4></div>
-        </div>
-    </div>
+                <div class="row mb-4">
 
-    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('wo_po')">
-        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-            <div class="wb-icon-box icon-purple me-3"><i class="fa fa-link"></i></div>
-            <div><p class="text-muted text-uppercase text-xs fw-bold mb-1">Maverick Spend (No-PO)</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4></div>
-        </div>
-    </div>
-</div>
+                    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('late_bills')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-warning me-3"><i class="fa fa-exclamation-triangle"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Late Bills Ratio</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Percentage of unpaid bills that are past their due date. Click to view only the overdue bills.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('wo_po')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-info me-3"><i class="fa fa-file-text-o"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">No-PO Ratio</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Percentage of bills where no product line is linked to a Purchase Order (maverick spend). Click to see those bills.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openAction('wo_po')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-purple me-3"><i class="fa fa-link"></i></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">No-PO Count</p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_count || 0"/></h4>
+                            </div>
+                            <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Absolute number of bills with no linked Purchase Order. Click to view the list.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
                     <h5 class="fw-bolder m-0 text-dark">
@@ -253,6 +284,7 @@
                 </div>
 
                 <div class="row g-4 mb-4">
+
                     <div class="col-lg-7">
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -260,11 +292,17 @@
                                     <i class="fa fa-balance-scale text-danger me-2"></i>Price Variance (PO vs Bill)
                                     <span class="chart-hint">(Click to view records)</span>
                                 </h6>
-                                <small class="text-muted fw-bold text-xs">
-                                    <span class="text-danger">■</span> Overbilled <span class="text-success ms-2">■</span> Underbilled
-                                </small>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted fw-bold text-xs">
+                                        <span class="text-danger">■</span> Overbilled <span class="text-success ms-2">■</span> Underbilled
+                                    </small>
+                                    <div class="wb-info-wrapper ms-1">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Compares the unit price on each bill line vs the price on the linked PO line. Red = billed more than agreed, Green = billed less. Click to drill into affected bills.</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('price_var')">
+                            <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('price_var')">
                                 <canvas t-ref="chart_price_var"></canvas>
                             </div>
                         </div>
@@ -274,15 +312,21 @@
                         <div class="wb-card h-100 overflow-hidden d-flex flex-column p-0">
                             <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
                                 <h6 class="fw-bold text-dark m-0">
-                                    <i class="fa fa-cubes text-info me-2"></i>Invoice Quantity Variance
+                                    <i class="fa fa-cubes text-info me-2"></i> Quantity Variance
                                 </h6>
-                                <button class="btn btn-sm btn-white border shadow-sm rounded-pill fw-bold text-xs px-3" t-on-click="() => this.openAction('qty_variance_pivot')">
-                                    <i class="fa fa-table me-1"></i> Pivot View
-                                </button>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-sm btn-white border shadow-sm rounded-pill fw-bold text-xs px-3" t-on-click="() => this.openAction('qty_variance_pivot')">
+                                        <i class="fa fa-table me-1"></i> Pivot View
+                                    </button>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows products where billed quantity differs from the PO ordered quantity. Positive = more billed than ordered. Click "Pivot View" for full analysis.</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="table-responsive flex-grow-1" style="max-height: 280px; cursor: pointer;" t-on-click="() => this.openAction('qty_variance_pivot')">
+                            <div class="table-responsive flex-grow-1" style="max-height:280px; cursor:pointer;" t-on-click="() => this.openAction('qty_variance_pivot')">
                                 <table class="table table-hover table-borderless align-middle mb-0">
-                                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                                    <thead class="table-light position-sticky top-0" style="z-index:1;">
                                         <tr>
                                             <th class="px-4 py-3 text-uppercase text-muted text-xs fw-bold">Product</th>
                                             <th class="px-4 py-3 text-uppercase text-muted text-xs fw-bold text-end">Variance</th>
@@ -290,9 +334,9 @@
                                     </thead>
                                     <tbody>
                                         <tr t-foreach="state.kpi_data.tables?.qty_variance_pivot || []" t-as="row" t-key="row.product">
-                                            <td class="px-4 py-2 fw-bold text-dark" style="font-size: 0.85rem;"><t t-esc="row.product"/></td>
+                                            <td class="px-4 py-2 fw-bold text-dark" style="font-size:0.85rem;"><t t-esc="row.product"/></td>
                                             <td class="px-4 py-2 fw-bolder text-end">
-                                                <span t-attf-class="badge rounded-pill px-3 py-2 {{ row.qty_variance &gt; 0 ? 'bg-danger' : (row.qty_variance &lt; 0 ? 'bg-success' : 'bg-secondary') }}">
+                                                <span t-attf-class="badge rounded-pill px-3 py-2 {{ row.qty_variance > 0 ? 'bg-danger' : (row.qty_variance &lt; 0 ? 'bg-success' : 'bg-secondary') }}">
                                                     <t t-esc="row.qty_variance"/>
                                                 </span>
                                             </td>
@@ -302,16 +346,24 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="row g-4 mb-4">
+
                     <div class="col-lg-8">
                         <div class="wb-card p-4 h-100">
-                            <h6 class="fw-bold text-dark mb-4">
-                                <i class="fa fa-line-chart text-primary me-2"></i>Spend Trend Analysis
-                                <span class="chart-hint">(Click point to view records)</span>
-                            </h6>
-                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('trend')">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0">
+                                    <i class="fa fa-line-chart text-primary me-2"></i>Spend Trend Analysis
+                                    <span class="chart-hint">(Click to view records)</span>
+                                </h6>
+                                <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-tooltip">Monthly total billed amount across all vendors matching the current filters. Helps spot spending spikes or seasonality. Click to open the bills grouped by month.</div>
+                                </div>
+                            </div>
+                            <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('trend')">
                                 <canvas t-ref="chart_trend"></canvas>
                             </div>
                         </div>
@@ -319,25 +371,39 @@
 
                     <div class="col-lg-4">
                         <div class="wb-card p-4 h-100 d-flex flex-column">
-                            <h6 class="fw-bold text-dark mb-4">
-                                <i class="fa fa-pie-chart text-warning me-2"></i>Paid vs Unpaid Bills
-                                <span class="chart-hint">(Click slice to drill)</span>
-                            </h6>
-                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('status')">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0">
+                                    <i class="fa fa-pie-chart text-warning me-2"></i>Paid vs Unpaid
+                                    <span class="chart-hint">(Click slice)</span>
+                                </h6>
+                                <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-tooltip">Breakdown of total billed amounts by payment status. Click the Paid slice to see paid bills, or the Unpaid slice to see outstanding ones.</div>
+                                </div>
+                            </div>
+                            <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('status')">
                                 <canvas t-ref="chart_status"></canvas>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="row g-4 mb-4">
+
                     <div class="col-lg-6">
                         <div class="wb-card p-4 h-100">
-                            <h6 class="fw-bold text-dark mb-4">
-                                <i class="fa fa-users text-success me-2"></i>Top 10 Vendors
-                                <span class="chart-hint">(Click bar to view records)</span>
-                            </h6>
-                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('vendor')">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0">
+                                    <i class="fa fa-users text-success me-2"></i>Top 10 Vendors
+                                    <span class="chart-hint">(Click to view records)</span>
+                                </h6>
+                                <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-tooltip">Top 10 vendors by total billed amount under the current filters. Click a bar to open all bills for that vendor.</div>
+                                </div>
+                            </div>
+                            <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('vendor')">
                                 <canvas t-ref="chart_vendor"></canvas>
                             </div>
                         </div>
@@ -345,18 +411,24 @@
 
                     <div class="col-lg-6">
                         <div class="wb-card p-4 h-100">
-                            <h6 class="fw-bold text-dark mb-4">
-                                <i class="fa fa-clock-o text-info me-2"></i>Vendor Payment Lead Time
-                            </h6>
-                            <div style="height: 280px; position: relative; cursor: pointer;" t-on-click="() => this.openAction('lead_time')">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0">
+                                    <i class="fa fa-clock-o text-info me-2"></i>Vendor Payment Lead Time
+                                </h6>
+                                <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-tooltip">Average days between bill date and due date per vendor. Higher values mean longer payment windows. Click to analyse lead time </div>
+                                </div>
+                            </div>
+                            <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('lead_time')">
                                 <canvas t-ref="chart_lead_time"></canvas>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
             </div>
-
             <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
 
                 <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
@@ -364,9 +436,14 @@
                         <i class="fa fa-sliders text-primary me-2 fs-5"></i>
                         <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
                     </div>
-                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar" style="transition: transform 0.2s;">
-                        <i class="fa fa-times"></i>
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-primary rounded-pill fw-bold d-flex align-items-center" t-on-click="resetFilters" title="Reset all filters">
+                            <i class="fa fa-refresh me-1"></i> Reset
+                        </button>
+                        <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="wb-sidebar-scroll">
@@ -381,13 +458,10 @@
                             <option value="180">📅 Last 6 Months</option>
                             <option value="365">📅 Last Year</option>
                         </select>
-
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2"><i class="fa fa-calendar me-1"></i> Custom Date Range</label>
                         <input type="date" class="form-control wb-input form-control-sm mb-2" t-model="state.date_from" t-on-change="applyDateFilter"/>
                         <input type="date" class="form-control wb-input form-control-sm" t-model="state.date_to" t-on-change="applyDateFilter"/>
                     </div>
-
-
 
                     <hr class="text-muted opacity-25"/>
 
@@ -410,7 +484,7 @@
                             </t>
                         </select>
                     </div>
-<!--                    Payment terms Filter-->
+
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Payment Terms</label>
                         <select class="form-select wb-input" t-model="state.filters.payment_term_id" t-on-change="onApplyFilter">
@@ -447,58 +521,37 @@
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Quick Filters</label>
 
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_posted"
-                                   t-att-checked="state.active_filters.state_posted"
-                                   t-on-change="() => this.toggleFilter('state_posted')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_posted" t-att-checked="state.active_filters.state_posted" t-on-change="() => this.toggleFilter('state_posted')"/>
                             <label class="form-check-label text-dark fw-bold mb-0" for="f_posted">Posted Bills Only</label>
                         </div>
-
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_draft"
-                                   t-att-checked="state.active_filters.state_draft"
-                                   t-on-change="() => this.toggleFilter('state_draft')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_draft" t-att-checked="state.active_filters.state_draft" t-on-change="() => this.toggleFilter('state_draft')"/>
                             <label class="form-check-label text-dark fw-bold mb-0" for="f_draft">Draft Bills</label>
                         </div>
-
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_paid"
-                                   t-att-checked="state.active_filters.pay_paid"
-                                   t-on-change="() => this.toggleFilter('pay_paid')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_paid" t-att-checked="state.active_filters.pay_paid" t-on-change="() => this.toggleFilter('pay_paid')"/>
                             <label class="form-check-label text-success fw-bold mb-0" for="f_paid">Fully Paid</label>
                         </div>
-
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_not_paid"
-                                   t-att-checked="state.active_filters.pay_not_paid"
-                                   t-on-change="() => this.toggleFilter('pay_not_paid')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_not_paid" t-att-checked="state.active_filters.pay_not_paid" t-on-change="() => this.toggleFilter('pay_not_paid')"/>
                             <label class="form-check-label text-dark fw-bold mb-0" for="f_not_paid">Not Paid</label>
                         </div>
-
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_overdue"
-                                   t-att-checked="state.active_filters.is_overdue"
-                                   t-on-change="() => this.toggleFilter('is_overdue')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_overdue" t-att-checked="state.active_filters.is_overdue" t-on-change="() => this.toggleFilter('is_overdue')"/>
                             <label class="form-check-label text-danger fw-bold mb-0" for="f_overdue">Overdue</label>
                         </div>
-
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_has_po"
-                                   t-att-checked="state.active_filters.has_po"
-                                   t-on-change="() => this.toggleFilter('has_po')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_has_po" t-att-checked="state.active_filters.has_po" t-on-change="() => this.toggleFilter('has_po')"/>
                             <label class="form-check-label text-primary fw-bold mb-0" for="f_has_po">With PO</label>
                         </div>
-
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
-                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_no_po"
-                                   t-att-checked="state.active_filters.no_po"
-                                   t-on-change="() => this.toggleFilter('no_po')"/>
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="f_no_po" t-att-checked="state.active_filters.no_po" t-on-change="() => this.toggleFilter('no_po')"/>
                             <label class="form-check-label text-warning fw-bold mb-0" for="f_no_po">Without PO (Maverick)</label>
                         </div>
                     </div>
 
                 </div>
             </div>
-
-        </div>
+            </div>
     </t>
 </templates>
