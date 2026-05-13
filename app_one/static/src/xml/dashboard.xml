@@ -2,29 +2,45 @@
 <templates xml:space="preserve">
     <t t-name="HRdashboard" owl="1">
         <style>
-            .wb-dashboard-wrapper {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
-            }
+            .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
             .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
             .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
             .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
+            .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); position: relative; z-index: 8 !important; }
+            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; z-index: 1 !important; }
+            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); z-index: 15 !important; }
+            .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
 
-            .wb-glassy-header {
-                background: rgba(255, 255, 255, 0.6);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.8);
-                border-radius: 1.25rem;
-                padding: 1rem 1.5rem;
-                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
+            /* ── Info Icon Tooltip (Kept as requested) ── */
+            .wb-info-wrapper { position: relative; display: inline-flex; align-items: center; margin-left: 8px; vertical-align: middle; }
+            .wb-info-icon {
+                width: 18px; height: 18px; border-radius: 50%;
+                background: #e2e8f0; color: #64748b;
+                font-size: 11px; font-weight: 700; font-style: normal;
+                display: inline-flex; align-items: center; justify-content: center;
+                cursor: default; flex-shrink: 0;
+                transition: background 0.2s, color 0.2s;
             }
+            .wb-info-icon:hover { background: #3b82f6; color: #fff; }
+            .wb-info-tooltip {
+                display: none; position: absolute;
+                bottom: calc(100% + 8px); right: 0;
+                background: #1e293b; color: #f1f5f9;
+                font-size: 12px; line-height: 1.5; font-weight: 400;
+                padding: 8px 12px; border-radius: 8px;
+                width: 220px; z-index: 9999;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+                pointer-events: none;
+                text-transform: none;
+                white-space: normal;
+            }
+            .wb-info-tooltip::before {
+                content: ''; position: absolute; top: 100%; right: 6px;
+                border: 6px solid transparent; border-top-color: #1e293b;
+            }
+            .wb-info-wrapper:hover .wb-info-tooltip { display: block; }
 
-            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
-            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
-            .wb-card.clickable:hover { border-color: #3b82f6; cursor: pointer; }
-
-            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
             .icon-primary { background: #eff6ff; color: #3b82f6; }
             .icon-success { background: #f0fdf4; color: #22c55e; }
             .icon-info { background: #ecfeff; color: #06b6d4; }
@@ -33,22 +49,17 @@
             .icon-dark { background: #f1f5f9; color: #334155; }
             .icon-purple { background: #faf5ff; color: #a855f7; }
             .icon-teal { background: #f0fdfa; color: #14b8a6; }
-            .icon-indigo { background: #e0e7ff; color: #4f46e5; }
             .icon-rose { background: #ffe4e6; color: #e11d48; }
 
             .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
             .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
 
-            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
-            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
-            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-
             .wb-search-dropdown-btn { background-color: transparent; border-color: #ccc !important; width: 40px; margin: -2px -5px -2px 0; border-top-right-radius: 4px !important; border-bottom-right-radius: 4px !important; box-shadow: none; transition: background-color 0.2s ease-in-out; }
             .wb-search-dropdown-btn:hover, .wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
 
-            .wb-custom-switch { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; transition: border-color 0.2s; }
-            .wb-custom-switch:hover { border-color: #cbd5e1; }
-            .wb-custom-switch .form-check-input { width: 2.5em; height: 1.25em; cursor: pointer; margin: 0; }
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
             #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
             .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 10px; }
@@ -56,7 +67,15 @@
             .print-title { font-size: 16px; font-weight: bold; color: #334155; }
             .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
 
-            .dept-card { background: linear-gradient(135deg, #ffffff, #f8fafc); border-left: 4px solid #3b82f6; }
+           .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-tooltip-text {
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+
+            .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-card {
+                pointer-events: none !important;
+            }
         </style>
 
         <div class="wb-dashboard-wrapper">
@@ -168,7 +187,6 @@
             </div>
 
             <div class="wb-main-content">
-
                 <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
                     <div class="flex-shrink-0">
                         <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;">
@@ -177,7 +195,7 @@
                         <p class="text-muted text-sm mb-0">Track employee performance, attendance, and workload.</p>
                     </div>
 
-                    <div class="flex-grow-1 d-flex justify-content-center d-print-none mx-4" style="max-width: 500px;">
+                    <div class="flex-grow-1 d-flex justify-content-center d-print-none mx-4" style="max-width: 600px;">
                         <div class="shadow-sm d-flex align-items-stretch w-100" style="background: #ffffff; border-radius: 9999px; border: 1px solid #e2e8f0; min-height: 38px; padding: 0 10px;">
                             <div class="d-flex align-items-center justify-content-center" style="width: 30px;">
                                 <i class="fa fa-search text-muted"></i>
@@ -188,7 +206,7 @@
                                     <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
                                         <span class="px-2 py-1 text-white" style="background-color: #ffc107;"><i class="fa fa-star"></i></span>
                                         <span class="px-2 fw-bold text-dark"><t t-esc="state.active_favorite_name"/></span>
-                                        <i class="fa fa-times px-2 cursor-pointer" style="cursor: pointer;" t-on-click="clearFavorite"></i>
+                                        <i class="fa fa-times px-2 cursor-pointer" t-on-click="clearFavorite"></i>
                                     </div>
                                 </t>
                                 <t t-else="">
@@ -196,28 +214,28 @@
                                         <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
                                             <span class="px-2 py-1 bg-primary text-white"><i class="fa fa-search"></i></span>
                                             <span class="px-2"><t t-esc="state.search_query"/></span>
-                                            <i class="fa fa-times px-2 cursor-pointer" style="cursor: pointer;" t-on-click="clearSearchQuery"></i>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="clearSearchQuery"></i>
                                         </div>
                                     </t>
                                     <t t-if="state.active_filters.active_emp">
                                         <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
-                                            <span class="px-2 py-1" style="background-color: #714B67; color: white;"><i class="fa fa-filter"></i></span>
+                                            <span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span>
                                             <span class="px-2">Active Employees</span>
-                                            <i class="fa fa-times px-2 cursor-pointer" style="cursor: pointer;" t-on-click="() => this.toggleFilter('active_emp')"></i>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('active_emp')"></i>
                                         </div>
                                     </t>
                                     <t t-if="state.active_filters.archived_emp">
                                         <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
-                                            <span class="px-2 py-1" style="background-color: #714B67; color: white;"><i class="fa fa-filter"></i></span>
+                                            <span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span>
                                             <span class="px-2">Archived Employees</span>
-                                            <i class="fa fa-times px-2 cursor-pointer" style="cursor: pointer;" t-on-click="() => this.toggleFilter('archived_emp')"></i>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('archived_emp')"></i>
                                         </div>
                                     </t>
                                     <t t-foreach="state.group_by_list" t-as="gb" t-key="gb">
                                         <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
-                                            <span class="px-2 py-1" style="background-color: #714B67; color: white;"><i class="fa fa-bars"></i></span>
+                                            <span class="px-2 py-1" style="background-color: #4f46e5; color: white;"><i class="fa fa-bars"></i></span>
                                             <span class="px-2 text-capitalize"><t t-esc="gb.replace('_', ' ')"/></span>
-                                            <i class="fa fa-times px-2 cursor-pointer" style="cursor: pointer;" t-on-click="() => this.removeGroupBy(gb)"></i>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.removeGroupBy(gb)"></i>
                                         </div>
                                     </t>
                                 </t>
@@ -235,7 +253,7 @@
                                     <i class="fa fa-caret-down" style="color: #495057; font-size: 14px;"></i>
                                 </button>
 
-                                <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0" style="width: 750px; border-radius: 12px; border: 1px solid #ccc;">
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0" style="width: 750px; border-radius: 12px; border: 1px solid #ccc; z-index: 9999;">
                                     <div class="row g-0">
                                         <div class="col-4 border-end p-3">
                                             <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-filter me-2 text-muted"></i>Filters</h6>
@@ -265,14 +283,14 @@
                                                     Save current search <i t-attf-class="fa {{ state.show_save_menu ? 'fa-caret-down' : 'fa-caret-left' }}"></i>
                                                 </button>
                                                 <t t-if="state.show_save_menu">
-                                                    <div class="mt-2" style="font-size: 13px;">
-                                                        <input type="text" class="form-control form-control-sm border-0 border-bottom rounded-0 shadow-none mb-2 px-1" t-model="state.favorite_name" style="border-color: #666 !important;" t-on-click.stop=""/>
+                                                    <div class="mt-2" style="font-size: 13px;" t-on-click.stop="">
+                                                        <input type="text" class="form-control form-control-sm border-0 border-bottom rounded-0 shadow-none mb-2 px-1" t-model="state.favorite_name" style="border-color: #666 !important;"/>
                                                         <div class="form-check mb-1">
-                                                            <input class="form-check-input" type="checkbox" id="fav_default" t-model="state.is_default_fav" t-on-change="onDefaultCheckboxChange" t-on-click.stop=""/>
+                                                            <input class="form-check-input" type="checkbox" id="fav_default" t-model="state.is_default_fav" t-on-change="onDefaultCheckboxChange"/>
                                                             <label class="form-check-label text-muted" for="fav_default">Default filter</label>
                                                         </div>
                                                         <div class="form-check mb-3">
-                                                            <input class="form-check-input" type="checkbox" id="fav_shared" t-model="state.is_shared_fav" t-on-change="onSharedCheckboxChange" t-on-click.stop=""/>
+                                                            <input class="form-check-input" type="checkbox" id="fav_shared" t-model="state.is_shared_fav" t-on-change="onSharedCheckboxChange"/>
                                                             <label class="form-check-label text-muted" for="fav_shared">Shared</label>
                                                         </div>
                                                         <button class="btn btn-sm w-100 text-white fw-bold" style="background-color: #714B67;" t-on-click="saveFavoriteUI">Save</button>
@@ -294,193 +312,259 @@
                     </div>
 
                     <div class="d-flex gap-2 flex-shrink-0">
-                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white hover-bg-light text-nowrap" t-on-click="openExportModal" style="transition: all 0.2s;">
-                            <i class="fa fa-file-excel-o me-2"></i> Export Excel
-                        </button>
-                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white hover-bg-light text-nowrap" t-on-click="openPdfModal" style="transition: all 0.2s;">
-                            <i class="fa fa-file-pdf-o me-2"></i> Print PDF
-                        </button>
-                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar" title="Toggle Filters">
-                            <i class="fa fa-sliders"></i>
-                        </button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white text-nowrap" t-on-click="openExportModal"><i class="fa fa-file-excel-o me-2"></i> Custom Excel</button>
+                        <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white text-nowrap" t-on-click="openPdfModal"><i class="fa fa-file-pdf-o me-2"></i> Print PDF</button>
+                        <button class="btn btn-dark shadow-md rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #1e293b; border: none;" t-on-click="toggleSidebar"><i class="fa fa-sliders"></i></button>
                     </div>
                 </div>
 
-                <div class="pb-4 pt-2">
-                    <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showEmployees">
-                                <div class="wb-icon-box icon-primary me-3"><i class="fa fa-users"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Employees</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.employee_count"/></h4>
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showEmployees">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-primary me-3"><i class="fa fa-users"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Total Employees</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows the total number of employees based on selected filters Click to view employees </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAttendances">
-                                <div class="wb-icon-box icon-info me-3"><i class="fa fa-calendar-check-o"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Attendance Rate</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.attendance"/> <span class="text-sm text-muted fw-normal">%</span></h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showCompletedTasks">
-                                <div class="wb-icon-box icon-success me-3"><i class="fa fa-check-square-o"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Completed Tasks</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.tasks_complete"/></h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAllTasks">
-                                <div class="wb-icon-box icon-warning me-3"><i class="fa fa-line-chart"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Productivity</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.production_kpi"/> <span class="text-sm text-muted fw-normal">%</span></h4>
-                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.employee_count"/></h4>
                             </div>
                         </div>
                     </div>
-
-                    <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showWorkloadTasks">
-                                <div class="wb-icon-box icon-danger me-3"><i class="fa fa-clock-o"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Workload</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.workload_hours"/> <span class="text-sm text-muted fw-normal">Hrs</span></h4>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showAttendances">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-info me-3"><i class="fa fa-calendar-check-o"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Attendance Rate</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows employee attendance compared to expected workdays Formula: (Attendance Days ÷ Net Work Days) × 100 Click to view attendance records</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showTurnover">
-                                <div class="wb-icon-box icon-purple me-3"><i class="fa fa-sign-out"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Employee Turnover</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.emp_turnover"/> <span class="text-sm text-muted fw-normal">%</span></h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showSales">
-                                <div class="wb-icon-box icon-dark me-3"><i class="fa fa-money"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Sales Done / Emp</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_per_emp"/></h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showleaves">
-                                <div class="wb-icon-box icon-info me-3"><i class="fa fa-umbrella"></i></div>
-                                <div>
-                                   <p class="text-muted text-uppercase text-xs fw-bold mb-1">Vacations Rate</p>
-                                    <h4 class="fw-bold mb-0 text-dark">
-                                        <t t-esc="state.average_leaves"/>
-                                     <span class="text-sm text-muted fw-normal">%</span>
-                                    </h4>
-                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.attendance"/> <span class="text-sm text-muted fw-normal">%</span></h4>
                             </div>
                         </div>
                     </div>
-
-                    <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showAbsence">
-                                <div class="wb-icon-box icon-warning me-3"><i class="fa fa-calendar-times-o"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Absence Rate</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.absence"/> <span class="text-sm text-muted fw-normal">%</span></h4>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showCompletedTasks">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-success me-3"><i class="fa fa-check-square-o"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Completed Tasks</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows the number of completed tasks during the selected period Formula: Count of Tasks with State = Done Click to view completed tasks </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card clickable p-3 h-100 d-flex align-items-center" t-on-click="showWorkloadCongestion">
-                                <div class="wb-icon-box icon-rose me-3"><i class="fa fa-exclamation-triangle"></i></div>
-                                <div>
-                                    <p class="text-muted text-uppercase text-xs fw-bold mb-1">Workload Congestion</p>
-                                    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.bottleneck_emps"/> <span class="text-sm text-muted fw-normal">Emp</span></h4>
-                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.tasks_complete"/></h4>
                             </div>
                         </div>
                     </div>
-                    <div class="row mb-4">
-                        <div class="col-lg-5 mb-4">
-                            <div class="wb-card p-4 h-100">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-bold text-dark m-0"><i class="fa fa-bar-chart me-2 text-primary"></i>Workload Analysis</h5>
-        <select class="form-select form-select-sm w-auto wb-input rounded-pill px-3" t-model="state.top_workload" t-on-change="onChangeTopFilter">
-            <option value="5">Top 5</option>
-            <option value="10">Top 10</option>
-            <option value="15">Top 15</option>
-            <option value="1000">All</option>
-        </select>
-    </div>
-    <div style="height: 350px; position: relative;">
-        <canvas class="my_dashboard_chart"></canvas>
-    </div>
-</div>
-                        </div>
-                        <div class="col-lg-7 mb-4">
-                            <div class="wb-card p-4 h-100">
-                                <h5 class="fw-bold text-dark mb-4"><i class="fa fa-dot-circle-o me-2 text-indigo"></i>Productivity vs Workload </h5>
-                                <div style="height: 350px; position: relative;">
-                                    <canvas class="scatter_analytics_chart"></canvas>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showAllTasks">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-warning me-3"><i class="fa fa-line-chart"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Productivity</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Measures productivity by Formula: (Completed Tasks ÷ Total Tasks) × 100 Click to view all tasks </div>
+                                    </div>
                                 </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.production_kpi"/> <span class="text-sm text-muted fw-normal">%</span></h4>
                             </div>
                         </div>
                     </div>
-                     <div class="row mb-4">
-    <div class="col-lg-12 mb-4">
-        <div class="card shadow-sm h-100">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Productivity Variance (ANOVA)</h5>
-            <small class="text-muted">Comparing Mean Productivity vs Variance across Departments</small>
-        </div>
-        <div class="card-body">
-            <div style="position: relative; height: 300px;">
-                <canvas class="anova_variance_chart"></canvas> </div>
-        </div>
-    </div>
-</div>
-                     </div>
                 </div>
-                      <div class="row mb-4">
-    <div class="col-lg-12 mb-4">
-    <div class="wb-card p-4 h-100 shadow-sm border-0" style="border-radius: 15px; background: #ffffff;">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="fw-bold text-dark m-0">
-                <i class="fa fa-line-chart me-2 text-primary"></i>
-                Performance &amp; Stability Analysis (Productivity vs. Turnover)
-            </h5>
-            <div class="d-flex gap-3">
-                <span class="badge shadow-sm" style="background-color: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid #22c55e; padding: 8px 12px;">
-                    <i class="fa fa-circle me-1"></i> Productivity %
-                </span>
-                <span class="badge shadow-sm" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 8px 12px;">
-                    <i class="fa fa-minus me-1"></i> Turnover Rate %
-                </span>
+
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showWorkloadTasks">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-danger me-3"><i class="fa fa-clock-o"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Total Workload</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Measures total assigned workload hours for active tasks Formula: Sum of Allocated Active Task Hours Click to view pending tasks</div>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.workload_hours"/> <span class="text-sm text-muted fw-normal">Hrs</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showTurnover">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-purple me-3"><i class="fa fa-sign-out"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Employee Turnover</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Measures the percentage of employees who left the company Formula:(Employees Left ÷ Average Employees)× 100 Click to view left employees </div>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.emp_turnover"/> <span class="text-sm text-muted fw-normal">%</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showSales">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-dark me-3"><i class="fa fa-money"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Sales Done / Emp</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows Total Number of employees who completed sales orders successfully Formula: Count of Employees with Sales Orders Click to view confirmed sales </div>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_per_emp"/></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showleaves">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-info me-3"><i class="fa fa-umbrella"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Vacations Rate</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Measures approved leave days compared to expected workdays Formula: (Approved Leave Days ÷ Expected Work Days) × 100 Click to view leave records</div>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.average_leaves"/> <span class="text-sm text-muted fw-normal">%</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showAbsence">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-warning me-3"><i class="fa fa-calendar-times-o"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Absence Rate</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows the percentage of employee absence Formula: 100 − Attendance Rate Click to view absence analysis </div>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.absence"/> <span class="text-sm text-muted fw-normal">%</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6 mb-3" t-on-click="showWorkloadCongestion">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
+                            <div class="wb-icon-box icon-rose me-3"><i class="fa fa-exclamation-triangle"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <p class="text-muted text-uppercase text-xs fw-bold m-0">Workload Congestion</p>
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Identifies staff members with high workload hours but low task completion output indicating possible workflow delays or performance bottlenecks Formula: Employee Workload &gt; Average Workload AND Completed Tasks &lt; Average Completed Tasks Click to view bottleneck employees </div>
+                                    </div>
+                                </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.bottleneck_emps"/> <span class="text-sm text-muted fw-normal">Emp</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-lg-5 mb-4">
+                        <div class="wb-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                               <h6 class="fw-bold text-dark m-0 d-flex align-items-center ms-5">
+                                Workload Analysis
+
+                            <div class="wb-info-wrapper">
+                               <span class="wb-info-icon">i</span>
+                               <div class="wb-info-tooltip">
+                               Visualizes the distribution of labor hours across top employees or groups Click chart sections to view workload details
+                             </div>
+                            </div>
+                               </h6>
+                                <select class="form-select form-select-sm w-auto wb-input rounded-pill px-3" t-model="state.top_workload" t-on-change="onChangeTopFilter">
+                                    <option value="5">Top 5</option>
+                                    <option value="10">Top 10</option>
+                                    <option value="15">Top 15</option>
+                                    <option value="1000">All</option>
+                                </select>
+                            </div>
+                            <div style="height: 350px; position: relative;">
+                                <canvas class="my_dashboard_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7 mb-4">
+                        <div class="wb-card p-4 h-100">
+                            <h6 class="fw-bold text-dark mb-4 d-flex align-items-center">
+                                Productivity vs Workload
+                                <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-tooltip">Correlates 'Assigned Hours' with 'Tasks Completed' to evaluate staff performance stability Click any point to view employee task analysis </div>
+                                </div>
+                            </h6>
+                            <div style="height: 350px; position: relative;">
+                                <canvas class="scatter_analytics_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-lg-12 mb-4">
+                        <div class="wb-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0 d-flex align-items-center">
+                                    Productivity Variance
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Shows department productivity and performance variation to spot performance gaps Formula: Productivity Rate AND Performance Variance Analysis Click to on productivity or variance to show more information about it </div>
+                                    </div>
+                                </h6>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas class="anova_variance_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-lg-12 mb-4">
+                        <div class="wb-card p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="fw-bold text-dark m-0 d-flex align-items-center">
+                                    Performance &amp; Stability Analysis (Productivity vs. Turnover)
+                                    <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Monitors the monthly relationship between workforce turnover rates and overall productivity efficiency Click trend points to view productivity details or turnover details </div>
+                                    </div>
+                                </h6>
+                                <div class="d-flex gap-3">
+                                    <span class="badge shadow-sm" style="background-color: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid #22c55e; padding: 8px 12px;">
+                                        <i class="fa fa-circle me-1"></i> Productivity %
+                                    </span>
+                                    <span class="badge shadow-sm" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid #ef4444; padding: 8px 12px;">
+                                        <i class="fa fa-minus me-1"></i> Turnover Rate %
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="height: 400px; position: relative;">
+                                <canvas class="productivity_trend_chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-
-        <div style="height: 400px; position: relative;">
-            <canvas class="productivity_trend_chart"></canvas>
-        </div>
-
-        <div class="mt-3 d-flex justify-content-center border-top pt-3">
-            <small class="text-muted">
-                <i class="fa fa-info-circle me-1"></i>
-                This chart correlates workforce stability with overall productivity output over time.
-            </small>
-        </div>
-    </div>
-</div>
-</div>
-        </div>
 
             <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
                 <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
@@ -488,7 +572,7 @@
                         <i class="fa fa-sliders text-primary me-2 fs-5"></i>
                         <h5 class="fw-bold text-dark mb-0">Dashboard Filters</h5>
                     </div>
-                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar" style="transition: transform 0.2s;"><i class="fa fa-times"></i></button>
+                    <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar"><i class="fa fa-times"></i></button>
                 </div>
 
                 <div class="wb-sidebar-scroll">
@@ -496,7 +580,7 @@
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Organization</label>
                         <div class="mb-3">
                             <label class="text-xs text-dark fw-bold mb-1">Department</label>
-                           <select class="form-select wb-input" t-on-change="onDepartmentChange">
+                            <select class="form-select wb-input" t-on-change="onDepartmentChange">
                                 <option value="" t-att-selected="!state.filters.department_id"> All Departments</option>
                                 <t t-foreach="state.departments || []" t-as="dept" t-key="dept.id">
                                     <option t-att-value="dept.id" t-att-selected="state.filters.department_id == dept.id">
@@ -518,14 +602,11 @@
                             <option value="365">📅 Last Year</option>
                         </select>
                         <div class="p-3 bg-light rounded-3 border border-light">
-                            <label class="text-xs fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> From</label>
-                            <div class="mb-3">
-                                <input type="date" class="form-control wb-input form-control-sm" t-model="state.start_date" t-on-change="(ev) => this.onChangeStartDate(ev)" t-att-max="state.today_date"/>
-                            </div>
-                            <label class="text-xs fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> To</label>
-                            <div>
-                                <input type="date" class="form-control wb-input form-control-sm" t-model="state.end_date" t-on-change="(ev) => this.onChangeEndDate(ev)" t-att-max="state.today_date"/>
-                            </div>
+                            <label class="text-xs fw-bold text-dark mb-2"><i class="fa fa-calendar me-1"></i> From</label>
+                            <input type="date" class="form-control wb-input form-control-sm mb-3" t-model="state.start_date" t-on-change="(ev) => this.onChangeStartDate(ev)" t-att-max="state.today_date"/>
+
+                            <label class="text-xs fw-bold text-dark mb-2"><i class="fa fa-calendar me-1"></i> To</label>
+                            <input type="date" class="form-control wb-input form-control-sm" t-model="state.end_date" t-on-change="(ev) => this.onChangeEndDate(ev)" t-att-max="state.today_date"/>
                         </div>
                     </div>
                 </div>

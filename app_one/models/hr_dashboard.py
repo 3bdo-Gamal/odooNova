@@ -1,6 +1,5 @@
 from odoo import models, fields, api
 from datetime import datetime, timedelta, date
-from odoo.exceptions import UserError
 import io
 import base64
 from dateutil.relativedelta import relativedelta
@@ -10,12 +9,6 @@ try:
     import xlsxwriter
 except ImportError:
     xlsxwriter = None
-try:
-    import pandas as pa
-except ImportError:
-    pa = None
-
-
 class HR_Dashboard(models.Model):
     _name = 'wb.hr.dashboard'
     _description = 'HR KPI Dashboard'
@@ -34,11 +27,10 @@ class HR_Dashboard(models.Model):
     datajson = fields.Text()
 
     @api.model
+
     def dataframe(self, start_date, end_date, emp_ids):
         if not emp_ids:
             return []
-
-        # استخدت يوزر اي دي واي دي لاني بتعامل مع موديولز مختلفه من الhr فكل موديول ال اي دي متسمي باسم مختلف
         emp_fields = ['id', 'name', 'department_id', 'job_id', 'user_id', 'create_date', 'departure_date', 'active']
         employees = self.env['hr.employee'].with_context(active_test=False).search_read([('id', 'in', emp_ids)],
                                                                                         emp_fields)
@@ -106,11 +98,10 @@ class HR_Dashboard(models.Model):
                 'productivity_pct': (t_stats['done'] / t_stats['total'] * 100) if t_stats['total'] > 0 else 0
             }
             l.append(row)
-            # بحط الليست هنا في داتا فريم علشان تبقي التحليلات الاحصائيه بسرعه
         return l
 
     @api.model
-    def turnover_trend(self, end_date_val, department_id, search_query):
+    def turnover_trend(self, start_date_val, end_date_val, department_id, search_query):
         trend_labels = []
         trend_data = []
         base_dom = ['|', ('active', '=', True), ('active', '=', False)]
@@ -124,8 +115,11 @@ class HR_Dashboard(models.Model):
         )
 
         months_cache = []
-        for i in range(11, -1, -1):
-            target_month = end_date_val - relativedelta(months=i)
+        current_month = start_date_val.replace(day=1)
+        end_month = end_date_val.replace(day=1)
+
+        while current_month <= end_month:
+            target_month = current_month
             first_day = target_month.replace(day=1)
             last_day = target_month.replace(day=calendar.monthrange(target_month.year, target_month.month)[1])
 
@@ -138,6 +132,8 @@ class HR_Dashboard(models.Model):
                 'last_day_dt': last_day_dt,
                 'start_c': 0, 'end_c': 0, 'left_c': 0
             })
+            current_month += relativedelta(months=1)
+
         for emp in all_emps:
             c_date = emp.get('create_date')
             d_date = emp.get('departure_date')
@@ -168,7 +164,7 @@ class HR_Dashboard(models.Model):
         return {'labels': trend_labels, 'data': trend_data}
 
     @api.model
-    def productivity_trend(self, end_date_val, department_id, search_query, active_filters):
+    def productivity_trend(self, start_date_val, end_date_val, department_id, search_query, active_filters):
         trend2_labels = []
         trend2_data = []
         active_filters = active_filters or {}
@@ -192,14 +188,16 @@ class HR_Dashboard(models.Model):
         u_ids = employees.mapped('user_id').ids
 
         if not u_ids:
-            for i in range(11, -1, -1):
-                target_month = end_date_val - relativedelta(months=i)
+            current_month = start_date_val.replace(day=1)
+            end_month = end_date_val.replace(day=1)
+            while current_month <= end_month:
+                target_month = current_month
                 trend2_labels.append(target_month.strftime('%b %Y'))
                 trend2_data.append(0)
+                current_month += relativedelta(months=1)
             return {'labels2': trend2_labels, 'data2': trend2_data}
 
-        start_of_period = datetime.combine((end_date_val - relativedelta(months=11)).replace(day=1),
-                                           datetime.min.time())
+        start_of_period = datetime.combine(start_date_val.replace(day=1), datetime.min.time())
         end_of_period = datetime.combine(
             end_date_val.replace(day=calendar.monthrange(end_date_val.year, end_date_val.month)[1]),
             datetime.max.time())
@@ -223,8 +221,10 @@ class HR_Dashboard(models.Model):
                 if agg.get('state') == '1_done':
                     agg_dict[m_key]['done'] += agg.get('__count', 0)
 
-        for i in range(11, -1, -1):
-            target_month = end_date_val - relativedelta(months=i)
+        current_month = start_date_val.replace(day=1)
+        end_month = end_date_val.replace(day=1)
+        while current_month <= end_month:
+            target_month = current_month
             month_key = target_month.strftime('%B %Y')
 
             total_tasks = agg_dict.get(month_key, {}).get('total', 0)
@@ -235,6 +235,7 @@ class HR_Dashboard(models.Model):
                 'total_tasks': total_tasks,
                 'done_this_month': done_this_month
             })
+            current_month += relativedelta(months=1)
 
         for m_data in months_cache2:
             total_tasks = m_data['total_tasks']
@@ -333,7 +334,8 @@ class HR_Dashboard(models.Model):
             offset_tasks = 0
             while True:
                 tasks_todo = self.env['project.task'].search_read(
-                    [('state', 'not in', ['1_done', '1_canceled']), ('create_date', '<=', EndDate),
+                    [('state', 'not in', ['1_done', '1_canceled']),
+                     ('create_date', '<=', EndDate),
                      ('user_ids', 'in', u_ids)], ['name', 'allocated_hours', 'user_ids'], limit=limit_tasks,
                     offset=offset_tasks)
                 if not tasks_todo: break
@@ -451,8 +453,8 @@ class HR_Dashboard(models.Model):
         sorted_workload = sorted(chart_dict.items(), key=lambda item: item[1], reverse=True)[:top_workload_limit]
         final_chart_labels = [i[0] for i in sorted_workload]
         final_chart_data = [round(float(i[1]), 2) for i in sorted_workload]
-        prod_trend_data = self.productivity_trend(end_date_val, dept_id, search, active_filters)
-        turnover_res = self.turnover_trend(end_date_val, dept_id, search)
+        prod_trend_data = self.productivity_trend(start_date_val, end_date_val, dept_id, search, active_filters)
+        turnover_res = self.turnover_trend(start_date_val, end_date_val, dept_id, search)
         base_dom_kpi = []
         if dept_id and str(dept_id) != '0':
             base_dom_kpi.append(('department_id', '=', int(dept_id)))
@@ -520,7 +522,7 @@ class HR_Dashboard(models.Model):
 
         title_format = workbook.add_format({'bold': True, 'font_size': 12})
         header_format = workbook.add_format(
-            {'bold': True, 'bg_color': '#17ac39', 'font_color': 'white', 'border': 1, 'align': 'center',
+            {'bold': True,'bg_color': '#17a2b8', 'font_color': 'white', 'border': 1, 'align': 'center',
              'valign': 'vcenter', 'size': 13})
 
         insight_header_format = workbook.add_format(
@@ -647,6 +649,39 @@ class HR_Dashboard(models.Model):
                             f"* Critical Insight: Identified {bottleneck_count} employees as potential bottlenecks (High Workload, Low Completion).",
                             warning_format)
 
+        row += 1
+
+        note_header_format = workbook.add_format({
+            'bold': True,
+            'font_size': 12,
+            'font_color': '#1f2937'
+
+        })
+
+        note_text_format = workbook.add_format({
+            'font_size': 10,
+            'text_wrap': True,
+            'font_color': '#374151'
+        })
+
+        sheet.write(row, 0, "Insights Explanation", note_header_format)
+        row += 1
+        sheet.write(row, 0,
+                    "Workload Inequality:\n"
+                    "Measures workload balance inside departments.\n"
+                    "Formula: (Workload Std Deviation ÷ Average Workload) × 100\n"
+                    "Interpretation: Higher value = uneven workload distribution.",
+                    note_text_format
+                    )
+
+
+        sheet.write(row, 1,
+                    "Performance Gap:\n"
+                    "Measures variation in employee productivity.\n"
+                    "Formula: Standard Deviation of Productivity.\n"
+                    "Interpretation: Higher value = bigger performance differences between employees.",
+                    note_text_format
+                    )
         workbook.close()
         output.seek(0)
         attachment = self.env['ir.attachment'].create({
