@@ -8,3 +8,4 @@ from . import purchase_order
 from . import po_dashboard
 from . import pos_dashboard
 from . import invoicing_dashboard
+from . import cashflow_dashboard

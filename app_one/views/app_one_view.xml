@@ -1,14 +1,14 @@
 <?xml version="1.0" ?>
 <odoo>
     <data>
-     <record id="wb_app_one_tree_view" model="ir.ui.view">
-         <field name="name">wb.app_one.tree.view</field>
-         <field name="model">wb.app_one</field>
-         <field name="arch" type="xml">
-             <tree>
-             </tree>
-         </field>
-     </record>
+        <record id="wb_app_one_tree_view" model="ir.ui.view">
+            <field name="name">wb.app_one.tree.view</field>
+            <field name="model">wb.app_one</field>
+            <field name="arch" type="xml">
+                <tree>
+                </tree>
+            </field>
+        </record>
         <record id="wb_app_one_form_view" model="ir.ui.view">
             <field name="name">wb.app_one.form.view</field>
             <field name="model">wb.app_one</field>
@@ -17,57 +17,50 @@
                 </form>
             </field>
         </record>
-<!--        actions-->
 
+        <!-- actions -->
         <record id="wb_app_one_action_Sales" model="ir.actions.act_window">
             <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
-          <record id="wb_app_one_action_Inventory" model="ir.actions.act_window">
+        <record id="wb_app_one_action_Inventory" model="ir.actions.act_window">
             <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
-         <record id="wb_app_one_action_Purchase" model="ir.actions.act_window">
+        <record id="wb_app_one_action_Purchase" model="ir.actions.act_window">
             <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
-         <record id="wb_app_one_action_CRM" model="ir.actions.act_window">
+        <record id="wb_app_one_action_CRM" model="ir.actions.act_window">
             <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
-  <record id="wb_app_one_action_HR" model="ir.actions.act_window">
+        <record id="wb_app_one_action_HR" model="ir.actions.act_window">
             <field name="name">odooNova</field>
             <field name="res_model">wb.app_one</field>
             <field name="view_mode">tree,form</field>
         </record>
 
-<!--        odooNova =>-->
-<!--                menulist-->
+        <!-- Root Menu -->
         <menuitem id="wb_app_one_root_menu"
                   name="Odoo Nova"
                   web_icon="app_one,static/description/icon.png"
                   sequence="1" />
 
+        <record id="action_cashflow_dashboard_client" model="ir.actions.client">
+            <field name="name">Cash Flow Analytics</field>
+            <field name="tag">cashflow_dashboard_client_tag</field>
+        </record>
 
-
-
-
-<!--        <menuitem id="wb_app_one_menu_Purchase"-->
-<!--                  action="wb_app_one_action_Purchase"-->
-<!--                  name="Purchase Analysis"-->
-<!--                  sequence="3"-->
-<!--                  parent="wb_app_one_root_menu"-->
-<!--        />-->
-<!--        <menuitem id="wb_app_one_menu_CRM"-->
-<!--                  action="wb_app_one_action_CRM"-->
-<!--                  name="CRM"-->
-<!--                  sequence="4"-->
-<!--                  parent="wb_app_one_root_menu"-->
-<!--        />-->
+        <menuitem id="wb_app_one_menu_Cashflow"
+                  name="Cash Flow"
+                  action="action_cashflow_dashboard_client"
+                  sequence="99"
+                  parent="wb_app_one_root_menu" />
 
     </data>
 </odoo>

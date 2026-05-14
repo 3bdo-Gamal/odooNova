@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<odoo>
+    <data>
+        <!-- 1. The Client Action that triggers the OWL JavaScript tag -->
+        <record id="action_cashflow_dashboard_client" model="ir.actions.client">
+            <field name="name">Cash Flow Analytics</field>
+            <field name="tag">cashflow_dashboard_client_tag</field>
+        </record>
+
+        <!-- 2. The Menu Item that appears under Odoo Nova -->
+        <menuitem id="wb_app_one_menu_Cashflow"
+                  name="Cash Flow"
+                  action="action_cashflow_dashboard_client"
+                  sequence="99"
+                  parent="wb_app_one_root_menu" />
+    </data>
+</odoo>
