@@ -2,48 +2,74 @@
 <templates xml:space="preserve">
     <t t-name="purchase_orders_dashboard_template" owl="1">
         <style>
-            .wb-dashboard-wrapper {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9;
-            }
+            .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
             .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
             .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
             .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
-
-            .wb-glassy-header {
-                background: rgba(255, 255, 255, 0.6);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.8);
-                border-radius: 1.25rem;
-                padding: 1rem 1.5rem;
-                box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03);
-            }
-
-             /* Inputs and Search */
-            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; padding: 8px;}
-            .wb-input:focus { border-color: #3b82f6; outline: none; }
-
-            /* Native Search Bar Customization */
-            .wb-native-search .o_searchview { background: #f8fafc; border-radius: 9999px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); padding: 4px 18px; transition: all 0.3s;}
-            .wb-native-search .o_searchview:focus-within { background: #ffffff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-             /* Card Styles */
-            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; }
-            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+            .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); position: relative; z-index: 8 !important; }
+            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; z-index: 1 !important; }
+            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); z-index: 15 !important; }
             .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
-
-             /* Icon Box Styles */
-            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
             .icon-primary { background: #eff6ff; color: #3b82f6; }
             .icon-success { background: #f0fdf4; color: #22c55e; }
             .icon-info { background: #ecfeff; color: #06b6d4; }
             .icon-warning { background: #fefce8; color: #eab308; }
             .icon-danger { background: #fef2f2; color: #ef4444; }
+            .icon-dark { background: #f1f5f9; color: #334155; }
             .icon-purple { background: #faf5ff; color: #a855f7; }
+            .icon-teal { background: #f0fdfa; color: #14b8a6; }
 
             .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
             .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+
+            .wb-search-dropdown-btn { background-color: transparent; border-color: #ccc !important; width: 40px; margin: -2px -5px -2px 0; border-top-right-radius: 4px !important; border-bottom-right-radius: 4px !important; box-shadow: none; transition: background-color 0.2s ease-in-out; }
+            .wb-search-dropdown-btn:hover, .wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
+
+            .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
+            .custom-submenu { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 5px; }
+
+            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+            #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 10px; }
+            .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
+            .print-title { font-size: 16px; font-weight: bold; color: #334155; }
+            .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
+
+            /* ── Info Icon Tooltip ── */
+            .wb-info-wrapper { position: relative; display: inline-flex; align-items: center;}
+            .wb-info-icon {
+                width: 18px; height: 18px; border-radius: 50%;
+                background: #e2e8f0; color: #64748b;
+                font-size: 11px; font-weight: 700; font-style: normal;
+                display: inline-flex; align-items: center; justify-content: center;
+                cursor: default; flex-shrink: 0;
+                transition: background 0.2s, color 0.2s;
+            }
+            .wb-info-icon:hover { background: #3b82f6; color: #fff; }
+            .wb-info-tooltip {
+                display: none; position: absolute;
+                top: calc(100% + 8px); right: 0;
+                background: #1e293b; color: #f1f5f9;
+                font-size: 12px; line-height: 1.5; font-weight: 400;
+                padding: 8px 12px; border-radius: 8px;
+                width: 220px; z-index: 999;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+                pointer-events: none;
+            }
+            .wb-info-tooltip::before {
+                content: ''; position: absolute; bottom: 100%; right: 6px;
+                border: 6px solid transparent; border-bottom-color: #1e293b;
+            }
+            .wb-info-wrapper:hover .wb-info-tooltip { display: block; }
+             /* ── Print area ── */
+            #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+          .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-card {
+                pointer-events: none !important;
+            }
         </style>
 
         <div class="wb-dashboard-wrapper">
@@ -56,11 +82,222 @@
                         </h3>
                         <p class="text-muted text-sm mb-0">Track performance, savings, and vendor delays.</p>
                     </div>
+                 <!-- search-->
+                      <div class="flex-grow-1 d-flex justify-content-center d-print-none mx-4" style="max-width: 600px;">
+                        <div class="shadow-sm d-flex align-items-stretch w-100" style="background: #ffffff; border-radius: 9999px; border: 1px solid #e2e8f0; min-height: 38px; padding: 0 10px;">
+                            <div class="d-flex align-items-center justify-content-center" style="width: 30px;"><i class="fa fa-search text-muted"></i></div>
+                         <!--  favorites-->
+                            <div class="d-flex flex-wrap flex-grow-1 align-items-center gap-1 py-1" style="min-height: 36px;">
+                                <t t-if="state.active_favorite_name">
+                                    <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
+                                        <span class="px-2 py-1 text-white" style="background-color: #ffc107;"><i class="fa fa-star"></i></span>
+                                        <span class="px-2 fw-bold text-dark"><t t-esc="state.active_favorite_name"/></span>
+                                        <i class="fa fa-times px-2 cursor-pointer" t-on-click="clearFavorite"></i>
+                                    </div>
+                                </t>
+                                <t t-else="">
+<!--                                    search_query-->
+                                    <t t-if="state.search_query">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
+                                            <span class="px-2 py-1 bg-primary text-white"><i class="fa fa-search"></i></span>
+                                            <span class="px-2"><t t-esc="state.search_query"/></span>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="clearSearchQuery"></i>
+                                        </div>
+                                    </t>
 
-                    <div class="wb-native-search mx-4 flex-grow-1" style="max-width: 450px;">
-                        <SearchBar t-if="env.searchModel" />
+<!--                                    (Purchase Filters)-->
+                                    <t t-if="state.stats.active_filters.my_orders">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span><span class="px-2">My Purchases</span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('my_orders')"></i></div>
+                                    </t>
+                                    <t t-if="state.stats.active_filters.quotations">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span><span class="px-2">RFQs</span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('quotations')"></i></div>
+                                    </t>
+                                    <t t-if="state.stats.active_filters.sales_orders">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span><span class="px-2">Purchase Orders</span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('sales_orders')"></i></div>
+                                    </t>
+                                    <t t-if="state.stats.active_filters.to_invoice">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span><span class="px-2">Waiting Reception</span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('to_invoice')"></i></div>
+                                    </t>
+                                    <t t-foreach="state.custom_domain" t-as="cf" t-key="cf_index">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
+                                            <span class="px-2 py-1" style="background-color: #0d9488; color: white;"><t t-esc="cf.label"/> <t t-esc="cf.operator"/> <t t-esc="cf.value"/></span>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.removeCustomFilter(cf_index)"></i>
+                                        </div>
+                                    </t>
+                                    <t t-foreach="state.group_by_list" t-as="gb" t-key="gb">
+                                        <div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;">
+                                            <span class="px-2 py-1" style="background-color: #4f46e5; color: white;"><i class="fa fa-bars"></i></span>
+                                            <span class="px-2 text-capitalize"><t t-esc="gb"/></span>
+                                            <i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.removeGroupBy(gb)"></i>
+                                        </div>
+                                    </t>
+                                </t>
+                                <input type="text" class="border-0 fw-bold flex-grow-1 px-1" t-on-keyup="onSearchKeyUp" placeholder="Search Order or Customer..." style="box-shadow: none; background: transparent; min-width: 150px; outline: none; height: 26px;"/>
+                            </div>
+
+                            <!-- القائمة المنسدلة (Dropdown) -->
+                            <div class="dropdown d-flex align-items-stretch">
+                                <button class="btn border-0 d-flex align-items-center justify-content-center wb-search-dropdown-btn bg-transparent" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="fa fa-caret-down" style="color: #495057; font-size: 14px;"></i></button>
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0" style="width: 650px; border-radius: 12px; border: 1px solid #ccc; z-index: 9999;">
+                                    <div class="row g-0">
+                                        <!-- عمود الفلاتر -->
+                                        <div class="col-4 border-end p-3">
+                                            <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-filter me-2 text-muted"></i>Filters</h6>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleFilter('my_purchases')"><i t-attf-class="fa fa-check me-2 {{ state.stats.active_filters.my_orders ? 'text-dark' : 'opacity-0' }}"/> My Purchases</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleFilter('rfqs')"><i t-attf-class="fa fa-check me-2 {{ state.stats.active_filters.quotations ? 'text-dark' : 'opacity-0' }}"/> RFQs</a>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleFilter('purchase_orders')"><i t-attf-class="fa fa-check me-2 {{ state.stats.active_filters.sales_orders ? 'text-dark' : 'opacity-0' }}"/> Purchase Orders</a>
+                                            <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleFilter('to_receive')"><i t-attf-class="fa fa-check me-2 {{ state.stats.active_filters.to_invoice ? 'text-dark' : 'opacity-0' }}"/> Waiting Reception</a>
+
+                                            <div class="dropdown-divider"></div>
+                                            <button class="btn btn-sm text-start w-100 fw-bold text-primary px-2" t-on-click.prevent="toggleCustomFilterMenu">Add Custom Filter <i t-attf-class="fa {{ state.show_custom_filter_menu ? 'fa-caret-down' : 'fa-caret-right' }}"></i></button>
+                                            <div t-if="state.show_custom_filter_menu" class="custom-submenu" t-on-click.stop="">
+                                                <select class="form-select form-select-sm mb-2" t-model="state.cf_field" t-on-change="() => state.cf_value = ''">
+                                                    <t t-foreach="state.model_fields" t-as="f" t-key="f.name"><option t-att-value="f.name"><t t-esc="f.string"/></option></t>
+                                                </select>
+                                                <select class="form-select form-select-sm mb-2" t-model="state.cf_operator">
+                                                    <option value="=">is equal to</option>
+                                                    <option value="!=">is not equal to</option>
+                                                    <option value="ilike">contains</option>
+                                                    <option value=">">greater than</option>
+                                                    <option value="&lt;">less than</option>
+                                                </select>
+
+                                                <t t-set="c_field" t-value="this.currentField"/>
+                                                <t t-if="c_field.type === 'selection'">
+                                                    <select class="form-select form-select-sm mb-2" t-model="state.cf_value">
+                                                        <option value="">-- Select --</option>
+                                                        <t t-foreach="c_field.selection" t-as="sel" t-key="sel[0]">
+                                                            <option t-att-value="sel[0]"><t t-esc="sel[1]"/></option>
+                                                        </t>
+                                                    </select>
+                                                </t>
+                                                <t t-elif="c_field.type === 'boolean'">
+                                                    <select class="form-select form-select-sm mb-2" t-model="state.cf_value">
+                                                        <option value="1">Yes / True</option>
+                                                        <option value="0">No / False</option>
+                                                    </select>
+                                                </t>
+                                                <t t-elif="c_field.type === 'date' || c_field.type === 'datetime'">
+                                                    <input type="date" class="form-control form-control-sm mb-2" t-model="state.cf_value"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <input type="text" class="form-control form-control-sm mb-2" t-model="state.cf_value" placeholder="Value..."/>
+                                                </t>
+
+                                                <button class="btn btn-sm btn-primary w-100" t-on-click="addCustomFilter">Apply</button>
+                                            </div>
+                                        </div>
+                                        <!-- عمود التجميع (Group By) -->
+                                        <div class="col-4 border-end p-3">
+                                            <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-bars me-2 text-muted"></i>Group By</h6>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('user_id')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('user_id') ? 'text-dark' : 'opacity-0' }}"/> Salesperson</a>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('partner_id')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('partner_id') ? 'text-dark' : 'opacity-0' }}"/> Customer</a>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('state')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('state') ? 'text-dark' : 'opacity-0' }}"/> Status</a>
+
+                                            <div class="dropdown-divider"></div>
+                                            <button class="btn btn-sm text-start w-100 fw-bold text-primary px-2" t-on-click.prevent="toggleCustomGroupMenu">Add Custom Group <i t-attf-class="fa {{ state.show_custom_group_menu ? 'fa-caret-down' : 'fa-caret-right' }}"></i></button>
+                                            <div t-if="state.show_custom_group_menu" class="custom-submenu" t-on-click.stop="">
+                                                <select class="form-select form-select-sm mb-2" t-model="state.cg_field">
+                                                    <t t-foreach="state.model_fields" t-as="f" t-key="f.name"><option t-att-value="f.name"><t t-esc="f.string"/></option></t>
+                                                </select>
+                                                <button class="btn btn-sm btn-primary w-100" t-on-click="addCustomGroupBy">Apply</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-4 p-3">
+                                            <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-star me-2 text-muted"></i>Favorites</h6>
+                                            <div class="px-1 mb-3">
+                                                <button class="btn btn-light w-100 text-start py-1 border-0 bg-light" t-on-click.prevent="toggleSaveMenu">Save current search <i t-attf-class="fa {{ state.show_save_menu ? 'fa-caret-down' : 'fa-caret-left' }}"></i></button>
+                                                <t t-if="state.show_save_menu">
+                                                    <div class="mt-2" style="font-size: 13px;" t-on-click.stop="">
+                                                        <input type="text" class="form-control form-control-sm border-0 border-bottom rounded-0 shadow-none mb-2 px-1" t-model="state.favorite_name" style="border-color: #666 !important;"/>
+                                                        <div class="form-check mb-1">
+                                                            <input class="form-check-input" type="checkbox" id="fav_default" t-model="state.is_default_fav" t-on-change="onDefaultCheckboxChange"/>
+                                                            <label class="form-check-label text-muted" for="fav_default">Default filter</label>
+                                                        </div>
+                                                        <div class="form-check mb-3">
+                                                            <input class="form-check-input" type="checkbox" id="fav_shared" t-model="state.is_shared_fav" t-on-change="onSharedCheckboxChange"/>
+                                                            <label class="form-check-label text-muted" for="fav_shared">Shared</label>
+                                                        </div>
+                                                        <button class="btn btn-sm w-100 text-white fw-bold" style="background-color: #714B67;" t-on-click="saveFavoriteUI">Save</button>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                            <div class="dropdown-divider"></div>
+                                            <t t-foreach="state.saved_favorites" t-as="fav" t-key="fav.id">
+                                                <div class="dropdown-item px-2 py-1 rounded d-flex justify-content-between align-items-center" style="cursor:pointer;">
+                                                    <span t-on-click="() => this.loadFavorite(fav)" class="flex-grow-1"><i class="fa fa-star text-warning me-2"></i> <t t-esc="fav.name"/></span>
+                                                    <i class="fa fa-trash text-muted ms-2" t-on-click.stop="() => this.deleteFavorite(fav.id)"></i>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
+                    <!-- البحث المطور (نفس شكل صورة image_daf2be.png) -->
+<!--    <div class="flex-grow-1 d-flex justify-content-center px-4">-->
+<!--        <div class="wb-search-pill-container shadow-sm d-flex align-items-center bg-white border rounded-pill" style="width: 100%; max-width: 450px; height: 40px; position: relative;">-->
+<!--            <i class="fa fa-search text-muted ms-3 me-2"></i>-->
+<!--            <input type="text" class="form-control border-0 shadow-none p-0 flex-grow-1"-->
+<!--                   placeholder="Search Order or Vendor..."-->
+<!--                   t-model="state.search_query"-->
+<!--                   t-on-change="this.downloaddata"-->
+<!--                   style="font-size: 14px; background: transparent;"/>-->
+
+<!--            <div class="dropdown border-start ms-2 h-100 d-flex align-items-center">-->
+<!--                <button class="btn btn-link dropdown-toggle text-muted shadow-none py-0 px-3"-->
+<!--                        type="button" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">-->
+<!--                </button>-->
+
+<!--                &lt;!&ndash; القائمة الثلاثية الكبيرة &ndash;&gt;-->
+<!--                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" style="min-width: 650px; border-radius: 12px; margin-top: 10px !important;">-->
+<!--                    <div class="row g-0">-->
+<!--                        &lt;!&ndash; Filters &ndash;&gt;-->
+<!--                        <div class="col-4 border-end p-3">-->
+<!--                            <h6 class="fw-bold text-primary mb-3 small"><i class="fa fa-filter me-2"></i>Filters</h6>-->
+<!--                            <div class="list-group list-group-flush">-->
+<!--                                <t t-foreach="state.purchase_standard_filters" t-as="f" t-key="f.id">-->
+<!--                                    <button class="list-group-item list-group-item-action border-0 px-0 py-1 text-muted small" t-on-click="() => this.applyStandardFilter(f)">-->
+<!--                                        <t t-esc="f.string"/>-->
+<!--                                    </button>-->
+<!--                                </t>-->
+<!--                                <button class="btn btn-link btn-sm text-primary p-0 mt-2 text-start small fw-bold text-decoration-none" t-on-click="addCustomFilter">-->
+<!--                                    + Add Custom Filter-->
+<!--                                </button>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                        &lt;!&ndash; Group By &ndash;&gt;-->
+<!--                        <div class="col-4 border-end p-3 bg-light-subtle">-->
+<!--                            <h6 class="fw-bold text-secondary mb-3 small"><i class="fa fa-bars me-2"></i>Group By</h6>-->
+<!--                            <div class="list-group list-group-flush bg-transparent">-->
+<!--                                <button class="list-group-item list-group-item-action border-0 px-0 py-1 text-muted small bg-transparent">Vendor</button>-->
+<!--                                <button class="list-group-item list-group-item-action border-0 px-0 py-1 text-muted small bg-transparent">Order Date</button>-->
+<!--                                <button class="btn btn-link btn-sm text-secondary p-0 mt-2 text-start small fw-bold text-decoration-none">-->
+<!--                                    + Add Custom Group-->
+<!--                                </button>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                        &lt;!&ndash; Favorites &ndash;&gt;-->
+<!--                        <div class="col-4 p-3">-->
+<!--                            <h6 class="fw-bold text-warning mb-3 small"><i class="fa fa-star me-2"></i>Favorites</h6>-->
+<!--                            <button class="btn btn-outline-warning btn-sm w-100 mb-3 small" t-on-click="saveToFavorites">Save Current Search</button>-->
+<!--                            <t t-foreach="state.favorites" t-as="fav" t-key="fav.id">-->
+<!--                                <div class="small text-muted py-1 border-bottom d-flex justify-content-between align-items-center">-->
+<!--                                    <t t-esc="fav.name"/>-->
+<!--                                    <i class="fa fa-times text-danger cursor-pointer opacity-50" style="font-size: 10px;"></i>-->
+<!--                                </div>-->
+<!--                            </t>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 
                     <div class="d-flex gap-2">
                         <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white" t-on-click="downloadCustomExcel">
@@ -77,8 +314,8 @@
 <!--/////////////////////////////////////////////////////////////////////-->
                 <!-- cards-->
                 <div class="row mb-4">
-                    <div class=" col-md-4 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('savings')">
+                    <div class=" col-md-4 mb-3" t-on-click="() => this.openKpiAction('savings')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-primary me-3">
                                 <t t-if="state.stats.avg_savings != 0">
                                     <i class="fa fa-line-chart"></i>
@@ -87,7 +324,7 @@
                                     <i class="fa fa-check-circle"></i>
                                 </t>
                             </div>
-                            <div>
+                            <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Price Variance Status</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_savings"/>%</h4>
                                 <small t-attf-class="fw-bold {{ state.stats.avg_savings > 0 ? 'text-primary' : 'text-danger' }}">
@@ -96,59 +333,93 @@
                                     </t>
                                     <t t-else="">No Saving</t>
                                 </small>
-
-
                             </div>
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Compares the actual purchase price against the Blanket Order price to measure savings or budget deviations.</div>
+                             </div>
+
                         </div>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('emergency')" style="cursor: pointer;">
+                    <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('emergency')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-bolt"></i></div>
-                            <div>
+                            <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Urgent Requests</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.emergency_count"/></h4>
                             </div>
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">The number of orders approved less than two days before the scheduled delivery date.</div>
+                             </div>
+
                         </div>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('lead_time')" style="cursor: pointer;">
+                    <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('lead_time')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-edit"></i></div>
-                            <div>
+                            <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Lead Time</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_lead_time"/> Days</h4>
                             </div>
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">The average number of days taken from the moment a Purchase Order is created until it is officially approved.</div>
+                             </div>
+
                         </div>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('delay')" style="cursor: pointer;">
+                    <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('delay')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer"  style="cursor: pointer;">
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-clock-o"></i></div>
-                            <div>
+                            <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Delivery Delay</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.total_delay_days"/> Days</h4>
                             </div>
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Measures the average difference in days between the expected delivery date and the actual effective date from the vendor.</div>
+                             </div>
+
                         </div>
                     </div>
 
-                     <div class="col-md-4 mb-3">
-                        <div class="wb-card p-4 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('vendor_max_risk')" style="cursor: pointer;">
+                     <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('vendor_max_risk')">
+                        <div class="wb-card p-4 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-pie-chart"></i></div>
-                            <div>
+                            <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">Max Vendor Concentration</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.max_risk"/>%</h4>
                             </div>
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">Shows the percentage of total spend attributed to the top vendor to monitor dependency and mitigate supply chain risks.</div>
+                             </div>
+
                         </div>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-on-click="() => this.openKpiAction('automation_rate')" style="cursor: pointer;">
+                    <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('automation_rate')">
+                        <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-primary me-3"><i class="fa fa-cogs"></i></div>
-                            <div>
+                            <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1">PO Automation Rate</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.automation_rate"/>%</h4>
                             </div>
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">i</span>
+                                <div class="wb-info-tooltip">The percentage of purchase orders generated automatically by the system compared to those created manually.</div>
+                             </div>
+
                         </div>
                     </div>
 
@@ -209,7 +480,7 @@
                     <div class="mb-4">
 
                          <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
-                        <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
+                        <select class="form-select wb-input mb-3" t-model="state.stats.period" t-on-change="onChangePeriod">
                             <option value="0">-- All Time / Custom Dates --</option>
                             <option value="7">📅 Last 7 Days</option>
                             <option value="30">📅 Last Month</option>
@@ -221,10 +492,10 @@
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2"><i class="fa fa-calendar me-1"></i> Custom Date Range</label>
                         <div class="p-3 bg-light rounded-3 border">
                             <label class="text-xs fw-bold text-dark mb-1">From</label>
-                            <input type="date" class="form-control wb-input mb-3" t-model="state.stats.start_date" t-on-change="onChangeStartDate"/>
+                            <input type="date" class="form-control wb-input mb-3" t-att-value="state.stats.start_date" t-on-change="onChangeStartDate"/>
 
                             <label class="text-xs fw-bold text-dark mb-1">To</label>
-                            <input type="date" class="form-control wb-input" t-model="state.stats.end_date" t-on-change="onChangeEndDate"/>
+                            <input type="date" class="form-control wb-input" t-att-value="state.stats.end_date" t-on-change="onChangeEndDate"/>
                         </div>
                          <hr class="text-muted opacity-25"/>
 
