@@ -2,7 +2,6 @@
 import { registry } from "@web/core/registry";
 import { loadJS } from "@web/core/assets";
 import { useService } from "@web/core/utils/hooks";
-// FIX: Added onWillUnmount to prevent chart memory leaks on view destroy
 import { Component, onWillStart, onMounted, onWillUnmount, useState, useRef } from "@odoo/owl";
 
 export class InventoryDashboardClient extends Component {
@@ -21,7 +20,6 @@ export class InventoryDashboardClient extends Component {
         this.abcChartRef        = useRef("abc_chart");
         this.topProductChartRef = useRef("top_product_chart");
         this.locationChartRef   = useRef("location_chart");
-        // FIX: Removed dead valueChartRef — no canvas, no render method, causes confusion
 
         // ── Load saved state from localStorage ──────────────────────────
         const savedState    = JSON.parse(localStorage.getItem('wb_inventory_dashboard_state_v2')) || {};
@@ -46,10 +44,11 @@ export class InventoryDashboardClient extends Component {
             category_id:  savedState.category_id  || "all",
             location_id:  savedState.location_id  || "all",
 
-            // ── Top-N chart controls (mirror sales dashboard dropdowns) ─
-            top_products:   String(savedState.top_products  || "10"),
-            top_locations:  String(savedState.top_locations || "10"),
-            top_categories: String(savedState.top_categories || "10"),
+            // ── Chart controls (Top N) & Advanced Settings ─────────────
+            top_products:    String(savedState.top_products  || "10"),
+            top_locations:   String(savedState.top_locations || "10"),
+            top_categories:  String(savedState.top_categories || "10"),
+            dead_stock_days: savedState.dead_stock_days || "90", // <-- Added
 
             // ── Filter option lists ────────────────────────────────────
             filter_warehouses: [],
@@ -109,7 +108,6 @@ export class InventoryDashboardClient extends Component {
             trend_labels:       [],
             trend_in:           [],
             trend_out:          [],
-            // FIX: Keys now match backend response keys exactly
             category_value_labels: [],
             category_value_data:   [],
             top_product_labels: [],
@@ -146,7 +144,6 @@ export class InventoryDashboardClient extends Component {
             this.renderCharts();
         });
 
-        // FIX: Properly destroy all chart instances on component teardown to prevent memory leaks
         onWillUnmount(() => {
             this._destroyChart(this.trendChartRef);
             this._destroyChart(this.abcChartRef);
@@ -189,21 +186,19 @@ export class InventoryDashboardClient extends Component {
         this.state.isLoading = true;
         try {
             const kwargs = {
-                period:         parseInt(this.state.period) || 30,
-                date_from:      this.state.date_from || false,
-                date_to:        this.state.date_to   || false,
-                warehouse_id:   this.state.warehouse_id,
-                product_id:     this.state.product_id,
-                category_id:    this.state.category_id,
-                location_id:    this.state.location_id,
-                // FIX: Pass top-N params so backend respects the dropdown values
-                top_products:   parseInt(this.state.top_products)   || 10,
-                top_locations:  parseInt(this.state.top_locations)  || 10,
-                top_categories: parseInt(this.state.top_categories) || 10,
+                period:          parseInt(this.state.period) || 30,
+                date_from:       this.state.date_from || false,
+                date_to:         this.state.date_to   || false,
+                warehouse_id:    this.state.warehouse_id,
+                product_id:      this.state.product_id,
+                category_id:     this.state.category_id,
+                location_id:     this.state.location_id,
+                top_products:    parseInt(this.state.top_products)   || 10,
+                top_locations:   parseInt(this.state.top_locations)  || 10,
+                top_categories:  parseInt(this.state.top_categories) || 10,
+                dead_stock_days: parseInt(this.state.dead_stock_days)|| 90, // <-- Added
             };
-            const data = await this.orm.call(
-                "wb.inventory.dashboard", "get_inventory_kpis", [], kwargs
-            );
+            const data = await this.orm.call("wb.inventory.dashboard", "get_inventory_kpis", [], kwargs);
             if (data) {
                 Object.assign(this.state, data);
                 if (!data.received_value_fmt) {
@@ -228,6 +223,7 @@ export class InventoryDashboardClient extends Component {
             top_products: this.state.top_products,
             top_locations: this.state.top_locations,
             top_categories: this.state.top_categories,
+            dead_stock_days: this.state.dead_stock_days, // <-- Added
             search_query: this.state.search_query, active_filters: { ...this.state.active_filters },
             custom_domain: [...this.state.custom_domain], group_by_list: [...this.state.group_by_list],
         };
@@ -264,6 +260,7 @@ export class InventoryDashboardClient extends Component {
         this.state.top_products      = "10";
         this.state.top_locations     = "10";
         this.state.top_categories    = "10";
+        this.state.dead_stock_days   = "90";
         this.state.search_query      = "";
         this.state.active_filters    = { low_stock: false, dead_stock: false, no_reorder: false };
         this.state.custom_domain     = [];
@@ -520,7 +517,6 @@ export class InventoryDashboardClient extends Component {
         if (!ref.el) return;
         this._destroyChart(ref);
 
-        // FIX: Use correct state keys that match the backend response
         const labels = this.state.category_value_labels || [];
         const data   = this.state.category_value_data   || [];
 
