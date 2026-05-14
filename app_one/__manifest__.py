@@ -17,7 +17,8 @@
         'views/inventory_view.xml',
         'views/hr_view.xml',
         'views/PO.xml',
-        'views/bill_search.xml'
+        'views/bill_search.xml',
+        'views/cashflow_view.xml',
     ],
 
     "assets": {
@@ -37,6 +38,8 @@
             "app_one/static/src/xml/invoicing_dashboard.xml",
             "app_one/static/src/js/pos_dashboard.js",
             "app_one/static/src/xml/pos_dashboard.xml",
+            "app_one/static/src/js/cashflow_dashboard.js",
+            "app_one/static/src/xml/cashflow_dashboard.xml",
         ]
     },
 

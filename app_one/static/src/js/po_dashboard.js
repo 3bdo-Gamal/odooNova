@@ -28,7 +28,7 @@ export class PurchaseDashboard extends Component {
             searchModel: this.searchModel,
         });
 
-const savedPeriod = sessionStorage.getItem("hr_dashboard_period") || "30";
+const savedPeriod = sessionStorage.getItem("po_dashboard_period") || "30";
         this.orderRef = useRef("state_chart_container");
         this.delayRef = useRef("delays_chart_container");
         this.vendorChartRef = useRef("vendorChartCanvas");
@@ -42,8 +42,32 @@ const savedPeriod = sessionStorage.getItem("hr_dashboard_period") || "30";
         const savedStartDate = sessionStorage.getItem("po_dashboard_start") || lastWeekStr;
         const savedEndDate = sessionStorage.getItem("po_dashboard_end") || todayStr;
         const savedSidebar = sessionStorage.getItem("po_dashboard_sidebar") !== "false";
+         const savedFavorites = JSON.parse(localStorage.getItem('po_dashboard_favorites')) || [];
+        const defaultFav = savedFavorites.find(f => f.is_default === true);
+           const savedState = JSON.parse(localStorage.getItem('wb_po_dashboard_state_v2')) || {};
 
         this.state = useState({
+            model_fields: [], //fields that be searched
+            custom_domain: [], //active filters now
+            search_query: "",
+            cf_field: "name",
+            cf_operator: "=",
+            cf_value: "",
+              group_by_list: defaultFav ? [...defaultFav.group_by_list] : (savedState.group_by_list || []),
+             show_custom_filter_menu: false,
+            cg_field: '',
+              active_favorite_name: defaultFav ? defaultFav.name : null,
+            saved_favorites: savedFavorites,
+            show_save_menu: false,
+            favorite_name: 'po Analytics',
+             is_default_fav: false,
+            is_shared_fav: false,
+    //         purchase_standard_filters: [
+    //     { id: "rfq", string: "Requests for Quotation", domain: "[('state', 'in', ('draft', 'sent'))]" },
+    //     { id: "orders", string: "Purchase Orders", domain: "[('state', 'in', ('purchase', 'done'))]" },
+    //     { id: "my_orders", string: "My Orders", domain: "[('user_id', '=', uid)]" },
+    // ],
+
             stats: {
                 filter_options: {
                 vendors: [],
@@ -58,7 +82,11 @@ filters: {
 active_filters: {
     state_posted: false,
     state_draft: false,
-    pay_paid: false
+    pay_paid: false,
+    my_purchases: false,
+    rfqs: false,
+    purchase_orders: false,
+    to_receive: false
 },
 
                 employeeData: [],
@@ -99,41 +127,140 @@ active_filters: {
         onWillStart(async () => {
 
             const options = await this.orm.call("wb.po.dashboard", "get_filter_options", []);
-            this.state.stats.filter_options = options;
-
-            const viewData = await this.orm.searchRead("ir.model.data", [
-                ["module", "=", "app_one"],
-                ["name", "=", "view_purchase_dashboard_search"]
-            ], ["res_id"]);
-
-            const viewId = viewData.length > 0 ? viewData[0].res_id : false;
-
-            await this.searchModel.load({
-                resModel: "purchase.order",
-                views: [[viewId, "search"]],
-            });
+            this.state.model_fields = options.model_fields;
 
 
             await loadJS("/web/static/lib/Chart/Chart.js");
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js");
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
             await loadJS("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js");
-
-            await this.downloaddata();
         });
 
-        onMounted(() => {
-            this.renderChart();
+        onMounted(async () => {
+           await this.downloaddata();
+
         });
     }
+// ////////////////////////////////////////////////////////////////////////
+    //  (Standard Filters)
+applyStandardFilter(filter) {
 
+    this.state.search_query = filter.string;
+    this.downloaddata(filter.domain);
+}
+saveToFavorites() {
+    const newFavName = prompt("Enter a name for this search:");
+    if (newFavName) {
+        this.state.favorites.push({
+            id: Date.now(),
+            name: newFavName
+        });
+    }
+}
+
+    //add new filter
+    addCustomFilter() {
+        if (!this.state.cf_value || !this.state.cf_field) return;
+        const fieldObj = this.state.model_fields.find(f => f.name === this.state.cf_field)
+        if (fieldObj) {
+            this.state.custom_domain.push({
+                field: this.state.cf_field,
+                field_string: fieldObj.string,
+                operator: this.state.cf_operator,
+                value: this.state.cf_value,
+                type: fieldObj.type,
+            });
+            this.state.cf_value = "";
+            this.downloaddata();
+        }
+    }
+
+    //delete filter
+    removeFilter(index){
+        this.state.custom_domain.splice(index,1)
+        this.downloaddata()
+    }
+      async clearSearchQuery() { this.state.active_favorite_name = null; this.state.search_query = ''; await this.downloaddata(); }
+
+     async removeCustomFilter(index) {
+        this.state.active_favorite_name = null;
+        this.state.custom_domain.splice(index, 1);
+        await this.downloaddata();
+    }
+
+       toggleCustomGroupMenu(ev) { ev.stopPropagation(); this.state.show_custom_group_menu = !this.state.show_custom_group_menu; }
+       toggleSaveMenu(ev) { ev.stopPropagation(); this.state.show_save_menu = !this.state.show_save_menu; }
+        onDefaultCheckboxChange() { if (this.state.is_default_fav) this.state.is_shared_fav = false; }
+     onSharedCheckboxChange() { if (this.state.is_shared_fav) this.state.is_default_fav = false; }
+
+      loadFavorite(fav) {
+        this.state.search_query = fav.search_query;
+        this.state.stats.active_filters = { ...fav.active_filters };
+        this.state.custom_domain = [...fav.custom_domain];
+        this.state.group_by_list = [...fav.group_by_list];
+        this.state.active_favorite_name = fav.name;
+        this.downloaddata();
+    }
+
+    saveFavoriteUI(ev) {
+        ev.stopPropagation();
+        if (this.state.favorite_name.trim()) {
+            if (this.state.is_default_fav) this.state.saved_favorites.forEach(f => f.is_default = false);
+            const newFav = {
+                id: Date.now(), name: this.state.favorite_name, search_query: this.state.search_query,
+                active_filters: { ...this.state.active_filters }, custom_domain: [...this.state.custom_domain],
+                group_by_list: [...this.state.group_by_list], is_default: this.state.is_default_fav, is_shared: this.state.is_shared_fav
+            };
+            this.state.saved_favorites.push(newFav);
+            localStorage.setItem('sales_dashboard_favorites', JSON.stringify(this.state.saved_favorites));
+            this.state.show_save_menu = false; this.state.favorite_name = 'po Analytics';
+            this.state.is_default_fav = false; this.state.is_shared_fav = false;
+        }
+    }
+     async addCustomGroupBy(ev) {
+        ev.stopPropagation();
+        if(this.state.cg_field && !this.state.group_by_list.includes(this.state.cg_field)) {
+            this.state.active_favorite_name = null;
+            this.state.group_by_list.push(this.state.cg_field);
+            this.state.show_custom_group_menu = false;
+            await this.downloaddata();
+        }
+    }
+
+    async clearFavorite() {
+        this.state.active_favorite_name = null;
+        this.state.search_query = '';
+       this.state.active_filters.my_purchases = false;
+    this.state.active_filters.rfqs = false;
+    this.state.active_filters.purchase_orders = false;
+    this.state.active_filters.to_receive = false;
+        this.state.custom_domain = [];
+        this.state.group_by_list = [];
+        await this.downloaddata();
+    }
+
+     deleteFavorite(favId) {
+        this.state.saved_favorites = this.state.saved_favorites.filter(f => f.id !== favId);
+        localStorage.setItem('po_dashboard_favorites', JSON.stringify(this.state.saved_favorites));
+    }
+
+     async removeGroupBy(groupName) {
+        this.state.active_favorite_name = null;
+        this.state.group_by_list = this.state.group_by_list.filter(g => g !== groupName);
+        await this.downloaddata();
+    }
 //     //////////////////////////////////////////////////////////////
 toggleSidebar() {
         this.state.showSidebar = !this.state.showSidebar;
         sessionStorage.setItem("po_dashboard_sidebar", this.state.showSidebar);
     }
 
-
+onSearchKeyUp(ev) {
+        this.state.search_query = ev.target.value;
+        if (ev.key === "Enter") {
+            this.downloaddata();
+        }
+    }
 //     //////////////////////////////////////////////////////////////
 
     openKpiAction(type,vendorName = null) {
@@ -230,7 +357,7 @@ toggleSidebar() {
     }
 
 
-    async downloaddata() {
+    async downloaddata(standardDomain = null) {
         if (this.state.stats.period === "0" || this.state.stats.period === 0) {
             if (this.state.stats.start_date && this.state.stats.end_date) {
                 const start = new Date(this.state.stats.start_date);
@@ -240,25 +367,24 @@ toggleSidebar() {
                     alert("Invalid Date Range! Reverting to last valid dates.");
                     this.state.stats.start_date = this.last_valid_start;
                     this.state.stats.end_date = this.last_valid_end;
-                    sessionStorage.setItem("hr_dashboard_start", this.last_valid_start || "");
-                    sessionStorage.setItem("hr_dashboard_end", this.last_valid_end || "");
+                    sessionStorage.setItem("po_dashboard_start", this.last_valid_start || "");
+                    sessionStorage.setItem("po_dashboard_end", this.last_valid_end || "");
                     return;
                 }
             }
         }
-        const searchDomain = this.searchModel.domain || [];
+        // const searchDomain = this.searchModel.domain || [];
         try {
-            if (this.state.stats.start_date > this.state.stats.end_date) {
-                alert("Start date must be before end date");
-                return;
-            }
             const data = await this.orm.call("wb.po.dashboard", "get_purchase_stats", [], {
-                domain: this.searchModel.domain || [],
+                period: this.state.stats.period,
+                domain: standardDomain || [],
                 start_date: this.state.stats.start_date,
                 end_date: this.state.stats.end_date,
                 vendor_id: this.state.stats.filters.vendor_id,
-            category_id: this.state.stats.filters.category_id,
-            active_filters: this.state.stats.active_filters,
+                category_id: this.state.stats.filters.category_id,
+                active_filters: this.state.stats.active_filters, group_by_list: this.state.group_by_list,
+                custom_domain_list: this.state.custom_domain, search_query: this.state.search_query,
+
 
             });
 
@@ -266,7 +392,6 @@ toggleSidebar() {
                 this.state.stats.avg_savings = data.stats.avg_savings;
                 this.state.stats.avg_lead_time = data.stats.avg_lead_time;
                 this.state.stats.emergency_count = data.stats.emergency_count;
-                this.state.stats.total_orders = data.stats.total_orders;
                 this.state.stats.total_delay_days = data.stats.total_delay_days;
                 this.state.stats.max_risk = data.stats.max_risk;
                 this.state.stats.automation_rate = data.stats.automation_rate;
@@ -283,6 +408,9 @@ toggleSidebar() {
                 if (data.vendor_spending_labels && data.vendor_spending_labels.length > 0) {
                         this.state.top_vendor_name = data.vendor_spending_labels[0];
                 }
+             this.last_valid_start = this.state.stats.start_date;
+            this.last_valid_end = this.state.stats.end_date;
+            this.renderChart();
 
             }
         } catch (e) {
@@ -297,46 +425,54 @@ toggleSidebar() {
     async toggleFilter(filterName) {
     this.state.stats.active_filters[filterName] = !this.state.stats.active_filters[filterName];
     await this.downloaddata();
-    this.renderChart();
+
 }
 
     // دالة تحديث البيانات عند تغيير أي فلتر
     async onApplyFilter() {
     await this.downloaddata();
-    this.renderChart();
+
 }
     ////////////////////////////////////////////////////////////////////////////////////
 
     async onChangeStartDate(ev) {
         this.state.stats.start_date = ev.target.value;
+        this.state.stats.period = "0";
         sessionStorage.setItem("po_dashboard_start", this.state.stats.start_date);
+        sessionStorage.setItem("po_dashboard_period", "0");
         if (this.state.stats.start_date && this.state.stats.end_date) {
             await this.downloaddata();
-            this.renderChart();
+
         }
     }
 
     async onChangeEndDate(ev) {
         this.state.stats.end_date = ev.target.value;
-        sessionStorage.setItem("po_dashboard_end", this.state.stats.end_date);
+          this.state.stats.period = "0";
+        sessionStorage.setItem("po_dashboard_start", this.state.stats.start_date);
+        sessionStorage.setItem("po_dashboard_period", "0");
         if (this.state.stats.start_date && this.state.stats.end_date) {
             await this.downloaddata();
-            this.renderChart();
+
         }
     }
 
     async onChangePeriod() {
         const period = this.state.stats.period;
-
-        const today = new Date();
-        const formatDate = (date) => date.toISOString().split('T')[0];
+        sessionStorage.setItem("po_dashboard_period", period);
 
         if (period !== "0") {
+              const today = new Date();
             const startDate = new Date();
             startDate.setDate(today.getDate() - parseInt(period));
 
-            this.state.stats.start_date = formatDate(startDate);
-            this.state.stats.end_date = formatDate(today);
+            const formatDate = (date) => date.toISOString().split('T')[0];
+          this.state.stats.start_date = formatDate(startDate);
+this.state.stats.end_date = formatDate(today);
+
+            sessionStorage.setItem("po_dashboard_start",  this.state.stats.start_date)
+            sessionStorage.setItem("po_dashboard_end",  this.state.stats.end_date)
+
         }
 
         await this.downloaddata();
@@ -449,7 +585,7 @@ toggleSidebar() {
         startY: currentY,
         head: [['Top 5 Late Vendors', 'Avg Delay Days']],
         body: lateVendorBody,
-        headStyles: { fillColor: [255, 193, 7], textColor: [0, 0, 0] }, // لون أصفر مثل الرسمة
+        headStyles: { fillColor: [255, 193, 7], },
         styles: { fontSize: 11, cellPadding: 4 }
     });
 
@@ -459,14 +595,17 @@ toggleSidebar() {
         const orderStateBody = [];
         if (this.vendorNames && this.orderStateData) {
         for (let i = 0; i < this.vendorNames.length; i++) {
-            lateVendorBody.push([this.vendorNames[i], this.orderStateData[i] + " Day(s)"]);
+            const draftCount = this.orderStateData.draft[i] || 0;
+           const confirmedCount = this.orderStateData.purchase[i] || 0;
+        orderStateBody.push([this.vendorNames[i], `Draft: ${draftCount}, Confirmed: ${confirmedCount}`]);
+
             }
         }
         doc.autoTable({
         startY: currentY,
-        head: [['State of Order', 'Avg Delay Days']],
+        head: [['Vendor Name', 'Order States (Count)']],
         body: orderStateBody,
-        headStyles: { fillColor: [255, 200, 7], textColor: [0, 0, 0] },
+        headStyles: { fillColor:[78, 115, 223] },
         styles: { fontSize: 11, cellPadding: 4 }
     });
 

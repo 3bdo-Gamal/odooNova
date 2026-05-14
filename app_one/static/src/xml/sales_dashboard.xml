@@ -41,7 +41,9 @@
 
             .wb-tooltip-text { visibility: hidden; width: max-content; max-width: 250px; background-color: #1e293b; color: #f8fafc; text-align: left; border-radius: 8px; padding: 10px 14px; position: absolute; z-index: 9999 !important; bottom: calc(100% + 10px); right: 15px; opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.8rem; font-weight: 500; font-family: sans-serif; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); transform: translateY(10px); pointer-events: none; }
             .wb-tooltip-text::after { content: ""; position: absolute; top: 100%; right: 20px; border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
-            .wb-card:hover .wb-tooltip-text { visibility: visible; opacity: 1; transform: translateY(0); }
+
+
+            .show-tooltips .wb-card:hover .wb-tooltip-text { visibility: visible; opacity: 1; transform: translateY(0); }
 
             .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-tooltip-text {
                 visibility: hidden !important;
@@ -53,7 +55,9 @@
                 pointer-events: none !important;
             }
         </style>
-        <div class="wb-dashboard-wrapper">
+
+
+        <div t-attf-class="wb-dashboard-wrapper {{ state.show_kpi_info ? 'show-tooltips' : '' }}">
 
             <t t-if="state.showExportModal">
                 <div class="wb-modal-overlay">
@@ -146,8 +150,19 @@
 
             <div class="wb-main-content">
                 <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
+
+
                     <div class="flex-shrink-0">
-                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;"><i class="fa fa-line-chart text-primary me-2"></i>Sales Analytics</h3>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h3 class="fw-bolder m-0 text-dark" style="letter-spacing: -0.5px;"><i class="fa fa-line-chart text-primary me-2"></i>Sales Analytics</h3>
+                            <button class="btn btn-sm rounded-circle shadow-sm border"
+                                    t-attf-class="{{ state.show_kpi_info ? 'btn-primary' : 'btn-light' }}"
+                                    style="width: 24px; height: 24px; padding: 0;"
+                                    t-on-click="toggleKpiInfo"
+                                    title="Toggle KPI Info">
+                                <i class="fa fa-info" style="font-size: 12px;"></i>
+                            </button>
+                        </div>
                         <p class="text-muted text-sm mb-0">Track performance, analyze trends, and monitor growth.</p>
                     </div>
 

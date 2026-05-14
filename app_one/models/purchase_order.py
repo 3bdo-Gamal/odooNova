@@ -1,8 +1,11 @@
 from itertools import count
 
+# from win32comext.adsi.demos.search import search
 from odoo import models, fields, api
 from datetime import datetime, timedelta, date
 from odoo.exceptions import UserError
+from odoo.osv import expression
+
 
 class PurchaseOrderExtension(models.Model):
     _inherit = 'purchase.order'
@@ -10,6 +13,7 @@ class PurchaseOrderExtension(models.Model):
     price_variance = fields.Float(string="Price Variance", compute="_compute_price_variance", store=True)
     po_lead_time = fields.Float(string='PO Lead Time (Days)',compute="_compute_po_lead_time",store=True)
     is_emergency = fields.Boolean(string="Is Emergency", compute="_compute_is_emergency", store=True)
+
     # ///////////////////////////////////////////////////////////////////////////
 
     # compute variance
@@ -68,6 +72,10 @@ class PurchaseDashboard(models.Model):
     _name = 'wb.po.dashboard'
     _description = 'Purchase Dashboard'
 
+    ALLOWED_PURCHASE_FIELDS = {
+        'name', 'state', 'date_order', 'amount_total', 'partner_id',
+        'user_id', 'company_id', 'invoice_status', 'date_approve'
+    }
     # /////////////////////////////////////////////////////////////////////////////
     # Vendor Concentration Risk
     @api.model
@@ -144,58 +152,83 @@ class PurchaseDashboard(models.Model):
 
     # /////////////////////////////////////////////////////////////////////////////////////
     @api.model
-    def get_purchase_stats(self, start_date=None, end_date=None, **kwargs):
-        period = kwargs.get('period', '30')
-        if period and str(period) != '0':
+    def get_purchase_stats(self, **kwargs):
+        start_str = kwargs.get('start_date')
+        end_str = kwargs.get('end_date')
+        period = kwargs.get('period', '0')
+        if start_str and end_str:
+            StartDate = datetime.strptime(start_str, '%Y-%m-%d')
+            EndDate = datetime.strptime(end_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        elif period and str(period) != '0':
             EndDate = datetime.now()
             StartDate = EndDate - timedelta(days=int(period))
         else:
-            StartDate = datetime.strptime(kwargs.get('start_date'), '%Y-%m-%d') if kwargs.get(
-                'start_date') else datetime.now() - timedelta(days=30)
-            EndDate = datetime.strptime(kwargs.get('end_date'), '%Y-%m-%d').replace(hour=23, minute=59,
-                                                                                    second=59) if kwargs.get(
-                'end_date') else datetime.now()
-        start_date_val, end_date_val = StartDate.date(), EndDate.date()
-        if isinstance(start_date, str) and start_date:
-            StartDate = datetime.strptime(start_date, '%Y-%m-%d')
-        else:
-            StartDate = datetime.now() - timedelta(days=7)
-
-        if isinstance(end_date, str) and end_date:
-            EndDate = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-        else:
             EndDate = datetime.now()
+            StartDate = EndDate - timedelta(days=30)
+
 
         today = date.today()
-        if StartDate.date() > today or EndDate.date() > today:
+        if StartDate.date() > today:
             raise UserError("Not Valid Date: You should enter a date less than or equal to today.")
+
+        custom_domain_list = kwargs.get('custom_domain_list', [])
+
+        and_tuples = []
+        for c_filter in custom_domain_list:
+            f_name = c_filter.get('field')
+            op = c_filter.get('operator')
+            val = c_filter.get('value')
+            if f_name in self.ALLOWED_PURCHASE_FIELDS:
+                and_tuples.append((f_name, op, val))
 
         base_domain = [
             ('date_order', '>=', StartDate),
             ('date_order', '<=', EndDate),
             ('state', 'in', ['purchase', 'done'])
         ]
+        if and_tuples:
+            base_domain = expression.AND([base_domain, and_tuples])
+
+        search_query = kwargs.get('search_query', '')
+        if search_query:
+            base_domain = expression.AND(
+                [base_domain, ['|', ('name', 'ilike', search_query), ('partner_id.name', 'ilike', search_query)]])
+
+
 
         # (Dropdowns)
         if kwargs.get('vendor_id') and kwargs.get('vendor_id') != 'all':
             base_domain.append(('partner_id', '=', int(kwargs.get('vendor_id'))))
 
         if kwargs.get('category_id') and kwargs.get('category_id') != 'all':
-            # تصفية الـ PO التي تحتوي على منتجات من هذه الفئة
+
             base_domain.append(('order_line.product_id.categ_id', '=', int(kwargs.get('category_id'))))
 
         # (Switches)
         active_filters = kwargs.get('active_filters', {})
 
-        if active_filters.get('state_posted'):
-            base_domain.append(('invoice_status', '=', 'invoiced'))
+        if active_filters.get('my_purchases'):
+            base_domain = expression.AND([base_domain, [('user_id', '=', self.env.uid)]])
 
-        if active_filters.get('state_draft'):
-                base_domain.append(('state', '=', 'draft'))
+        if active_filters.get('rfqs'):
+            base_domain = expression.AND([base_domain, [('state', 'in', ('draft', 'sent'))]])
+        else:
+            base_domain = expression.AND([base_domain, [('state', 'in', ['purchase', 'done'])]])
 
-        if active_filters.get('pay_paid'):
-            # تصفية الـ PO المدفوعة بالكامل
-            base_domain.append(('invoice_status', '=', 'invoiced'))
+        if active_filters.get('purchase_orders'):
+            base_domain = expression.AND([base_domain, [('state', '=', 'purchase')]])
+
+        if active_filters.get('to_receive'):
+            base_domain = expression.AND([base_domain, [('invoice_status', '=', 'to invoice')]])
+
+            # 4. فلاتر القوائم المنسدلة (Dropdowns)
+        if kwargs.get('vendor_id') and kwargs.get('vendor_id') != 'all':
+            base_domain = expression.AND([base_domain, [('partner_id', '=', int(kwargs.get('vendor_id')))]])
+
+        if kwargs.get('category_id') and kwargs.get('category_id') != 'all':
+            base_domain = expression.AND(
+                [base_domain, [('order_line.product_id.categ_id', '=', int(kwargs.get('category_id')))]])
+        orders = self.env['purchase.order'].search(base_domain)
 
 
         res = self.env['purchase.order'].read_group(base_domain, ['price_variance:avg','po_lead_time:avg'], [])
@@ -210,10 +243,12 @@ class PurchaseDashboard(models.Model):
             'stats': {
                 'avg_savings': round(data.get('price_variance', 0) * 100, 2),
                 'avg_lead_time': round(data.get('po_lead_time', 0.0), 2),
-                'emergency_count': self.env['purchase.order'].search_count(base_domain + [('is_emergency', '=', True)]),
+                'emergency_count': self.env['purchase.order'].search_count(expression.AND([base_domain, [('is_emergency', '=', True)]])),
                 'total_delay_days': round(delay_stats['avg_total_delay'], 2),
                 'max_risk': concentration['max_risk'],
                 'automation_rate':auto_rate,
+                'total_amount': sum(orders.mapped('amount_total')),
+                'orders_count':len(orders),
 
             },
             'late_vendor_names': delay_stats['late_names'],
@@ -264,7 +299,9 @@ class PurchaseDashboard(models.Model):
 # ////////////////////////////////////////////////////////////////////
     @api.model
     def get_filter_options(self):
-       return {
+
+        return {
+
         'vendors': self.env['res.partner'].search_read([('supplier_rank', '>', 0)], ['id', 'name']),
         'categories': self.env['product.category'].search_read([], ['id', 'name']),
         'journals': self.env['account.journal'].search_read([('type', '=', 'purchase')], ['id', 'name']),

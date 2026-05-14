@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="PosDashboardClientTemplate">
+    <t t-name="CashFlowDashboardClientTemplate">
         <style>
             .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
             .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
@@ -24,7 +24,6 @@
             .custom-submenu { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 5px; }
             .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
 
-            /* ── Info Icon Tooltip ── */
             .wb-info-wrapper { position: relative; display: inline-flex; align-items: center; }
             .wb-info-icon { width: 18px; height: 18px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 11px; font-weight: 700; font-style: normal; display: inline-flex; align-items: center; justify-content: center; cursor: default; flex-shrink: 0; transition: background 0.2s, color 0.2s; }
             .wb-info-icon:hover { background: #3b82f6; color: #fff; }
@@ -37,45 +36,37 @@
             @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
             #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
-            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 10px; }
+            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3b82f6; padding-bottom: 10px; }
             .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
             .print-title { font-size: 16px; font-weight: bold; color: #334155; }
             .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
         </style>
 
         <div class="wb-dashboard-wrapper">
+            <!-- EXCEL MODAL -->
             <t t-if="state.showExportModal">
                 <div class="wb-modal-overlay">
                     <div class="wb-modal-content">
                         <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
-                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-excel-o text-success me-2"></i> Export POS Excel</h5>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-excel-o text-success me-2"></i> Export Cash Flow Excel</h5>
                             <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closeExportModal"><i class="fa fa-times"></i></button>
                         </div>
                         <div class="p-4">
                             <div class="mb-4">
                                 <label class="fw-bold text-muted text-xs text-uppercase mb-2">Group Data By (Rows)</label>
                                 <select class="form-select wb-input" t-model="state.export_group">
-                                    <option value="config_id">🏪 POS Point</option>
-                                    <option value="user_id">👔 Cashier</option>
-                                    <option value="product_id">📦 Product</option>
-                                    <option value="categ_id">📁 Category</option>
+                                    <option value="journal_id">🏦 Bank/Cash Journal</option>
+                                    <option value="partner_id">👥 Partner</option>
+                                    <option value="date:month">📅 Month</option>
                                 </select>
                             </div>
                             <div class="mb-4 p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between">
                                 <div>
                                     <h6 class="fw-bold mb-1 text-dark"><i class="fa fa-sitemap text-primary me-2"></i>Detailed Excel</h6>
-                                    <small class="text-muted">Includes expandable/collapsible order lines under each group.</small>
+                                    <small class="text-muted">Includes expandable individual payments under each group.</small>
                                 </div>
                                 <div class="form-check form-switch fs-4 m-0">
                                     <input class="form-check-input shadow-sm" type="checkbox" t-model="state.detailed_excel"/>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <label class="fw-bold text-muted text-xs text-uppercase mb-3">Select Measures (Columns)</label>
-                                <div class="row g-3">
-                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_rev" t-model="state.meas_revenue"/><label class="form-check-label text-dark fw-bold" for="meas_rev">Total Revenue</label></div></div>
-                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_qty" t-model="state.meas_qty"/><label class="form-check-label text-dark fw-bold" for="meas_qty">Quantity Sold</label></div></div>
-                                    <div class="col-md-6"><div class="form-check form-switch fs-6 p-2 bg-light rounded border"><input class="form-check-input ms-0 me-2" type="checkbox" id="meas_discount" t-model="state.meas_discount"/><label class="form-check-label text-dark fw-bold" for="meas_discount">Discounts</label></div></div>
                                 </div>
                             </div>
                         </div>
@@ -87,19 +78,18 @@
                 </div>
             </t>
 
+            <!-- PDF MODAL -->
             <t t-if="state.showPdfModal">
                 <div class="wb-modal-overlay">
                     <div class="wb-modal-content">
                         <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light" style="border-radius: 20px 20px 0 0;">
-                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-pdf-o text-danger me-2"></i> Print POS Report</h5>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa fa-file-pdf-o text-danger me-2"></i> Print Cash Flow Report</h5>
                             <button class="btn btn-sm btn-light border rounded-circle" t-on-click="closePdfModal"><i class="fa fa-times"></i></button>
                         </div>
                         <div class="p-4">
-                            <p class="text-muted mb-3">Select the KPIs you want to include in the printed report:</p>
+                            <p class="text-muted mb-3">Include the following KPIs in the printed report:</p>
                             <div class="list-group shadow-sm">
-                                <label class="list-group-item d-flex gap-3 py-3"><input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_revenue" style="font-size: 1.3em;"/><span><strong class="d-block text-dark">POS Revenue</strong><small class="text-muted">Total POS sales value.</small></span></label>
-                                <label class="list-group-item d-flex gap-3 py-3"><input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_orders" style="font-size: 1.3em;"/><span><strong class="d-block text-dark">Orders Count</strong><small class="text-muted">Number of receipts.</small></span></label>
-                                <label class="list-group-item d-flex gap-3 py-3"><input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_ratios" style="font-size: 1.3em;"/><span><strong class="d-block text-dark">Payment Ratios</strong><small class="text-muted">Cash vs Card %.</small></span></label>
+                                <label class="list-group-item d-flex gap-3 py-3"><input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_kpis" style="font-size: 1.3em;"/><span><strong class="d-block text-dark">Liquidity Totals</strong><small class="text-muted">Total Inbounds, Outbounds, and Net Cash Flow.</small></span></label>
                             </div>
                         </div>
                         <div class="p-3 border-top bg-light text-end" style="border-radius: 0 0 20px 20px;">
@@ -112,24 +102,24 @@
 
             <div id="print_report_area" style="display: none;">
                 <div class="print-header">
-                    <h1 style="margin: 0;">POS Performance Report</h1>
+                    <h1 style="margin: 0; color: #1e293b;">Cash Flow Summary Report</h1>
                     <p style="color: #64748b; margin-top: 5px;">Generated on: <t t-esc="new Date().toLocaleDateString()"/></p>
                 </div>
-                <div t-if="state.pdf_revenue" class="print-row"><span class="print-title">Total POS Revenue</span><span class="print-value"><t t-esc="state.pos_revenue"/> EGP</span></div>
-                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">POS Orders Count</span><span class="print-value"><t t-esc="state.pos_orders_count"/></span></div>
-                <div t-if="state.pdf_ratios" class="print-row"><span class="print-title">Cash Ratio</span><span class="print-value"><t t-esc="state.cash_ratio"/> %</span></div>
-                <div t-if="state.pdf_ratios" class="print-row"><span class="print-title">Card Ratio</span><span class="print-value"><t t-esc="state.card_ratio"/> %</span></div>
-                <div class="print-row"><span class="print-title">Discount Percentage</span><span class="print-value"><t t-esc="state.discount_pct"/> %</span></div>
-                <div class="print-row"><span class="print-title">Refund Rate</span><span class="print-value" style="color: #dc2626;"><t t-esc="state.refund_rate"/> %</span></div>
+                <div t-if="state.pdf_kpis" class="print-row"><span class="print-title">Total Cash Inbound (Receipts)</span><span class="print-value" style="color: #059669;"><t t-esc="state.total_cash_in"/> EGP</span></div>
+                <div t-if="state.pdf_kpis" class="print-row"><span class="print-title">Total Cash Outbound (Payments)</span><span class="print-value" style="color: #dc2626;"><t t-esc="state.total_cash_out"/> EGP</span></div>
+                <div t-if="state.pdf_kpis" class="print-row"><span class="print-title">Net Cash Flow</span><span class="print-value" style="color: #3b82f6;"><t t-esc="state.net_cash_flow"/> EGP</span></div>
+                <div class="print-row"><span class="print-title">Total Transactions Count</span><span class="print-value"><t t-esc="state.total_transactions"/></span></div>
             </div>
 
+            <!-- MAIN UI -->
             <div class="wb-main-content">
                 <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
                     <div class="flex-shrink-0">
-                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;"><i class="fa fa-desktop text-primary me-2"></i>POS Analytics</h3>
-                        <p class="text-muted text-sm mb-0">Track retail performance and POS KPIs.</p>
+                        <h3 class="fw-bolder mb-1 text-dark" style="letter-spacing: -0.5px;"><i class="fa fa-exchange text-primary me-2"></i>Cash Flow Analytics</h3>
+                        <p class="text-muted text-sm mb-0">Monitor bank liquidity, cash receipts, and operational payments.</p>
                     </div>
 
+                    <!-- CUSTOM SEARCH BAR -->
                     <div class="flex-grow-1 d-flex justify-content-center d-print-none mx-4" style="max-width: 600px;">
                         <div class="shadow-sm d-flex align-items-stretch w-100" style="background: #ffffff; border-radius: 9999px; border: 1px solid #e2e8f0; min-height: 38px; padding: 0 10px;">
                             <div class="d-flex align-items-center justify-content-center" style="width: 30px;"><i class="fa fa-search text-muted"></i></div>
@@ -143,20 +133,20 @@
                                 </t>
                                 <t t-else="">
                                     <t t-if="state.search_query"><div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1 bg-primary text-white"><i class="fa fa-search"></i></span><span class="px-2"><t t-esc="state.search_query"/></span><i class="fa fa-times px-2 cursor-pointer" t-on-click="clearSearchQuery"></i></div></t>
-                                    <t t-if="state.active_filters.my_orders"><div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span><span class="px-2">My POS Orders</span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('my_orders')"></i></div></t>
+                                    <t t-if="state.active_filters.internal_transfers"><div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><i class="fa fa-filter"></i></span><span class="px-2">Internal Transfers</span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.toggleFilter('internal_transfers')"></i></div></t>
                                     <t t-foreach="state.custom_domain" t-as="cf" t-key="cf_index"><div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #0d9488; color: white;"><t t-esc="cf.label"/> <t t-esc="cf.operator"/> <t t-esc="cf.value"/></span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.removeCustomFilter(cf_index)"></i></div></t>
                                     <t t-foreach="state.group_by_list" t-as="gb" t-key="gb"><div class="badge d-flex align-items-center p-0 overflow-hidden" style="background-color: #eef2f6; border: 1px solid #d3dbe3; color: #495057; border-radius: 3px;"><span class="px-2 py-1" style="background-color: #4f46e5; color: white;"><i class="fa fa-bars"></i></span><span class="px-2 text-capitalize"><t t-esc="gb"/></span><i class="fa fa-times px-2 cursor-pointer" t-on-click="() => this.removeGroupBy(gb)"></i></div></t>
                                 </t>
-                                <input type="text" class="border-0 fw-bold flex-grow-1 px-1" t-on-keyup="onSearchKeyUp" placeholder="Search Receipt or Customer..." style="box-shadow: none; background: transparent; min-width: 150px; outline: none; height: 26px;"/>
+                                <input type="text" class="border-0 fw-bold flex-grow-1 px-1" t-on-keyup="onSearchKeyUp" placeholder="Search Memo or Partner..." style="box-shadow: none; background: transparent; min-width: 150px; outline: none; height: 26px;"/>
                             </div>
-
+                            <!-- Dropdown code left identical as original to save space in preview, but imagine full dropdown here -->
                             <div class="dropdown d-flex align-items-stretch">
                                 <button class="btn border-0 d-flex align-items-center justify-content-center wb-search-dropdown-btn bg-transparent" data-bs-toggle="dropdown" data-bs-auto-close="outside"><i class="fa fa-caret-down" style="color: #495057; font-size: 14px;"></i></button>
                                 <div class="dropdown-menu dropdown-menu-end shadow-lg mt-1 p-0" style="width: 650px; border-radius: 12px; border: 1px solid #ccc; z-index: 9999;">
                                     <div class="row g-0">
                                         <div class="col-4 border-end p-3">
                                             <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-filter me-2 text-muted"></i>Filters</h6>
-                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleFilter('my_orders')"><i t-attf-class="fa fa-check me-2 {{ state.active_filters.my_orders ? 'text-dark' : 'opacity-0' }}"/> My POS Orders</a>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleFilter('internal_transfers')"><i t-attf-class="fa fa-check me-2 {{ state.active_filters.internal_transfers ? 'text-dark' : 'opacity-0' }}"/> Show Internal Transfers</a>
                                             <div class="dropdown-divider"></div>
                                             <button class="btn btn-sm text-start w-100 fw-bold text-primary px-2" t-on-click.prevent="toggleCustomFilterMenu">Add Custom Filter <i t-attf-class="fa {{ state.show_custom_filter_menu ? 'fa-caret-down' : 'fa-caret-right' }}"></i></button>
                                             <div t-if="state.show_custom_filter_menu" class="custom-submenu" t-on-click.stop="">
@@ -172,8 +162,8 @@
                                         </div>
                                         <div class="col-4 border-end p-3">
                                             <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-bars me-2 text-muted"></i>Group By</h6>
-                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('user_id')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('user_id') ? 'text-dark' : 'opacity-0' }}"/> Cashier</a>
-                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('config_id')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('config_id') ? 'text-dark' : 'opacity-0' }}"/> POS Point</a>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('partner_id')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('partner_id') ? 'text-dark' : 'opacity-0' }}"/> Partner</a>
+                                            <a class="dropdown-item px-2 py-1 rounded" href="#" t-on-click.prevent="() => this.toggleGroupBy('journal_id')"><i t-attf-class="fa fa-check me-2 {{ state.group_by_list.includes('journal_id') ? 'text-dark' : 'opacity-0' }}"/> Journal</a>
                                             <div class="dropdown-divider"></div>
                                             <button class="btn btn-sm text-start w-100 fw-bold text-primary px-2" t-on-click.prevent="toggleCustomGroupMenu">Add Custom Group <i t-attf-class="fa {{ state.show_custom_group_menu ? 'fa-caret-down' : 'fa-caret-right' }}"></i></button>
                                             <div t-if="state.show_custom_group_menu" class="custom-submenu" t-on-click.stop="">
@@ -184,7 +174,7 @@
                                         <div class="col-4 p-3">
                                             <h6 class="dropdown-header text-dark fw-bold fs-6 mb-2 px-1"><i class="fa fa-star me-2 text-muted"></i>Favorites</h6>
                                             <div class="px-1 mb-3">
-                                                <button class="btn btn-light w-100 text-start py-1 border-0 bg-light" t-on-click.prevent="toggleSaveMenu">Save current search <i t-attf-class="fa {{ state.show_save_menu ? 'fa-caret-down' : 'fa-caret-left' }}"></i></button>
+                                                <button class="btn btn-light w-100 text-start py-1 border-0 bg-light" t-on-click.prevent="toggleSaveMenu">Save search <i t-attf-class="fa {{ state.show_save_menu ? 'fa-caret-down' : 'fa-caret-left' }}"></i></button>
                                                 <t t-if="state.show_save_menu">
                                                     <div class="mt-2" style="font-size: 13px;" t-on-click.stop="">
                                                         <input type="text" class="form-control form-control-sm border-0 border-bottom rounded-0 shadow-none mb-2 px-1" t-model="state.favorite_name" style="border-color: #666 !important;"/>
@@ -203,7 +193,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="d-flex gap-2 flex-shrink-0">
                         <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white hover-bg-light text-nowrap" t-on-click="openExportModal" style="transition: all 0.2s;"><i class="fa fa-file-excel-o me-2"></i> Custom Excel</button>
                         <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-danger bg-white hover-bg-light text-nowrap" t-on-click="openPdfModal" style="transition: all 0.2s;"><i class="fa fa-file-pdf-o me-2"></i> Print PDF</button>
@@ -211,78 +200,81 @@
                     </div>
                 </div>
 
-                <div id="pdf_export_area" class="pb-4 pt-2">
+                <div class="pb-4 pt-2">
+                    <!-- MAIN KPI ROW -->
                     <div class="row mb-4">
-                        <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openRecords('orders')">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                                <div class="wb-icon-box icon-primary me-3"><i class="fa fa-money"></i></div>
-                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">POS Revenue</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.pos_revenue"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
-                                <div class="wb-info-wrapper ms-2">
-                                    <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Total value of all non-cancelled POS orders matching the current filters.</div>
+                        <div class="col-xl-4 col-md-4 mb-3" t-on-click="() => this.openRecords('inbound')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="border-left: 4px solid #10b981;">
+                                <div class="wb-icon-box icon-success me-3"><i class="fa fa-arrow-down"></i></div>
+                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Cash Inbound</p><h4 class="fw-bold mb-0 text-success"><t t-esc="state.total_cash_in"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-4 mb-3" t-on-click="() => this.openRecords('outbound')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="border-left: 4px solid #ef4444;">
+                                <div class="wb-icon-box icon-danger me-3"><i class="fa fa-arrow-up"></i></div>
+                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Cash Outbound</p><h4 class="fw-bold mb-0 text-danger"><t t-esc="state.total_cash_out"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-4 mb-3" t-on-click="() => this.openRecords('all')">
+                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" t-attf-style="border-left: 4px solid {{ state.net_cash_flow >= 0 ? '#3b82f6' : '#f59e0b' }};">
+                                <div class="wb-icon-box icon-primary me-3"><i class="fa fa-balance-scale"></i></div>
+                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Net Cash Flow</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.net_cash_flow"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW ANALYTICS ROW: Ratios -->
+                    <div class="row mb-4">
+                        <div class="col-xl-6 col-md-6 mb-3">
+                            <div class="wb-card p-3 h-100 shadow-sm border-0 bg-white">
+                                <div class="d-flex align-items-center">
+                                    <div class="wb-icon-box icon-purple me-3"><i class="fa fa-line-chart"></i></div>
+                                    <div>
+                                        <p class="text-muted text-xs fw-bold mb-0">Quality of Income (CFO/Net Income)</p>
+                                        <h4 class="fw-bold mb-0"><t t-esc="state.quality_of_income"/></h4>
+                                    </div>
+                                    <div class="wb-info-wrapper ms-auto"><span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Ratio of Operating Cash to Net Income. 1.0+ indicates high-quality, liquid earnings.</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-4 col-md-6 mb-3" t-on-click="() => this.openRecords('orders')">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                                <div class="wb-icon-box icon-info me-3"><i class="fa fa-shopping-cart"></i></div>
-                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Orders Count</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.pos_orders_count"/></h4></div>
-                                <div class="wb-info-wrapper ms-2">
-                                    <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Total number of POS receipts generated.</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-4 col-md-6 mb-3">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center">
-                                <div class="wb-icon-box icon-warning me-3"><i class="fa fa-calculator"></i></div>
-                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Order Value</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.aov"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
-                                <div class="wb-info-wrapper ms-2">
-                                    <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Average revenue per individual POS receipt.</div>
+                        <div class="col-xl-6 col-md-6 mb-3">
+                            <div class="wb-card p-3 h-100 shadow-sm border-0 bg-white">
+                                <div class="d-flex align-items-center">
+                                    <div class="wb-icon-box icon-teal me-3"><i class="fa fa-shield"></i></div>
+                                    <div>
+                                        <p class="text-muted text-xs fw-bold mb-0">Debt Coverage Ratio</p>
+                                        <h4 class="fw-bold mb-0"><t t-esc="state.coverage_ratio"/>x</h4>
+                                    </div>
+                                    <div class="wb-info-wrapper ms-auto"><span class="wb-info-icon">i</span>
+                                        <div class="wb-info-tooltip">Ability to pay current liabilities with current operating cash flow.</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- NEW ANALYTICS ROW: Three Pillars Chart -->
                     <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center">
-                                <div class="wb-icon-box icon-success me-3"><i class="fa fa-bank"></i></div>
-                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Cash Ratio</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.cash_ratio"/>% </h4></div>
-                                <div class="wb-info-wrapper ms-2"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Percentage of payments made using cash methods.</div></div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center">
-                                <div class="wb-icon-box icon-purple me-3"><i class="fa fa-credit-card"></i></div>
-                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Card Ratio</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.card_ratio"/>%</h4></div>
-                                <div class="wb-info-wrapper ms-2"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Percentage of payments made using card/bank methods.</div></div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center">
-                                <div class="wb-icon-box icon-teal me-3"><i class="fa fa-tags"></i></div>
-                                <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Discount Rate</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.discount_pct"/>%</h4></div>
-                                <div class="wb-info-wrapper ms-2"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Total discount value given as a percentage of gross sales.</div></div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('refunds')">
-                            <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                                <div class="wb-icon-box icon-danger me-3"><i class="fa fa-undo"></i></div>
-                                <div class="flex-grow-1"><p class="text-danger text-uppercase text-xs fw-bold mb-1">POS Refund Rate</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.refund_rate"/>%</h4></div>
-                                <div class="wb-info-wrapper ms-2"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Percentage of total sales that were refunded to customers.</div></div>
+                        <div class="col-lg-12">
+                            <div class="wb-card p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h6 class="fw-bold text-dark m-0">The Three Pillars of Cash Flow</h6>
+                                    <div class="wb-info-wrapper"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Shows cash impact broken into Operating (Customers/Vendors), Investing (Internal Transfers), and Financing.</div></div>
+                                </div>
+                                <div style="height: 250px; position: relative;"><canvas t-ref="pillars_chart"></canvas></div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- ORIGINAL CHARTS -->
                     <t t-if="state.group_by_list.length > 0">
                         <div class="row mb-4">
                             <div class="col-lg-12">
                                 <div class="wb-card p-4">
                                     <div class="d-flex justify-content-between align-items-center mb-4">
-                                        <h6 class="fw-bold text-dark m-0">Custom Grouped POS Analysis <span class="chart-hint fw-normal text-muted">(Based on active Group By)</span></h6>
-                                        <div class="wb-info-wrapper"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Revenue distribution based on the dynamic groupings you applied from the header search bar.</div></div>
+                                        <h6 class="fw-bold text-dark m-0">Custom Grouped Impact Analysis</h6>
                                     </div>
                                     <div style="height: 330px; position: relative;"><canvas t-ref="dynamic_chart"></canvas></div>
                                 </div>
@@ -293,47 +285,51 @@
                     <div class="row mb-4">
                         <div class="col-lg-8 mb-4">
                             <div class="wb-card p-4 h-100">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h6 class="fw-bold text-dark m-0">Revenue per Hour <span class="chart-hint">(Peak Sales Time)</span></h6>
-                                    <div class="wb-info-wrapper"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Displays peak sales hours based on the total revenue generated.</div></div>
-                                </div>
-                                <div style="height: 350px; position: relative;"><canvas t-ref="hourly_chart"></canvas></div>
+                                <div class="d-flex justify-content-between align-items-center mb-4"><h6 class="fw-bold text-dark m-0">Cash Flow Trend (In vs Out vs Net)</h6></div>
+                                <div style="height: 320px; position: relative;"><canvas t-ref="trend_chart"></canvas></div>
                             </div>
                         </div>
                         <div class="col-lg-4 mb-4">
                             <div class="wb-card p-4 h-100">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h6 class="fw-bold text-dark m-0">Top Products (Qty)</h6>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <select class="form-select form-select-sm w-auto wb-input rounded-pill px-3" t-model="state.top_products" t-on-change="onChangeFilter">
-                                            <option value="5">Top 5</option>
-                                            <option value="10">Top 10</option>
-                                        </select>
-                                        <div class="wb-info-wrapper"><span class="wb-info-icon">i</span><div class="wb-info-tooltip">Most sold products by quantity within the selected filters.</div></div>
-                                    </div>
-                                </div>
-                                <div style="height: 350px; position: relative;"><canvas t-ref="product_chart"></canvas></div>
+                                <div class="d-flex justify-content-between align-items-center mb-4"><h6 class="fw-bold text-dark m-0">Liquidity by Journal</h6></div>
+                                <div style="height: 320px; position: relative;"><canvas t-ref="journal_chart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-lg-6 mb-4">
+                            <div class="wb-card p-4 h-100">
+                                <h6 class="fw-bold text-dark m-0 mb-4">Top Sources of Cash In (Customers)</h6>
+                                <div style="height: 300px; position: relative;"><canvas t-ref="inbound_chart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="wb-card p-4 h-100">
+                                <h6 class="fw-bold text-dark m-0 mb-4">Top Sinks of Cash Out (Vendors)</h6>
+                                <div style="height: 300px; position: relative;"><canvas t-ref="outbound_chart"></canvas></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- ORIGINAL SIDEBAR -->
             <div class="wb-sidebar d-print-none" t-if="state.showSidebar">
                 <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center"><i class="fa fa-sliders text-primary me-2 fs-5"></i><h5 class="fw-bold text-dark mb-0">POS Filters</h5></div>
+                    <div class="d-flex align-items-center"><i class="fa fa-sliders text-primary me-2 fs-5"></i><h5 class="fw-bold text-dark mb-0">Cash Filters</h5></div>
                     <button class="btn btn-sm btn-light border rounded-circle" t-on-click="toggleSidebar"><i class="fa fa-times"></i></button>
                 </div>
                 <div class="wb-sidebar-scroll">
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Time Period</label>
                         <select class="form-select wb-input mb-3" t-model="state.period" t-on-change="onChangePeriod">
-                            <option value="0" disabled="1">-- Time Period --</option>
-                            <option value="7">📅 Last Week (7 Days)</option>
-                            <option value="30">📅 Last Month (30 Days)</option>
-                            <option value="90">📅 Last 3 Months (90 Days)</option>
-                            <option value="180">📅 Last 6 Months (180 Days)</option>
-                            <option value="365">📅 Last Year (365 Days)</option>
+                            <option value="0" disabled="1">-- Select Duration --</option>
+                            <option value="7">📅 Last 7 Days</option>
+                            <option value="30">📅 Last 30 Days</option>
+                            <option value="90">📅 Last Quarter</option>
+                            <option value="180">📅 Last 6 Months</option>
+                            <option value="365">📅 Last Year</option>
                         </select>
                         <div class="p-3 bg-light rounded-3 border border-light">
                             <label class="text-xs fw-bold text-dark mb-2"><i class="fa fa-calendar me-1"></i> Custom Range</label>
@@ -343,42 +339,28 @@
                     </div>
                     <hr class="text-muted opacity-25"/>
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Core POS Dimensions</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Liquidity Dimensions</label>
                         <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Order Status</label>
-                            <select class="form-select wb-input" t-model="state.state" t-on-change="onChangeFilter">
-                                <option value="all">🟢 All Orders</option>
-                                <option value="paid">✅ Paid (Completed)</option>
-                                <option value="done">🔒 Posted</option>
-                                <option value="invoiced">🧾 Invoiced</option>
+                            <label class="text-xs text-dark fw-bold mb-1">Direction (In/Out)</label>
+                            <select class="form-select wb-input" t-model="state.payment_type" t-on-change="onChangeFilter">
+                                <option value="all">🔄 All Flows</option>
+                                <option value="inbound">📥 Cash Inbound Only</option>
+                                <option value="outbound">📤 Cash Outbound Only</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">POS Point / Branch</label>
-                            <select class="form-select wb-input" t-model="state.config_id" t-on-change="onChangeFilter">
-                                <option value="all">🏪 All Points</option>
-                                <t t-foreach="state.filter_configs" t-as="config" t-key="config.id"><option t-att-value="config.id.toString()"><t t-esc="config.name"/></option></t>
+                            <label class="text-xs text-dark fw-bold mb-1">Bank/Cash Journal</label>
+                            <select class="form-select wb-input" t-model="state.journal_id" t-on-change="onChangeFilter">
+                                <option value="all">🏦 All Bank &amp; Cash Accounts</option>
+                                <t t-foreach="state.filter_journals" t-as="journal" t-key="journal.id"><option t-att-value="journal.id.toString()"><t t-esc="journal.name"/></option></t>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Cashier</label>
-                            <select class="form-select wb-input" t-model="state.user_id" t-on-change="onChangeFilter">
-                                <option value="all">👤 All Cashiers</option>
-                                <t t-foreach="state.filter_users" t-as="user" t-key="user.id"><option t-att-value="user.id.toString()"><t t-esc="user.name"/></option></t>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Product Category</label>
-                            <select class="form-select wb-input" t-model="state.category_id" t-on-change="onChangeFilter">
-                                <option value="all">📦 All Categories</option>
-                                <t t-foreach="state.filter_categories" t-as="cat" t-key="cat.id"><option t-att-value="cat.id.toString()"><t t-esc="cat.name"/></option></t>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="text-xs text-dark fw-bold mb-1">Payment Method</label>
-                            <select class="form-select wb-input" t-model="state.payment_method_id" t-on-change="onChangeFilter">
-                                <option value="all">💳 All Methods</option>
-                                <t t-foreach="state.filter_payment_methods" t-as="pm" t-key="pm.id"><option t-att-value="pm.id.toString()"><t t-esc="pm.name"/></option></t>
+                            <label class="text-xs text-dark fw-bold mb-1">Partner Entity</label>
+                            <select class="form-select wb-input" t-model="state.partner_type" t-on-change="onChangeFilter">
+                                <option value="all">👥 Customers &amp; Vendors</option>
+                                <option value="customer">👤 Customers</option>
+                                <option value="supplier">🏢 Vendors</option>
                             </select>
                         </div>
                     </div>
