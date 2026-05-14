@@ -30,6 +30,7 @@ export class SalesDashboardClient extends Component {
         const defaultFav = savedFavorites.find(f => f.is_default === true);
 
         this.state = useState({
+            show_kpi_info: false, // <-- التعديل هنا (تهيئة الزرار ليكون مغلق افتراضياً)
             showSidebar: true,
             top_products: String(savedState.top_products || "5"),
             top_customers: String(savedState.top_customers || "5"),
@@ -99,6 +100,11 @@ export class SalesDashboardClient extends Component {
             if (this.teamChartRef.el && this.teamChartRef.el.chartInstance) this.teamChartRef.el.chartInstance.destroy();
             if (this.dynamicChartRef.el && this.dynamicChartRef.el.chartInstance) this.dynamicChartRef.el.chartInstance.destroy();
         });
+    }
+
+    // <-- التعديل هنا (دالة لتغيير حالة الإظهار والإخفاء)
+    toggleKpiInfo() {
+        this.state.show_kpi_info = !this.state.show_kpi_info;
     }
 
     async loadFilters() {
