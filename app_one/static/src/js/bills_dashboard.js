@@ -44,6 +44,8 @@ export class PurchaseBillsDashboard extends Component {
         this.state = useState({
             showSidebar: true,
             showExportModal: false,
+            export_group: "partner_id", detailed_excel: false,
+            meas_amount: true, meas_qty: true, meas_price_var: true, meas_qty_var: false, meas_bills: false, meas_abv: false,
 
             filter_options: {
                 vendors: [],
@@ -136,10 +138,6 @@ export class PurchaseBillsDashboard extends Component {
         });
 
        onMounted(() => {
-            if (this.state.period === "0") {
-                 if (this.filterRefs.date_from.el) this.filterRefs.date_from.el.value = this.state.date_from || "";
-                 if (this.filterRefs.date_to.el) this.filterRefs.date_to.el.value = this.state.date_to || "";
-            }
 
             setTimeout(() => {
                 if (this.state.kpi_data && this.state.kpi_data.charts) {
@@ -209,16 +207,31 @@ export class PurchaseBillsDashboard extends Component {
         } catch (error) { console.error("Error fetching data:", error); }
     }
 
-    async downloadExcel() {
+
+
+
+async downloadExcel() {
         this.state.showExportModal = false;
+        const measures = [];
+        if (this.state.meas_amount) measures.push('amount');
+        if (this.state.meas_qty) measures.push('qty');
+        if (this.state.meas_price_var) measures.push('price_var');
+        if (this.state.meas_qty_var) measures.push('qty_var');
+        if (this.state.meas_bills) measures.push('bill_count');
+        if (this.state.meas_abv) measures.push('abv');
+
+        if (measures.length === 0) { alert("Please select at least one measure."); return; }
+
         const searchDomain = (this.env.searchModel && this.env.searchModel.domain) ? this.env.searchModel.domain : [];
         try {
-            const attachmentId = await this.orm.call("wb.purchase.bills.dashboard", "export_bills_excel", [], {
+            const kwargs = {
                 period: parseInt(this.state.period) || 0, date_from: this.state.date_from || "", date_to: this.state.date_to || "",
                 vendor_id: this.state.filters.vendor_id, journal_id: this.state.filters.journal_id, payment_term_id: this.state.filters.payment_term_id,
                 category_id: this.state.filters.category_id, location_id: this.state.filters.location_id,
-                active_filters: this.state.active_filters, native_domain: searchDomain
-            });
+                active_filters: this.state.active_filters, native_domain: searchDomain,
+                export_group: this.state.export_group, export_measures: measures, detailed_excel: this.state.detailed_excel
+            };
+            const attachmentId = await this.orm.call("wb.purchase.bills.dashboard", "export_bills_excel", [], kwargs);
             if (attachmentId) { window.location = `/web/content/${attachmentId}?download=true`; }
         } catch (error) { console.error(error); }
     }
@@ -235,24 +248,24 @@ export class PurchaseBillsDashboard extends Component {
         const chartsData = this.state.kpi_data.charts || {};
         const barOptions = { barPercentage: 0.4, categoryPercentage: 0.5 };
 
-        if (this.chartRefs.chart_trend.el && chartsData.trend && chartsData.trend.labels && chartsData.trend.labels.length > 0) {
+        if (this.chartRefs.chart_trend.el && chartsData.trend && chartsData.trend.labels) {
              this.chartInstances.trend = new window.Chart(this.chartRefs.chart_trend.el, { type: 'line', data: chartsData.trend, options: { responsive: true, maintainAspectRatio: false, onClick: () => this.openAction('trend') } });
         }
-        if (this.chartRefs.chart_status.el && chartsData.status && chartsData.status.labels && chartsData.status.labels.length > 0) {
+        if (this.chartRefs.chart_status.el && chartsData.status && chartsData.status.labels) {
             this.chartInstances.status = new window.Chart(this.chartRefs.chart_status.el, { type: 'doughnut', data: chartsData.status, options: { responsive: true, maintainAspectRatio: false, onClick: (ev, elements) => { if (elements.length > 0) { const label = chartsData.status.labels[elements[0].index]; this.openAction('status', label === 'Paid' ? 'paid' : 'unpaid'); } } } });
         }
-        if (this.chartRefs.chart_vendor.el && chartsData.vendor && chartsData.vendor.labels && chartsData.vendor.labels.length > 0) {
+        if (this.chartRefs.chart_vendor.el && chartsData.vendor && chartsData.vendor.labels) {
             this.chartInstances.vendor = new window.Chart(this.chartRefs.chart_vendor.el, { type: 'bar', data: chartsData.vendor, options: { responsive: true, maintainAspectRatio: false, datasets: { bar: barOptions }, onClick: () => this.openAction('vendor') } });
         }
-        if (this.chartRefs.chart_lead_time.el && chartsData.lead_time && chartsData.lead_time.labels && chartsData.lead_time.labels.length > 0) {
+        if (this.chartRefs.chart_lead_time.el && chartsData.lead_time && chartsData.lead_time.labels) {
             this.chartInstances.lead_time = new window.Chart(this.chartRefs.chart_lead_time.el, { type: 'bar', data: chartsData.lead_time, options: { responsive: true, maintainAspectRatio: false, datasets: { bar: barOptions }, onClick: () => this.openAction('lead_time') } });
         }
-        if (this.chartRefs.chart_price_var.el && chartsData.price_var && chartsData.price_var.labels && chartsData.price_var.labels.length > 0) {
-            this.chartInstances.price_var = new window.Chart(this.chartRefs.chart_price_var.el, { type: 'bar', data: chartsData.price_var, options: { responsive: true, maintainAspectRatio: false, datasets: { bar: barOptions }, onClick: () => this.openAction('price_var') } });
+
+        if (this.chartRefs.chart_price_var.el && chartsData.price_var && chartsData.price_var.labels) {
+            this.chartInstances.price_var = new window.Chart(this.chartRefs.chart_price_var.el, { type: 'bar', data: chartsData.price_var, options: { responsive: true, maintainAspectRatio: false, datasets: { bar: barOptions }, onClick: (ev, elements) => { if (elements.length > 0) { const clickedProduct = chartsData.price_var.labels[elements[0].index]; this.openAction('price_var', clickedProduct); } else { this.openAction('price_var'); } } } });
         }
     }
-
- async openAction(actionType, subType = null) {
+async openAction(actionType, subType = null) {
         let domain = [['move_type', '=', 'in_invoice']];
         let name = "Bills Analysis";
         let res_model = 'account.move';
@@ -262,6 +275,10 @@ export class PurchaseBillsDashboard extends Component {
 
         const dateFrom = this.state.date_from || false;
         const dateTo = this.state.date_to || false;
+
+        // Fix Timezone issue to ensure dates match the local timezone
+        const offset = new Date().getTimezoneOffset() * 60000;
+        const localTodayStr = (new Date(Date.now() - offset)).toISOString().split('T')[0];
 
         switch (actionType) {
             case 'all':
@@ -274,12 +291,12 @@ export class PurchaseBillsDashboard extends Component {
                 target_view_name = 'dashboard.bills.default.tree.v2';
                 break;
             case 'upcoming':
-                domain.push(['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']], ['invoice_date_due', '>=', new Date().toISOString().split('T')[0]]);
+                domain.push(['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']], ['invoice_date_due', '>=', localTodayStr]);
                 name = "Upcoming Payables";
                 target_view_name = 'dashboard.bills.upcoming.tree.v2';
                 break;
             case 'late_bills':
-                domain.push(['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']], ['invoice_date_due', '<', new Date().toISOString().split('T')[0]]);
+                domain.push(['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']], ['invoice_date_due', '<', localTodayStr]);
                 name = "Overdue Vendor Bills";
                 target_view_name = 'dashboard.bills.upcoming.tree.v2';
                 break;
@@ -299,20 +316,30 @@ export class PurchaseBillsDashboard extends Component {
                 target_view_name = 'dashboard.bills.default.tree.v2';
                 break;
             case 'price_var':
-                domain.push(['invoice_line_ids.purchase_line_id', '!=', false]);
-                name = "Price Variance Analysis (PO vs Bill)";
-                target_view_name = 'dashboard.bills.price.var.tree.v2';
+                res_model = 'account.move.line';
+                const var_ids = (this.state.kpi_data && this.state.kpi_data.price_variance_line_ids) ? this.state.kpi_data.price_variance_line_ids : [];
+                domain = [['id', 'in', var_ids.length > 0 ? var_ids : [0]]];
+                if (subType) {
+                    // Use ilike to ensure product name match even with slight spacing differences
+                    domain.push(['product_id.name', 'ilike', subType]);
+                    name = "Price Variance Details (" + subType + ")";
+                } else {
+                    name = "Price Variance Details (Product Level)";
+                }
+                target_view_name = 'dashboard.lines.price.var.tree.v3';
                 break;
             case 'wo_po':
-                domain.push(['invoice_line_ids.purchase_line_id', '=', false]);
+                // Use the negated operator format to accurately filter Maverick Spend (bills without any PO)
+                domain.push('!', ['invoice_line_ids.purchase_line_id', '!=', false]);
                 name = "Vendor Bills Without PO (Maverick Spend)";
                 target_view_name = 'dashboard.bills.default.tree.v2';
                 break;
             case 'qty_variance_pivot':
                 res_model = 'account.move.line';
-                domain = [['move_id.move_type', '=', 'in_invoice'], ['purchase_line_id', '!=', false], ['display_type', '=', 'product']];
+                const qty_var_ids = (this.state.kpi_data && this.state.kpi_data.qty_variance_line_ids) ? this.state.kpi_data.qty_variance_line_ids : [];
+                domain = [['id', 'in', qty_var_ids.length > 0 ? qty_var_ids : [0]]];
                 name = "Quantity Variance Records";
-                target_view_name = 'dashboard.lines.qty.var.tree.v2'; // هنا تم إضافة الـ v2 لتخطي الكاش
+                target_view_name = 'dashboard.lines.qty.var.tree.v3';
                 break;
             case 'vendor':
                 view_mode = 'graph,pivot,list';
@@ -333,68 +360,74 @@ export class PurchaseBillsDashboard extends Component {
                 break;
         }
 
-        if (res_model === 'account.move') {
-            if (this.state.period && this.state.period !== "0") {
-                const today = new Date();
-                const pastDate = new Date(today.getTime() - (parseInt(this.state.period) * 24 * 60 * 60 * 1000));
-                domain.push(['invoice_date', '>=', pastDate.toISOString().split('T')[0]], ['invoice_date', '<=', today.toISOString().split('T')[0]]);
-            } else {
-                if (dateFrom) domain.push(['invoice_date', '>=', dateFrom]);
-                if (dateTo) domain.push(['invoice_date', '<=', dateTo]);
-            }
-        } else if (res_model === 'account.move.line') {
-            if (this.state.period && this.state.period !== "0") {
-                const today = new Date();
-                const pastDate = new Date(today.getTime() - (parseInt(this.state.period) * 24 * 60 * 60 * 1000));
-                domain.push(['move_id.invoice_date', '>=', pastDate.toISOString().split('T')[0]], ['move_id.invoice_date', '<=', today.toISOString().split('T')[0]]);
-            } else {
-                if (dateFrom) domain.push(['move_id.invoice_date', '>=', dateFrom]);
-                if (dateTo) domain.push(['move_id.invoice_date', '<=', dateTo]);
-            }
-        }
+        // Magic fix: Skip re-filtering for Variance charts since Python already provided the exact IDs!
+        if (actionType !== 'price_var' && actionType !== 'qty_variance_pivot') {
 
-        if (this.state.filters.vendor_id !== "all") {
-            domain.push(res_model === 'account.move' ? ['partner_id', '=', parseInt(this.state.filters.vendor_id)] : ['move_id.partner_id', '=', parseInt(this.state.filters.vendor_id)]);
-        }
-        if (this.state.filters.journal_id !== "all") {
-            domain.push(res_model === 'account.move' ? ['journal_id', '=', parseInt(this.state.filters.journal_id)] : ['move_id.journal_id', '=', parseInt(this.state.filters.journal_id)]);
-        }
-        if (this.state.filters.payment_term_id !== "all") {
-            domain.push(res_model === 'account.move' ? ['invoice_payment_term_id', '=', parseInt(this.state.filters.payment_term_id)] : ['move_id.invoice_payment_term_id', '=', parseInt(this.state.filters.payment_term_id)]);
-        }
-        if (this.state.filters.category_id !== "all") {
-            domain.push(res_model === 'account.move' ? ['invoice_line_ids.product_id.categ_id', 'child_of', parseInt(this.state.filters.category_id)] : ['product_id.categ_id', 'child_of', parseInt(this.state.filters.category_id)]);
-        }
-        if (this.state.filters.location_id !== "all") {
-            domain.push(res_model === 'account.move' ? ['invoice_line_ids.purchase_line_id.order_id.picking_type_id.default_location_dest_id', 'child_of', parseInt(this.state.filters.location_id)] : ['purchase_line_id.order_id.picking_type_id.default_location_dest_id', 'child_of', parseInt(this.state.filters.location_id)]);
-        }
-
-        const applyQuickFilters = !['dpo', 'qty_variance_pivot'].includes(actionType);
-
-        if (applyQuickFilters && res_model === 'account.move') {
-            const states = [];
-            if (!['upcoming', 'late_bills', 'status', 'all'].includes(actionType)) {
-                if (this.state.active_filters.state_posted) states.push('posted');
-                if (this.state.active_filters.state_draft) states.push('draft');
-                if (states.length > 0) domain.push(['state', 'in', states]);
+            if (res_model === 'account.move') {
+                if (this.state.period && this.state.period !== "0") {
+                    const today = new Date();
+                    const pastDate = new Date(today.getTime() - (parseInt(this.state.period) * 24 * 60 * 60 * 1000));
+                    const localPastStr = (new Date(pastDate - offset)).toISOString().split('T')[0];
+                    domain.push(['invoice_date', '>=', localPastStr], ['invoice_date', '<=', localTodayStr]);
+                } else {
+                    if (dateFrom) domain.push(['invoice_date', '>=', dateFrom]);
+                    if (dateTo) domain.push(['invoice_date', '<=', dateTo]);
+                }
+            } else if (res_model === 'account.move.line') {
+                if (this.state.period && this.state.period !== "0") {
+                    const today = new Date();
+                    const pastDate = new Date(today.getTime() - (parseInt(this.state.period) * 24 * 60 * 60 * 1000));
+                    const localPastStr = (new Date(pastDate - offset)).toISOString().split('T')[0];
+                    domain.push(['move_id.invoice_date', '>=', localPastStr], ['move_id.invoice_date', '<=', localTodayStr]);
+                } else {
+                    if (dateFrom) domain.push(['move_id.invoice_date', '>=', dateFrom]);
+                    if (dateTo) domain.push(['move_id.invoice_date', '<=', dateTo]);
+                }
             }
 
-            if (!['status', 'upcoming', 'late_bills', 'trend', 'lead_time'].includes(actionType)) {
-                const payments = [];
-                if (this.state.active_filters.pay_paid) payments.push('paid');
-                if (this.state.active_filters.pay_not_paid) payments.push('not_paid', 'partial');
-                if (payments.length > 0) domain.push(['payment_state', 'in', payments]);
+            if (this.state.filters.vendor_id !== "all") {
+                domain.push(res_model === 'account.move' ? ['partner_id', '=', parseInt(this.state.filters.vendor_id)] : ['move_id.partner_id', '=', parseInt(this.state.filters.vendor_id)]);
+            }
+            if (this.state.filters.journal_id !== "all") {
+                domain.push(res_model === 'account.move' ? ['journal_id', '=', parseInt(this.state.filters.journal_id)] : ['move_id.journal_id', '=', parseInt(this.state.filters.journal_id)]);
+            }
+            if (this.state.filters.payment_term_id !== "all") {
+                domain.push(res_model === 'account.move' ? ['invoice_payment_term_id', '=', parseInt(this.state.filters.payment_term_id)] : ['move_id.invoice_payment_term_id', '=', parseInt(this.state.filters.payment_term_id)]);
+            }
+            if (this.state.filters.category_id !== "all") {
+                domain.push(res_model === 'account.move' ? ['invoice_line_ids.product_id.categ_id', 'child_of', parseInt(this.state.filters.category_id)] : ['product_id.categ_id', 'child_of', parseInt(this.state.filters.category_id)]);
+            }
+            if (this.state.filters.location_id !== "all") {
+                domain.push(res_model === 'account.move' ? ['invoice_line_ids.purchase_line_id.order_id.picking_type_id.default_location_dest_id', 'child_of', parseInt(this.state.filters.location_id)] : ['purchase_line_id.order_id.picking_type_id.default_location_dest_id', 'child_of', parseInt(this.state.filters.location_id)]);
             }
 
-            if (!['late_bills', 'upcoming', 'trend', 'status'].includes(actionType) && this.state.active_filters.is_overdue) {
-                domain.push(['state', '=', 'posted'], ['invoice_date_due', '<', new Date().toISOString().split('T')[0]], ['payment_state', 'in', ['not_paid', 'partial']]);
-            }
+            const applyQuickFilters = !['dpo', 'qty_variance_pivot'].includes(actionType);
 
-            if (!['wo_po', 'price_var', 'qty_variance_pivot'].includes(actionType)) {
-                const has_po = this.state.active_filters.has_po;
-                const no_po = this.state.active_filters.no_po;
-                if (has_po && !no_po) domain.push(['invoice_line_ids.purchase_line_id', '!=', false]);
-                else if (no_po && !has_po) domain.push(['invoice_line_ids.purchase_line_id', '=', false]);
+            if (applyQuickFilters && res_model === 'account.move') {
+                const states = [];
+                if (!['upcoming', 'late_bills', 'status', 'all'].includes(actionType)) {
+                    if (this.state.active_filters.state_posted) states.push('posted');
+                    if (this.state.active_filters.state_draft) states.push('draft');
+                    if (states.length > 0) domain.push(['state', 'in', states]);
+                }
+
+                if (!['status', 'upcoming', 'late_bills', 'trend', 'lead_time'].includes(actionType)) {
+                    const payments = [];
+                    if (this.state.active_filters.pay_paid) payments.push('paid');
+                    if (this.state.active_filters.pay_not_paid) payments.push('not_paid', 'partial');
+                    if (payments.length > 0) domain.push(['payment_state', 'in', payments]);
+                }
+
+                if (!['late_bills', 'upcoming', 'trend', 'status'].includes(actionType) && this.state.active_filters.is_overdue) {
+                    domain.push(['state', '=', 'posted'], ['invoice_date_due', '<', localTodayStr], ['payment_state', 'in', ['not_paid', 'partial']]);
+                }
+
+                if (!['wo_po', 'price_var', 'qty_variance_pivot'].includes(actionType)) {
+                    const has_po = this.state.active_filters.has_po;
+                    const no_po = this.state.active_filters.no_po;
+                    if (has_po && !no_po) domain.push(['invoice_line_ids.purchase_line_id', '!=', false]);
+                    else if (no_po && !has_po) domain.push('!', ['invoice_line_ids.purchase_line_id', '!=', false]);
+                }
             }
         }
 
@@ -406,7 +439,6 @@ export class PurchaseBillsDashboard extends Component {
         let list_view_id = false;
         if (target_view_name) {
             try {
-                // سيبحث عن الـ Name الجديد (v2) الذي أنشأناه للتو
                 const views = await this.orm.searchRead('ir.ui.view', [['name', '=', target_view_name]], ['id'], { limit: 1 });
                 if (views.length > 0) {
                     list_view_id = views[0].id;
@@ -437,6 +469,5 @@ export class PurchaseBillsDashboard extends Component {
         });
     }
 }
-
 PurchaseBillsDashboard.template = "purchase_bills_dashboard_template";
 registry.category("actions").add("purchase_bills_dashboard_tag", PurchaseBillsDashboard);
