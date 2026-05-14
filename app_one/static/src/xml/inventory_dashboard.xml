@@ -294,7 +294,8 @@
                             <input class="form-check-input flex-shrink-0" type="checkbox" t-model="state.pdf_dead" style="font-size:1.3em;"/>
                             <span>
                                 <strong class="d-block text-dark">Dead Stock</strong>
-                                <small class="text-muted">Items with no movement in selected period.</small>
+                                <small class="text-muted">Items with no movement in the last
+                                    <t t-esc="state.dead_stock_threshold_days || 90"/> days.</small>
                             </span>
                         </label>
                     </div>
@@ -677,6 +678,8 @@
                 </div>
             </div>
             <div class="col-xl-3 col-md-6">
+                <!-- FIX: Dead stock threshold is a fixed 90-day business rule (DEAD_STOCK_DAYS),
+                     independent of the dashboard period. Use the value returned by the backend. -->
                 <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openDeadStock">
                     <div class="wb-icon-box icon-slate me-3"><i class="fa fa-archive"/></div>
                     <div>
@@ -685,7 +688,9 @@
                             <t t-esc="state.dead_stock_count"/>
                             <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
                         </h4>
-                        <small class="text-muted" style="font-size:0.7rem;">No movement in period</small>
+                        <small class="text-muted" style="font-size:0.7rem;">
+                            No movement in <t t-esc="state.dead_stock_threshold_days || 90"/> days
+                        </small>
                     </div>
                 </div>
             </div>
@@ -724,9 +729,13 @@
         <div class="row g-3 mb-4">
             <div class="col-lg-5">
                 <div class="wb-chart-card h-100">
-                    <div class="wb-chart-title">
-                        <i class="fa fa-pie-chart me-2" style="color:#10b981;"/>
-                        ABC Analysis (Stock Value by Category)
+                    <!-- FIX: Chart title reflects top_categories control in sidebar -->
+                    <div class="wb-chart-title d-flex align-items-center justify-content-between">
+                        <span>
+                            <i class="fa fa-pie-chart me-2" style="color:#10b981;"/>
+                            Stock Value by Category
+                            <span class="chart-hint">(Top <t t-esc="state.top_categories"/>)</span>
+                        </span>
                     </div>
                     <div style="height:300px;position:relative;">
                         <canvas t-ref="abc_chart"/>
@@ -735,10 +744,13 @@
             </div>
             <div class="col-lg-7">
                 <div class="wb-chart-card h-100">
-                    <div class="wb-chart-title">
-                        <i class="fa fa-bar-chart me-2" style="color:#4f46e5;"/>
-                        Top Products by Quantity Out
-                        <span class="chart-hint">(Click bar to view moves)</span>
+                    <!-- FIX: Chart title reflects top_products control in sidebar -->
+                    <div class="wb-chart-title d-flex align-items-center justify-content-between">
+                        <span>
+                            <i class="fa fa-bar-chart me-2" style="color:#4f46e5;"/>
+                            Top <t t-esc="state.top_products"/> Products by Quantity Out
+                            <span class="chart-hint">(Click bar to view moves)</span>
+                        </span>
                     </div>
                     <div style="height:300px;position:relative;">
                         <canvas t-ref="top_product_chart"/>
@@ -751,10 +763,11 @@
         <div class="row g-3 mb-4">
             <div class="col-12">
                 <div class="wb-chart-card">
+                    <!-- FIX: Chart title reflects top_locations control in sidebar -->
                     <div class="wb-chart-title">
                         <i class="fa fa-map-marker me-2" style="color:#06b6d4;"/>
                         Stock Distribution by Location
-                        <span class="chart-hint">(Click bar to view stock at that location)</span>
+                        <span class="chart-hint">(Top <t t-esc="state.top_locations"/> — Click bar to view stock at that location)</span>
                     </div>
                     <div style="height:280px;position:relative;">
                         <canvas t-ref="location_chart"/>
@@ -839,6 +852,43 @@
                         <t t-foreach="state.filter_locations" t-as="loc" t-key="loc.id">
                             <option t-att-value="loc.id"><t t-esc="loc.complete_name"/></option>
                         </t>
+                    </select>
+                </div>
+            </div>
+            <hr class="text-muted opacity-25"/>
+
+            <!-- FIX: Top-N Chart Controls — wired to state.top_products / top_locations /
+                 top_categories, which fetchData() sends to the backend. These were fully
+                 implemented in JS and Python but had no UI in the original XML. -->
+            <div class="mb-4">
+                <label class="form-label text-muted fw-bold text-uppercase mb-3" style="font-size:0.72rem;">
+                    <i class="fa fa-bar-chart me-1"/>Chart Controls (Top N)
+                </label>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Top Products (by Qty Out)</label>
+                    <select class="form-select wb-input" t-model="state.top_products" t-on-change="onChangeFilter">
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Top Locations (by Qty on Hand)</label>
+                    <select class="form-select wb-input" t-model="state.top_locations" t-on-change="onChangeFilter">
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold text-dark mb-1" style="font-size:0.8rem;">Top Categories (by Stock Value)</label>
+                    <select class="form-select wb-input" t-model="state.top_categories" t-on-change="onChangeFilter">
+                        <option value="5">Top 5</option>
+                        <option value="10">Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
                     </select>
                 </div>
             </div>

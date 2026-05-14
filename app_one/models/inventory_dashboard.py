@@ -8,6 +8,12 @@ try:
 except ImportError:
     xlsxwriter = None
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Dead stock: fixed business threshold — completely independent of the
+# dashboard's reporting date range.
+# ─────────────────────────────────────────────────────────────────────────────
+DEAD_STOCK_DAYS = 90
+
 
 class InventoryDashboard(models.Model):
     _name = 'wb.inventory.dashboard'
@@ -17,37 +23,24 @@ class InventoryDashboard(models.Model):
 
     @api.model
     def get_filter_options(self):
-        warehouses = self.env['stock.warehouse'].search_read([], ['id', 'name'])
-        products = self.env['product.product'].search_read(
-            [('detailed_type', '=', 'product')], ['id', 'display_name']
-        )
-        categories = self.env['product.category'].search_read([], ['id', 'name'])
-        locations = self.env['stock.location'].search_read(
-            [('usage', '=', 'internal')], ['id', 'complete_name']
-        )
         return {
-            'warehouses': warehouses,
-            'products': products,
-            'categories': categories,
-            'locations': locations,
+            'warehouses': self.env['stock.warehouse'].search_read([], ['id', 'name']),
+            'products': self.env['product.product'].search_read(
+                [('detailed_type', '=', 'product')], ['id', 'display_name'], limit=200
+            ),
+            'categories': self.env['product.category'].search_read([], ['id', 'name']),
+            'locations': self.env['stock.location'].search_read(
+                [('usage', '=', 'internal')], ['id', 'complete_name']
+            ),
         }
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # Helper: build all filtered domains from the shared filter parameters
-    # ─────────────────────────────────────────────────────────────────────────
     def _build_domains(self, period, date_from, date_to,
                        warehouse_id, product_id, category_id, location_id):
-        """
-        Returns (dt_from, dt_to, days_count, product_domain,
-                 quant_domain, move_out_domain, move_in_domain)
-        """
         today = datetime.now()
 
         if date_from and date_to:
-            dt_from = datetime.strptime(date_from, '%Y-%m-%d')
-            dt_to = datetime.strptime(date_to, '%Y-%m-%d').replace(
-                hour=23, minute=59, second=59
-            )
+            dt_from = fields.Datetime.to_datetime(date_from)
+            dt_to = fields.Datetime.to_datetime(date_to).replace(hour=23, minute=59, second=59)
         else:
             try:
                 period = int(period)
@@ -58,36 +51,27 @@ class InventoryDashboard(models.Model):
 
         days_count = max((dt_to - dt_from).days + 1, 1)
 
-        # ── base domains ───────────────────────────────────────────────────
         product_domain = [('detailed_type', '=', 'product')]
-
-        # Quants: physical stock sitting in internal locations right now
         quant_domain = [('location_id.usage', '=', 'internal')]
 
-        # FIX #1 ─ Out moves: deliveries FROM internal stock TO customers only
-        #   Old code had no constraint on location_id.usage, so it also captured
-        #   production outputs, inter-warehouse transfers, etc.
+        # Out: customer deliveries only (internal → customer)
         move_out_domain = [
             ('state', '=', 'done'),
-            ('location_id.usage', '=', 'internal'),       # shipped FROM warehouse
-            ('location_dest_id.usage', '=', 'customer'),  # delivered TO customer
+            ('location_id.usage', '=', 'internal'),
+            ('location_dest_id.usage', '=', 'customer'),
             ('date', '>=', dt_from),
             ('date', '<=', dt_to),
         ]
 
-        # FIX #2 ─ In moves: receipts FROM suppliers TO internal stock only
-        #   Old code used ('location_dest_id.usage', '=', 'internal') with NO
-        #   constraint on origin location, so it counted internal transfers,
-        #   manufacturing outputs, customer returns, etc. as "received from supplier".
+        # In: supplier receipts only (supplier → internal)
         move_in_domain = [
             ('state', '=', 'done'),
-            ('location_id.usage', '=', 'supplier'),       # shipped FROM supplier
-            ('location_dest_id.usage', '=', 'internal'),  # received INTO warehouse
+            ('location_id.usage', '=', 'supplier'),
+            ('location_dest_id.usage', '=', 'internal'),
             ('date', '>=', dt_from),
             ('date', '<=', dt_to),
         ]
 
-        # ── optional filters ──────────────────────────────────────────────
         if product_id and product_id != 'all':
             pid = int(product_id)
             product_domain.append(('id', '=', pid))
@@ -118,16 +102,25 @@ class InventoryDashboard(models.Model):
     # Main KPI method
     # ─────────────────────────────────────────────────────────────────────────
     @api.model
-    def get_inventory_kpis(
-        self,
-        period=30,
-        date_from=False,
-        date_to=False,
-        warehouse_id='all',
-        product_id='all',
-        category_id='all',
-        location_id='all',
-    ):
+    def get_inventory_kpis(self, period=30, date_from=False, date_to=False,
+                           warehouse_id='all', product_id='all',
+                           category_id='all', location_id='all',
+                           top_products=10, top_locations=10, top_categories=10):
+
+        # FIX: Safely cast top_N params (JS may send string or int)
+        try:
+            top_products = int(top_products)
+        except Exception:
+            top_products = 10
+        try:
+            top_locations = int(top_locations)
+        except Exception:
+            top_locations = 10
+        try:
+            top_categories = int(top_categories)
+        except Exception:
+            top_categories = 10
+
         (dt_from, dt_to, days_count,
          product_domain, quant_domain,
          move_out_domain, move_in_domain) = self._build_domains(
@@ -135,280 +128,232 @@ class InventoryDashboard(models.Model):
             warehouse_id, product_id, category_id, location_id
         )
 
-        products  = self.env['product.product'].search(product_domain)
-        quants    = self.env['stock.quant'].search(quant_domain)
+        p_ctx = {}
+        if warehouse_id != 'all': p_ctx['warehouse'] = int(warehouse_id)
+        if location_id != 'all': p_ctx['location'] = int(location_id)
+
+        products = self.env['product.product'].with_context(**p_ctx).search(product_domain)
+        quants = self.env['stock.quant'].search(quant_domain)
         out_moves = self.env['stock.move'].search(move_out_domain)
-        in_moves  = self.env['stock.move'].search(move_in_domain)
+        in_moves = self.env['stock.move'].search(move_in_domain)
 
         # ══════════════════════════════════════════════════════════════════
-        # KPI 1 ─ Stock On Hand (units)
-        # Simple sum of available quantity across all matching quants.
+        # Map Valuation Layers (Accounting entries)
         # ══════════════════════════════════════════════════════════════════
-        stock_on_hand = sum(quants.mapped('quantity'))
+        vl_out = self.env['stock.valuation.layer'].search([('stock_move_id', 'in', out_moves.ids)])
+        out_val_map = {}
+        for v in vl_out:
+            out_val_map[v.stock_move_id.id] = out_val_map.get(v.stock_move_id.id, 0.0) + abs(v.value)
+
+        vl_in = self.env['stock.valuation.layer'].search([('stock_move_id', 'in', in_moves.ids)])
+        in_val_map = {}
+        for v in vl_in:
+            in_val_map[v.stock_move_id.id] = in_val_map.get(v.stock_move_id.id, 0.0) + v.value
 
         # ══════════════════════════════════════════════════════════════════
-        # KPI 2 ─ Ending Stock Value
-        # Ending Stock Value = Σ (qty_on_hand × standard_cost)
-        # We use standard_price because it is the configured cost price for
-        # the product and is consistent regardless of costing method used for
-        # journal entries (Standard / AVCO / FIFO).
+        # OPTIMIZATION: Single-Pass for Quants (With Universal Fallback)
         # ══════════════════════════════════════════════════════════════════
-        ending_stock_value = sum(
-            q.quantity * (q.product_id.standard_price or 0.0) for q in quants
-        )
+        stock_on_hand = 0.0
+        ending_stock_value = 0.0
+        cat_data = {}
+        product_value_map = {}
+        location_stock = {}
+
+        for q in quants:
+            free_qty = max(q.quantity - q.reserved_quantity, 0.0)
+
+            # UNIVERSAL FALLBACK: If q.value exists (Automated), use it.
+            # Otherwise (Manual), calculate: quantity * standard_price
+            val = q.value if q.value else (q.quantity * q.product_id.standard_price)
+
+            pid = q.product_id.id
+            p_name = q.product_id.display_name or 'Unknown'
+            c_name = q.product_id.categ_id.name or 'Unknown'
+            loc_name = q.location_id.complete_name or q.location_id.name or 'Unknown'
+
+            stock_on_hand += free_qty
+            ending_stock_value += val
+            cat_data[c_name] = cat_data.get(c_name, 0.0) + val
+            location_stock[loc_name] = location_stock.get(loc_name, 0.0) + free_qty
+
+            if pid not in product_value_map:
+                product_value_map[pid] = {'name': p_name, 'value': 0.0}
+            product_value_map[pid]['value'] += val
 
         # ══════════════════════════════════════════════════════════════════
-        # KPI 3 ─ COGS for the selected period
-        # COGS = Σ (qty_done × standard_cost) for all outgoing (delivery) moves
-        #
-        # FIX #3 ─ old code used  m.price_unit  which is the sales price
-        # stored on the stock move for some flows, not the COST price.
-        # standard_price is the correct cost to use here.
-        # For AVCO/FIFO companies that need valuation-layer accuracy they
-        # can replace this with stock.valuation.layer queries.
+        # OPTIMIZATION: Single-Pass for Moves (With Universal Fallback)
         # ══════════════════════════════════════════════════════════════════
-        cogs = sum(
-            m.product_uom_qty * (m.product_id.standard_price or 0.0)
-            for m in out_moves
-        )
+        cogs = 0.0
+        received_value = 0.0
+        daily_in, daily_out = {}, {}
+        product_out = {}
+
+        for i in range(days_count):
+            key = (dt_from + timedelta(days=i)).strftime('%Y-%m-%d')
+            daily_in[key] = daily_out[key] = 0.0
+
+        for m in in_moves:
+            k = m.date.strftime('%Y-%m-%d')
+            if k in daily_in: daily_in[k] += m.quantity
+
+            # Fallback for Received Value
+            m_val = in_val_map.get(m.id, 0.0)
+            if m_val == 0.0:
+                m_val = m.quantity * m.product_id.standard_price
+            received_value += m_val
+
+        for m in out_moves:
+            k = m.date.strftime('%Y-%m-%d')
+            if k in daily_out: daily_out[k] += m.quantity
+
+            # Fallback for COGS
+            m_val = out_val_map.get(m.id, 0.0)
+            if m_val == 0.0:
+                m_val = m.quantity * m.product_id.standard_price
+            cogs += m_val
+
+            p_name = m.product_id.display_name or 'Unknown'
+            product_out[p_name] = product_out.get(p_name, 0.0) + m.quantity
+
+        # Ratios
+        inventory_turnover = round((cogs / ending_stock_value) * (365.0 / days_count),
+                                   2) if ending_stock_value > 0 and cogs > 0 else 0.0
+        dio = round((ending_stock_value / cogs) * days_count, 1) if cogs > 0 else days_count
 
         # ══════════════════════════════════════════════════════════════════
-        # KPI 4 ─ Value Received from Suppliers (period)
-        # Received Value = Σ (qty_received × standard_cost)
-        # Same reasoning as COGS: use standard_price, not price_unit.
+        # Low Stock & Dead Stock
         # ══════════════════════════════════════════════════════════════════
-        received_value = sum(
-            m.product_uom_qty * (m.product_id.standard_price or 0.0)
-            for m in in_moves
-        )
+        op_domain = []
+        if warehouse_id != 'all': op_domain.append(('warehouse_id', '=', int(warehouse_id)))
 
-        # ══════════════════════════════════════════════════════════════════
-        # KPI 5 ─ Inventory Turnover Ratio  (annualized)
-        #
-        # Formula:  Turnover = (COGS_period / Ending_Stock_Value)
-        #                      × (365 / days_count)
-        #
-        # FIX #4 ─ old code: cogs / ending_stock_value — no annualization.
-        # Without annualization a 7-day period with the same daily sales rate
-        # gives a turnover 52× lower than a yearly view, making the KPI
-        # meaningless for short periods. Annualizing lets you compare to
-        # industry benchmarks regardless of the chosen date range.
-        #
-        # NOTE: "Average Inventory" = (Begin + End) / 2 is the textbook form,
-        # but beginning inventory requires an extra historical query.
-        # Using ending inventory is the standard dashboard approximation.
-        # ══════════════════════════════════════════════════════════════════
-        if ending_stock_value > 0 and cogs > 0:
-            raw_turnover = cogs / ending_stock_value          # ratio for period
-            inventory_turnover = round(raw_turnover * (365.0 / days_count), 2)
-        else:
-            raw_turnover = 0.0
-            inventory_turnover = 0.0
-
-        # ══════════════════════════════════════════════════════════════════
-        # KPI 6 ─ DIO  (Days Inventory Outstanding / Days in Stock)
-        #
-        # Formula:  DIO = (Ending_Stock_Value / COGS_period) × days_count
-        #
-        # Business meaning: "At the current period's sales rate, how many
-        # days will existing stock last?"
-        #
-        # FIX #5 ─ old code used  365 / inventory_turnover  which always
-        # produced a year-based figure even when the user chose 7 days,
-        # and capped the result arbitrarily at 365 days.
-        # ══════════════════════════════════════════════════════════════════
-        if cogs > 0:
-            dio = round((ending_stock_value / cogs) * days_count, 1)
-        else:
-            # No sales at all in the period → inventory is not moving
-            # DIO is undefined; we show it as the full period length as a
-            # conservative "still in stock" indicator.
-            dio = days_count
-
-        # ══════════════════════════════════════════════════════════════════
-        # KPI 7 ─ Low Stock Count
-        #
-        # FIX #6 ─ old code: qty_available <= 0  → that is OUT-OF-STOCK,
-        # not low stock.  Low stock means qty is at or below the configured
-        # reorder minimum (stock.warehouse.orderpoint.product_min_qty).
-        # Products with no reorder rule fall back to qty_available <= 0.
-        # ══════════════════════════════════════════════════════════════════
-        orderpoints = self.env['stock.warehouse.orderpoint'].search([])
-        # Map: product_id → minimum qty before reorder triggers
+        orderpoints = self.env['stock.warehouse.orderpoint'].search(op_domain)
         reorder_min_map = {}
         for op in orderpoints:
             pid = op.product_id.id
-            # If multiple orderpoints for same product, take the highest min_qty
-            reorder_min_map[pid] = max(
-                reorder_min_map.get(pid, 0.0),
-                op.product_min_qty
-            )
+            reorder_min_map[pid] = max(reorder_min_map.get(pid, 0.0), op.product_min_qty)
 
-        low_stock_count = 0
-        for product in products:
-            on_hand = product.qty_available
-            min_qty = reorder_min_map.get(product.id, 0.0)
-            # "Low stock" = on hand has reached (or gone below) the reorder point
-            if on_hand <= min_qty:
-                low_stock_count += 1
+        low_stock_count = sum(1 for p in products if p.qty_available <= reorder_min_map.get(p.id, 0.0))
 
-        # ══════════════════════════════════════════════════════════════════
-        # KPI 8 ─ Dead Stock
-        # Products that have stock on hand but had ZERO movement (in or out)
-        # during the entire selected period.
-        # ══════════════════════════════════════════════════════════════════
-        moved_product_ids = (
-            set(out_moves.mapped('product_id').ids)
-            | set(in_moves.mapped('product_id').ids)
-        )
-        dead_stock_products = products.filtered(
-            lambda p: p.id not in moved_product_ids and p.qty_available > 0
-        )
+        if products:
+            dead_cutoff = datetime.now() - timedelta(days=DEAD_STOCK_DAYS)
+            dead_base_domain = [('state', '=', 'done'), ('date', '>=', dead_cutoff),
+                                ('product_id', 'in', products.ids)]
 
-        # ══════════════════════════════════════════════════════════════════
-        # Chart: Stock Movement Trend  (daily in / out quantities)
-        # ══════════════════════════════════════════════════════════════════
-        daily_in  = {}
-        daily_out = {}
-        for i in range(days_count):
-            key = (dt_from + timedelta(days=i)).strftime('%Y-%m-%d')
-            daily_in[key]  = 0.0
-            daily_out[key] = 0.0
+            dead_out_ids = set(self.env['stock.move'].search(dead_base_domain + [
+                ('location_id.usage', '=', 'internal'), ('location_dest_id.usage', '=', 'customer')
+            ]).mapped('product_id').ids)
+            dead_in_ids = set(self.env['stock.move'].search(dead_base_domain + [
+                ('location_id.usage', '=', 'supplier'), ('location_dest_id.usage', '=', 'internal')
+            ]).mapped('product_id').ids)
 
-        for m in in_moves:
-            key = m.date.strftime('%Y-%m-%d')
-            if key in daily_in:
-                daily_in[key] += m.product_uom_qty
+            recently_moved_ids = dead_out_ids | dead_in_ids
+            dead_stock_count = len([p for p in products if p.id not in recently_moved_ids and p.qty_available > 0])
+        else:
+            dead_stock_count = 0
 
-        for m in out_moves:
-            key = m.date.strftime('%Y-%m-%d')
-            if key in daily_out:
-                daily_out[key] += m.product_uom_qty
+        # Sorting — respect top_N limits passed from frontend
+        sorted_products = sorted(product_out.items(), key=lambda x: x[1], reverse=True)[:top_products]
+        sorted_locations = sorted(location_stock.items(), key=lambda x: x[1], reverse=True)[:top_locations]
 
-        # ══════════════════════════════════════════════════════════════════
-        # Chart: ABC Analysis – Stock Value by Category
-        # ══════════════════════════════════════════════════════════════════
-        abc_labels = []
-        abc_data   = []
-        for cat in self.env['product.category'].search([]):
-            cat_quants = quants.filtered(lambda q: q.product_id.categ_id == cat)
-            val = sum(
-                q.quantity * (q.product_id.standard_price or 0.0)
-                for q in cat_quants
-            )
-            if val > 0:
-                abc_labels.append(cat.name)
-                abc_data.append(round(val, 2))
+        # FIX: top_categories now respected for category/ABC chart
+        sorted_categories = sorted(cat_data.items(), key=lambda x: x[1], reverse=True)[:top_categories]
 
-        # ══════════════════════════════════════════════════════════════════
-        # Chart: Top Products by Quantity Out (delivered to customers)
-        # ══════════════════════════════════════════════════════════════════
-        product_out = {}
-        for m in out_moves:
-            name = m.product_id.display_name or 'Unknown'
-            product_out[name] = product_out.get(name, 0.0) + m.product_uom_qty
-        sorted_products = sorted(product_out.items(), key=lambda x: x[1], reverse=True)[:10]
+        sorted_by_value = sorted(product_value_map.values(), key=lambda x: x['value'], reverse=True)
 
-        # ══════════════════════════════════════════════════════════════════
-        # Chart: Stock Distribution by Location
-        # ══════════════════════════════════════════════════════════════════
-        location_stock = {}
-        for q in quants:
-            loc_name = q.location_id.complete_name or q.location_id.name or 'Unknown'
-            location_stock[loc_name] = location_stock.get(loc_name, 0.0) + q.quantity
-        sorted_locations = sorted(
-            location_stock.items(), key=lambda x: x[1], reverse=True
-        )[:10]
+        total_stock_value = sum(x['value'] for x in sorted_by_value) or 1.0
+        cumulative = 0.0
+        abc = {'A': [], 'B': [], 'C': []}
+
+        for x in sorted_by_value:
+            cumulative += x['value'] / total_stock_value
+            if cumulative <= 0.80:
+                abc['A'].append(x['name'])
+            elif cumulative <= 0.95:
+                abc['B'].append(x['name'])
+            else:
+                abc['C'].append(x['name'])
 
         return {
-            'stock_on_hand':       round(stock_on_hand, 2),
-            'stock_value':         round(ending_stock_value, 2),
-            'stock_value_fmt':     "{:,.2f}".format(ending_stock_value),
-            'cogs':                round(cogs, 2),
-            'cogs_fmt':            "{:,.2f}".format(cogs),
-            'received_value':      round(received_value, 2),
-            # Annualized ratio, e.g. "4.5x"
-            'inventory_turnover':  "{}x".format(inventory_turnover),
-            # Days current stock will last at current sales rate
-            'dio':                 "{} Days".format(int(dio)),
-            'low_stock_count':     low_stock_count,
-            'dead_stock_count':    len(dead_stock_products),
-            'total_products':      len(products),
-            'trend_labels':        list(daily_in.keys()),
-            'trend_in':            list(daily_in.values()),
-            'trend_out':           list(daily_out.values()),
-            'abc_labels':          abc_labels,
-            'abc_data':            abc_data,
-            'top_product_labels':  [i[0] for i in sorted_products],
-            'top_product_data':    [i[1] for i in sorted_products],
-            'location_labels':     [i[0] for i in sorted_locations],
-            'location_data':       [i[1] for i in sorted_locations],
+            'stock_on_hand': round(stock_on_hand, 2),
+            'stock_value': round(ending_stock_value, 2),
+            'stock_value_fmt': "{:,.2f}".format(ending_stock_value),
+            'cogs': round(cogs, 2),
+            'cogs_fmt': "{:,.2f}".format(cogs),
+            'received_value': round(received_value, 2),
+            'received_value_fmt': "{:,.2f}".format(received_value),
+            'inventory_turnover': f"{inventory_turnover}x",
+            'dio': f"{int(dio)} Days",
+            'low_stock_count': low_stock_count,
+            'dead_stock_count': dead_stock_count,
+            'dead_stock_threshold_days': DEAD_STOCK_DAYS,
+            'total_products': len(products),
+            'trend_labels': list(daily_in.keys()),
+            'trend_in': list(daily_in.values()),
+            'trend_out': list(daily_out.values()),
+
+            # FIX: Keys now match exactly what JS state expects (category_value_*)
+            'category_value_labels': [i[0] for i in sorted_categories],
+            'category_value_data': [round(i[1], 2) for i in sorted_categories],
+
+            'abc_class_a': abc['A'][:10],
+            'abc_class_b': abc['B'][:10],
+            'abc_class_c': abc['C'][:10],
+            'top_product_labels': [i[0] for i in sorted_products],
+            'top_product_data': [i[1] for i in sorted_products],
+            'location_labels': [i[0] for i in sorted_locations],
+            'location_data': [i[1] for i in sorted_locations],
         }
 
     # ─────────────────────────────────────────────────────────────────────────
-    # Excel Export  (same fixes applied)
+    # Excel Export (With Universal Fallback)
     # ─────────────────────────────────────────────────────────────────────────
     @api.model
-    def export_inventory_excel(
-        self,
-        period=30,
-        date_from=False,
-        date_to=False,
-        warehouse_id='all',
-        product_id='all',
-        category_id='all',
-        export_group='product',
-        export_measures=None,
-        detailed_excel=False,
-    ):
-        if export_measures is None:
-            export_measures = ['qty', 'value']
+    def export_inventory_excel(self, period=30, date_from=False, date_to=False,
+                               warehouse_id='all', product_id='all',
+                               category_id='all', location_id='all',
+                               export_group='product', export_measures=None, detailed_excel=False):
 
-        if not xlsxwriter:
-            return False
+        if export_measures is None: export_measures = ['qty', 'value']
+        if not xlsxwriter: return False
 
-        (dt_from, dt_to, days_count,
-         product_domain, quant_domain,
+        (dt_from, dt_to, days_count, product_domain, quant_domain,
          move_out_domain, move_in_domain) = self._build_domains(
-            period, date_from, date_to,
-            warehouse_id, product_id, category_id, 'all'
+            period, date_from, date_to, warehouse_id, product_id, category_id, location_id
         )
 
-        quants    = self.env['stock.quant'].search(quant_domain)
+        quants = self.env['stock.quant'].search(quant_domain)
         out_moves = self.env['stock.move'].search(move_out_domain)
-        in_moves  = self.env['stock.move'].search(move_in_domain)
+
+        valuation_out_map = {}
+        for vl in self.env['stock.valuation.layer'].search([('stock_move_id', 'in', out_moves.ids)]):
+            mid = vl.stock_move_id.id
+            valuation_out_map[mid] = valuation_out_map.get(mid, 0.0) + abs(vl.value)
 
         pivot_data = {}
 
-        # ── group data ────────────────────────────────────────────────────
         if export_group == 'product':
             for q in quants:
                 key = q.product_id.display_name or 'Unknown'
                 if key not in pivot_data:
-                    pivot_data[key] = {
-                        'qty': 0.0, 'value': 0.0, 'cogs': 0.0,
-                        'category': q.product_id.categ_id.name or '',
-                        'lines': [],
-                    }
-                pivot_data[key]['qty']   += q.quantity
-                # FIX: standard_price not price_unit
-                pivot_data[key]['value'] += q.quantity * (q.product_id.standard_price or 0.0)
+                    pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0,
+                                       'category': q.product_id.categ_id.name or '', 'lines': []}
+                pivot_data[key]['qty'] += max(q.quantity - q.reserved_quantity, 0.0)
+                pivot_data[key]['value'] += q.value if q.value else (q.quantity * q.product_id.standard_price)
 
             for m in out_moves:
                 key = m.product_id.display_name or 'Unknown'
                 if key not in pivot_data:
-                    pivot_data[key] = {
-                        'qty': 0.0, 'value': 0.0, 'cogs': 0.0,
-                        'category': m.product_id.categ_id.name or '',
-                        'lines': [],
-                    }
-                # FIX: standard_price not price_unit
-                cost = m.product_uom_qty * (m.product_id.standard_price or 0.0)
+                    pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0,
+                                       'category': m.product_id.categ_id.name or '', 'lines': []}
+
+                cost = valuation_out_map.get(m.id, 0.0)
+                if cost == 0.0: cost = m.quantity * m.product_id.standard_price
+
                 pivot_data[key]['cogs'] += cost
                 if detailed_excel:
                     pivot_data[key]['lines'].append({
                         'name': m.reference or (m.picking_id.name if m.picking_id else ''),
-                        'qty': m.product_uom_qty,
+                        'qty': m.quantity,
                         'cost': cost,
                         'date': str(m.date.date()),
                     })
@@ -416,68 +361,66 @@ class InventoryDashboard(models.Model):
         elif export_group == 'category':
             for q in quants:
                 key = q.product_id.categ_id.name or 'Uncategorized'
-                if key not in pivot_data:
-                    pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
-                pivot_data[key]['qty']   += q.quantity
-                pivot_data[key]['value'] += q.quantity * (q.product_id.standard_price or 0.0)
+                if key not in pivot_data: pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
+                pivot_data[key]['qty'] += max(q.quantity - q.reserved_quantity, 0.0)
+                pivot_data[key]['value'] += q.value if q.value else (q.quantity * q.product_id.standard_price)
+
             for m in out_moves:
                 key = m.product_id.categ_id.name or 'Uncategorized'
-                if key not in pivot_data:
-                    pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
-                pivot_data[key]['cogs'] += m.product_uom_qty * (m.product_id.standard_price or 0.0)
+                if key not in pivot_data: pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
+
+                cost = valuation_out_map.get(m.id, 0.0)
+                if cost == 0.0: cost = m.quantity * m.product_id.standard_price
+                pivot_data[key]['cogs'] += cost
 
         elif export_group == 'location':
             for q in quants:
                 key = q.location_id.complete_name or q.location_id.name or 'Unknown'
-                if key not in pivot_data:
-                    pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
-                pivot_data[key]['qty']   += q.quantity
-                pivot_data[key]['value'] += q.quantity * (q.product_id.standard_price or 0.0)
+                if key not in pivot_data: pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
+                pivot_data[key]['qty'] += max(q.quantity - q.reserved_quantity, 0.0)
+                pivot_data[key]['value'] += q.value if q.value else (q.quantity * q.product_id.standard_price)
 
         elif export_group == 'warehouse':
+            wh_map = {}
             for q in quants:
-                wh = self.env['stock.warehouse'].search(
-                    [('view_location_id', 'parent_of', q.location_id.id)], limit=1
-                )
-                key = wh.name if wh else 'Unknown'
-                if key not in pivot_data:
-                    pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
-                pivot_data[key]['qty']   += q.quantity
-                pivot_data[key]['value'] += q.quantity * (q.product_id.standard_price or 0.0)
+                loc_id = q.location_id.id
+                if loc_id not in wh_map:
+                    wh = self.env['stock.warehouse'].search([('view_location_id', 'parent_of', loc_id)], limit=1)
+                    wh_map[loc_id] = wh.name if wh else 'Unknown'
 
-        # ── Turnover Rate per group (FIX: same corrected formula) ─────────
+                key = wh_map[loc_id]
+                if key not in pivot_data: pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': []}
+                pivot_data[key]['qty'] += max(q.quantity - q.reserved_quantity, 0.0)
+                pivot_data[key]['value'] += q.value if q.value else (q.quantity * q.product_id.standard_price)
+
         for data in pivot_data.values():
             if data['value'] > 0 and data['cogs'] > 0:
-                raw = data['cogs'] / data['value']
-                data['turnover'] = round(raw * (365.0 / days_count), 2)
+                data['turnover'] = round((data['cogs'] / data['value']) * (365.0 / days_count), 2)
             else:
                 data['turnover'] = 0.0
 
-        # ── Build Excel ───────────────────────────────────────────────────
-        output   = io.BytesIO()
+        output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-        sheet    = workbook.add_worksheet('Inventory Analysis')
-        if detailed_excel:
-            sheet.outline_settings(symbols_below=False)
+        sheet = workbook.add_worksheet('Inventory Analysis')
+        if detailed_excel: sheet.outline_settings(symbols_below=False)
 
-        header_fmt     = workbook.add_format({'bold': True, 'bg_color': '#1e3a5f', 'font_color': 'white', 'border': 1, 'align': 'center'})
-        money_fmt      = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
-        num_fmt        = workbook.add_format({'border': 1, 'align': 'center'})
-        text_fmt       = workbook.add_format({'border': 1, 'bold': True, 'bg_color': '#f0f4ff'})
+        header_fmt = workbook.add_format(
+            {'bold': True, 'bg_color': '#1e3a5f', 'font_color': 'white', 'border': 1, 'align': 'center'})
+        money_fmt = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
+        num_fmt = workbook.add_format({'border': 1, 'align': 'center'})
+        text_fmt = workbook.add_format({'border': 1, 'bold': True, 'bg_color': '#f0f4ff'})
         detail_txt_fmt = workbook.add_format({'border': 1, 'indent': 1, 'font_color': '#475569'})
-        detail_money_fmt = workbook.add_format({'num_format': '#,##0.00', 'border': 1, 'font_color': '#475569', 'bg_color': '#ffffff'})
+        detail_money_fmt = workbook.add_format(
+            {'num_format': '#,##0.00', 'border': 1, 'font_color': '#475569', 'bg_color': '#ffffff'})
 
-        group_titles = {
-            'product': 'Product', 'category': 'Category',
-            'location': 'Location', 'warehouse': 'Warehouse',
-        }
+        group_titles = {'product': 'Product', 'category': 'Category', 'location': 'Location', 'warehouse': 'Warehouse'}
         headers = [group_titles.get(export_group, 'Group')]
-        if 'qty'      in export_measures: headers.append('Qty On Hand')
-        if 'value'    in export_measures: headers.append('Stock Value (EGP)')
-        if 'cogs'     in export_measures: headers.append('COGS — Period (EGP)')
+
+        if 'qty' in export_measures: headers.append('Available Qty')
+        if 'value' in export_measures: headers.append('Stock Value (EGP)')
+        if 'cogs' in export_measures: headers.append('COGS — Period (EGP)')
         if 'turnover' in export_measures: headers.append('Turnover Rate (annualized)')
-        if export_group == 'product' and 'category' in export_measures:
-            headers.append('Category')
+        if export_group == 'product' and 'category' in export_measures: headers.append('Category')
 
         for col, h in enumerate(headers):
             sheet.write(0, col, h, header_fmt)
@@ -487,25 +430,24 @@ class InventoryDashboard(models.Model):
         for key, data in sorted(pivot_data.items(), key=lambda x: x[1]['value'], reverse=True):
             sheet.write(row, 0, str(key), text_fmt)
             col = 1
-            if 'qty'      in export_measures: sheet.write(row, col, data['qty'],      num_fmt);   col += 1
-            if 'value'    in export_measures: sheet.write(row, col, data['value'],    money_fmt); col += 1
-            if 'cogs'     in export_measures: sheet.write(row, col, data['cogs'],     money_fmt); col += 1
+            if 'qty' in export_measures: sheet.write(row, col, data['qty'], num_fmt);   col += 1
+            if 'value' in export_measures: sheet.write(row, col, data['value'], money_fmt); col += 1
+            if 'cogs' in export_measures: sheet.write(row, col, data['cogs'], money_fmt); col += 1
             if 'turnover' in export_measures: sheet.write(row, col, data['turnover'], num_fmt);   col += 1
             if export_group == 'product' and 'category' in export_measures:
-                sheet.write(row, col, data.get('category', ''), text_fmt); col += 1
+                sheet.write(row, col, data.get('category', ''), text_fmt);
+                col += 1
 
             if detailed_excel and data.get('lines'):
                 sheet.set_row(row, None, None, {'collapsed': True})
                 row += 1
                 for line in data['lines']:
-                    sheet.write(row, 0,
-                                "   -> {} ({})".format(line['name'], line['date']),
-                                detail_txt_fmt)
+                    sheet.write(row, 0, "   -> {} ({})".format(line['name'], line['date']), detail_txt_fmt)
                     col = 1
-                    if 'qty'   in export_measures: sheet.write(row, col, line['qty'],  detail_money_fmt); col += 1
-                    if 'value' in export_measures: sheet.write(row, col, 0,            detail_money_fmt); col += 1
-                    if 'cogs'  in export_measures: sheet.write(row, col, line['cost'], detail_money_fmt); col += 1
-                    if 'turnover' in export_measures: sheet.write(row, col, 0,         detail_money_fmt); col += 1
+                    if 'qty' in export_measures: sheet.write(row, col, line['qty'], detail_money_fmt); col += 1
+                    if 'value' in export_measures: sheet.write(row, col, 0, detail_money_fmt); col += 1
+                    if 'cogs' in export_measures: sheet.write(row, col, line['cost'], detail_money_fmt); col += 1
+                    if 'turnover' in export_measures: sheet.write(row, col, 0, detail_money_fmt); col += 1
                     sheet.set_row(row, None, None, {'level': 1, 'hidden': True})
                     row += 1
             else:
