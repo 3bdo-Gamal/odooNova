@@ -2,7 +2,7 @@
 import { registry } from "@web/core/registry";
 import { loadJS } from "@web/core/assets";
 import { useService } from "@web/core/utils/hooks";
-import { Component, onWillStart, onMounted, useState, useRef } from "@odoo/owl";
+import { Component, onWillStart, onMounted, onWillUnmount, useState, useRef } from "@odoo/owl";
 
 export class InventoryDashboardClient extends Component {
     static template = "InventoryDashboardClientTemplate";
@@ -20,7 +20,6 @@ export class InventoryDashboardClient extends Component {
         this.abcChartRef        = useRef("abc_chart");
         this.topProductChartRef = useRef("top_product_chart");
         this.locationChartRef   = useRef("location_chart");
-        this.valueChartRef      = useRef("value_chart");
 
         // ── Load saved state from localStorage ──────────────────────────
         const savedState    = JSON.parse(localStorage.getItem('wb_inventory_dashboard_state_v2')) || {};
@@ -45,6 +44,12 @@ export class InventoryDashboardClient extends Component {
             category_id:  savedState.category_id  || "all",
             location_id:  savedState.location_id  || "all",
 
+            // ── Chart controls (Top N) & Advanced Settings ─────────────
+            top_products:    String(savedState.top_products  || "10"),
+            top_locations:   String(savedState.top_locations || "10"),
+            top_categories:  String(savedState.top_categories || "10"),
+            dead_stock_days: savedState.dead_stock_days || "90", // <-- Added
+
             // ── Filter option lists ────────────────────────────────────
             filter_warehouses: [],
             filter_products:   [],
@@ -52,7 +57,7 @@ export class InventoryDashboardClient extends Component {
             filter_locations:  [],
             model_fields:      [],
 
-            // ── Quick-filter toggles (mirror sales dashboard) ──────────
+            // ── Quick-filter toggles ───────────────────────────────────
             active_filters: defaultFav
                 ? { ...defaultFav.active_filters }
                 : (savedState.active_filters || {
@@ -66,13 +71,13 @@ export class InventoryDashboardClient extends Component {
                 ? defaultFav.search_query
                 : (savedState.search_query || ''),
 
-            custom_domain:          defaultFav ? [...defaultFav.custom_domain] : (savedState.custom_domain || []),
+            custom_domain:           defaultFav ? [...defaultFav.custom_domain] : (savedState.custom_domain || []),
             show_custom_filter_menu: false,
             cf_field:    '',
             cf_operator: '=',
             cf_value:    '',
 
-            // ── Group by (cosmetic – drives dynamic chart label) ───────
+            // ── Group by ───────────────────────────────────────────────
             group_by_list:         defaultFav ? [...defaultFav.group_by_list] : (savedState.group_by_list || []),
             show_custom_group_menu: false,
             cg_field: '',
@@ -103,8 +108,8 @@ export class InventoryDashboardClient extends Component {
             trend_labels:       [],
             trend_in:           [],
             trend_out:          [],
-            abc_labels:         [],
-            abc_data:           [],
+            category_value_labels: [],
+            category_value_data:   [],
             top_product_labels: [],
             top_product_data:   [],
             location_labels:    [],
@@ -138,6 +143,13 @@ export class InventoryDashboardClient extends Component {
         onMounted(() => {
             this.renderCharts();
         });
+
+        onWillUnmount(() => {
+            this._destroyChart(this.trendChartRef);
+            this._destroyChart(this.abcChartRef);
+            this._destroyChart(this.topProductChartRef);
+            this._destroyChart(this.locationChartRef);
+        });
     }
 
     // ── Filter loader ───────────────────────────────────────────────────
@@ -151,13 +163,12 @@ export class InventoryDashboardClient extends Component {
                 this.state.filter_categories = data.categories || [];
                 this.state.filter_locations  = data.locations  || [];
 
-                // Build synthetic model_fields from quant / product fields for custom filter
                 this.state.model_fields = [
-                    { name: 'product_id',           string: 'Product',          type: 'many2one' },
-                    { name: 'categ_id',             string: 'Category',         type: 'many2one' },
-                    { name: 'location_id',          string: 'Location',         type: 'many2one' },
-                    { name: 'quantity',             string: 'Quantity on Hand', type: 'float'    },
-                    { name: 'product_id.active',    string: 'Active',           type: 'boolean'  },
+                    { name: 'product_id',        string: 'Product',          type: 'many2one' },
+                    { name: 'categ_id',          string: 'Category',         type: 'many2one' },
+                    { name: 'location_id',       string: 'Location',         type: 'many2one' },
+                    { name: 'quantity',          string: 'Quantity on Hand', type: 'float'    },
+                    { name: 'product_id.active', string: 'Active',           type: 'boolean'  },
                 ];
                 if (this.state.model_fields.length > 0) {
                     this.state.cf_field = this.state.model_fields[0].name;
@@ -175,20 +186,21 @@ export class InventoryDashboardClient extends Component {
         this.state.isLoading = true;
         try {
             const kwargs = {
-                period:       parseInt(this.state.period) || 30,
-                date_from:    this.state.date_from || false,
-                date_to:      this.state.date_to   || false,
-                warehouse_id: this.state.warehouse_id,
-                product_id:   this.state.product_id,
-                category_id:  this.state.category_id,
-                location_id:  this.state.location_id,
+                period:          parseInt(this.state.period) || 30,
+                date_from:       this.state.date_from || false,
+                date_to:         this.state.date_to   || false,
+                warehouse_id:    this.state.warehouse_id,
+                product_id:      this.state.product_id,
+                category_id:     this.state.category_id,
+                location_id:     this.state.location_id,
+                top_products:    parseInt(this.state.top_products)   || 10,
+                top_locations:   parseInt(this.state.top_locations)  || 10,
+                top_categories:  parseInt(this.state.top_categories) || 10,
+                dead_stock_days: parseInt(this.state.dead_stock_days)|| 90, // <-- Added
             };
-            const data = await this.orm.call(
-                "wb.inventory.dashboard", "get_inventory_kpis", [], kwargs
-            );
+            const data = await this.orm.call("wb.inventory.dashboard", "get_inventory_kpis", [], kwargs);
             if (data) {
                 Object.assign(this.state, data);
-                // Format received_value if backend doesn't send formatted version
                 if (!data.received_value_fmt) {
                     this.state.received_value_fmt =
                         (data.received_value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -208,6 +220,10 @@ export class InventoryDashboardClient extends Component {
             period: this.state.period, date_from: this.state.date_from, date_to: this.state.date_to,
             warehouse_id: this.state.warehouse_id, product_id: this.state.product_id,
             category_id: this.state.category_id, location_id: this.state.location_id,
+            top_products: this.state.top_products,
+            top_locations: this.state.top_locations,
+            top_categories: this.state.top_categories,
+            dead_stock_days: this.state.dead_stock_days, // <-- Added
             search_query: this.state.search_query, active_filters: { ...this.state.active_filters },
             custom_domain: [...this.state.custom_domain], group_by_list: [...this.state.group_by_list],
         };
@@ -241,6 +257,10 @@ export class InventoryDashboardClient extends Component {
         this.state.product_id        = "all";
         this.state.category_id       = "all";
         this.state.location_id       = "all";
+        this.state.top_products      = "10";
+        this.state.top_locations     = "10";
+        this.state.top_categories    = "10";
+        this.state.dead_stock_days   = "90";
         this.state.search_query      = "";
         this.state.active_filters    = { low_stock: false, dead_stock: false, no_reorder: false };
         this.state.custom_domain     = [];
@@ -496,7 +516,11 @@ export class InventoryDashboardClient extends Component {
         const ref = this.abcChartRef;
         if (!ref.el) return;
         this._destroyChart(ref);
-        if (!this.state.abc_labels || this.state.abc_labels.length === 0) {
+
+        const labels = this.state.category_value_labels || [];
+        const data   = this.state.category_value_data   || [];
+
+        if (!labels || labels.length === 0) {
             const ctx = ref.el.getContext("2d");
             ctx.clearRect(0, 0, ref.el.width, ref.el.height);
             ctx.font = "14px sans-serif"; ctx.fillStyle = "#94a3b8";
@@ -508,10 +532,20 @@ export class InventoryDashboardClient extends Component {
         ref.el.chartInstance = new window.Chart(ref.el, {
             type: "doughnut",
             data: {
-                labels: this.state.abc_labels,
-                datasets: [{ data: this.state.abc_data, backgroundColor: colors.slice(0, this.state.abc_labels.length), borderWidth: 2, hoverOffset: 6 }],
+                labels: labels,
+                datasets: [{ data: data, backgroundColor: colors.slice(0, labels.length), borderWidth: 2, hoverOffset: 6 }],
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: "right", labels: { boxWidth: 12 } } },
+                onClick: (e, activeEls) => {
+                    if (activeEls.length > 0) {
+                        const label = labels[activeEls[0].index];
+                        this.openView("product.product", [["categ_id.name", "=", label], ["detailed_type", "=", "product"]], `Products in: ${label}`);
+                    }
+                },
+                onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? "pointer" : "default"; },
+            },
         });
     }
 
