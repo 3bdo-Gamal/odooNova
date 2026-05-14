@@ -7,7 +7,7 @@
             <search string="Search Purchase Bills">
                 <field name="name" string="Bill Reference"/>
                 <field name="partner_id" string="Vendor"/>
-                <field name="journal_id" string="Journal"/>
+                <field name="journal_id" string="Journal" optional="hide" />
 
                 <filter string="My Bills" name="my_bills" domain="[('invoice_user_id', '=', uid)]"/>
                 <separator/>
@@ -43,13 +43,23 @@
             <tree create="0" edit="0" delete="0" decoration-info="state == 'draft'" decoration-muted="state == 'cancel'">
                 <field name="name" string="Bill Number"/>
                 <field name="partner_id" string="Vendor Name"/>
-                <field name="invoice_date" string="Bill Date"/>
-                <field name="invoice_date_due" string="Due Date"/>
-                <field name="payment_reference" string="Payment Reference"/>
-                <field name="amount_tax" string="Tax"/>
-                <field name="amount_total" string="Total Amount" sum="Total"/>
-                <field name="state" string="Status" widget="badge"/>
-                <field name="payment_state" string="Payment Status" widget="badge" decoration-success="payment_state == 'paid'" decoration-danger="payment_state in ('not_paid', 'partial')"/>
+                <field name="invoice_origin" string="Source Document" optional="hide"/>
+                <field name="ref" string="Vendor Reference" optional="hide"/>
+                <field name="invoice_user_id" string="Purchase Rep" optional="hide" widget="many2one_avatar_user"/>
+                <field name="company_id" string="Company" optional="hide" groups="base.group_multi_company"/>
+
+                <field name="invoice_date" string="Bill Date" optional="show"/>
+                <field name="invoice_date_due" string="Due Date" optional="show"/>
+                <field name="payment_reference" string="Payment Reference" optional="hide"/>
+
+                <field name="amount_untaxed" string="Tax Excluded" sum="Total Untaxed" optional="hide"/>
+                <field name="amount_tax" string="Tax" optional="hide"/>
+                <field name="amount_total" string="Total Amount" sum="Total" optional="show"/>
+                <field name="amount_residual" string="Amount Due" sum="Amount Due" optional="hide"/>
+                <field name="currency_id" optional="hide"/>
+
+                <field name="state" string="Status" widget="badge" optional="show"/>
+                <field name="payment_state" string="Payment Status" widget="badge" decoration-success="payment_state == 'paid'" decoration-danger="payment_state in ('not_paid', 'partial')" optional="show"/>
             </tree>
         </field>
     </record>
@@ -61,13 +71,22 @@
             <tree create="0" edit="0" delete="0" decoration-danger="invoice_date_due &lt; current_date">
                 <field name="name" string="Number"/>
                 <field name="partner_id" string="Vendor Name"/>
-                <field name="invoice_date_due" string="Due Date"/>
-                <field name="payment_reference" string="Payment Ref"/>
-                <field name="amount_tax" string="Tax"/>
-                <field name="amount_total" string="Total"/>
-                <field name="amount_residual" string="Residual Amount" sum="Total Residual"/>
-                <field name="state" string="Status" widget="badge" decoration-info="state == 'posted'"/>
-                <field name="payment_state" string="Payment Status" widget="badge" decoration-danger="payment_state in ('not_paid', 'partial')"/>
+                <field name="invoice_origin" string="Source Document" optional="hide"/>
+                <field name="invoice_user_id" string="Purchase Rep" optional="hide" widget="many2one_avatar_user"/>
+                <field name="company_id" string="Company" optional="hide" groups="base.group_multi_company"/>
+
+                <field name="invoice_date" string="Bill Date" optional="hide"/>
+                <field name="invoice_date_due" string="Due Date" optional="show"/>
+                <field name="payment_reference" string="Payment Ref" optional="hide"/>
+
+                <field name="amount_untaxed" string="Tax Excluded" sum="Total Untaxed" optional="hide"/>
+                <field name="amount_tax" string="Tax" optional="hide"/>
+                <field name="amount_total" string="Total" optional="show"/>
+                <field name="amount_residual" string="Residual Amount" sum="Total Residual" optional="show"/>
+                <field name="currency_id" optional="hide"/>
+
+                <field name="state" string="Status" widget="badge" decoration-info="state == 'posted'" optional="show"/>
+                <field name="payment_state" string="Payment Status" widget="badge" decoration-danger="payment_state in ('not_paid', 'partial')" optional="show"/>
             </tree>
         </field>
     </record>
@@ -79,54 +98,80 @@
             <tree create="0" edit="0" delete="0">
                 <field name="name" string="Number"/>
                 <field name="partner_id" string="Vendor Name"/>
-                <field name="nova_payment_lead_time" string="DOP Days" sum="Avg" avg="Average Days"/>
-                <field name="invoice_date" string="Bill Date"/>
-                <field name="invoice_date_due" string="Due Date"/>
-                <field name="payment_reference" string="Payment Ref"/>
-                <field name="amount_tax" string="Tax"/>
-                <field name="amount_total" string="Total Payment"/>
-                <field name="payment_state" string="Payment Status" widget="badge" decoration-success="payment_state == 'paid'"/>
-                <field name="state" string="Status" widget="badge"/>
+                <field name="invoice_origin" string="Source Document" optional="hide"/>
+                <field name="invoice_user_id" string="Purchase Rep" optional="hide" widget="many2one_avatar_user"/>
+
+                <field name="nova_payment_lead_time" string="DOP Days" sum="Avg" avg="Average Days" optional="show"/>
+
+                <field name="invoice_date" string="Bill Date" optional="show"/>
+                <field name="invoice_date_due" string="Due Date" optional="show"/>
+                <field name="payment_reference" string="Payment Ref" optional="hide"/>
+
+                <field name="amount_untaxed" string="Tax Excluded" sum="Total Untaxed" optional="hide"/>
+                <field name="amount_tax" string="Tax" optional="hide"/>
+                <field name="amount_total" string="Total Payment" optional="show"/>
+                <field name="amount_residual" string="Amount Due" sum="Amount Due" optional="hide"/>
+                <field name="currency_id" optional="hide"/>
+
+                <field name="payment_state" string="Payment Status" widget="badge" decoration-success="payment_state == 'paid'" optional="show"/>
+                <field name="state" string="Status" widget="badge" optional="show"/>
             </tree>
         </field>
     </record>
 
-    <record id="view_dashboard_bills_price_var_tree_v2" model="ir.ui.view">
-        <field name="name">dashboard.bills.price.var.tree.v2</field>
-        <field name="model">account.move</field>
-        <field name="arch" type="xml">
-            <tree create="0" edit="0" delete="0">
-                <field name="name" string="Number"/>
-                <field name="partner_id" string="Vendor Name"/>
-                <field name="nova_total_price_variance" string="Price Variance Amount" decoration-danger="nova_total_price_variance &gt; 0" decoration-success="nova_total_price_variance &lt; 0" sum="Total Variance"/>
-                <field name="payment_reference" string="Payment Ref"/>
-                <field name="amount_tax" string="Tax"/>
-                <field name="amount_total" string="Total Payment"/>
-                <field name="payment_state" string="Payment Status" widget="badge"/>
-                <field name="state" string="Status" widget="badge"/>
-            </tree>
-        </field>
-    </record>
-
-    <record id="view_dashboard_lines_qty_var_tree_v2" model="ir.ui.view">
-        <field name="name">dashboard.lines.qty.var.tree.v2</field>
+ <record id="view_dashboard_lines_price_var_tree" model="ir.ui.view">
+        <field name="name">dashboard.lines.price.var.tree.v3</field>
         <field name="model">account.move.line</field>
         <field name="arch" type="xml">
-            <tree create="0" edit="0" delete="0" decoration-danger="nova_qty_variance &gt; 0" decoration-success="nova_qty_variance &lt; 0">
-                <field name="move_name" string="Number"/>
-                <field name="partner_id" string="Vendor Name"/>
-                <field name="nova_due_date" string="Due Date"/>
-                <field name="nova_payment_ref" string="Payment Ref"/>
+            <tree create="0" edit="0" delete="0">
+                <field name="move_name" string="Bill Number"/>
+                <field name="partner_id" string="Vendor"/>
+                <field name="product_id" string="Product"/>
 
-                <field name="nova_po_qty" string="PO Quantity"/>
-                <field name="quantity" string="Billed Quantity"/>
-                <field name="nova_qty_variance" string="Quantity Variance"/>
+                <field name="nova_price_variance" string="Price Variance"
+                       decoration-danger="nova_price_variance &gt; 0.01"
+                       decoration-success="nova_price_variance &lt; -0.01"
+                       sum="Total Variance"/>
+
+                <field name="nova_purchase_price_unit" string="PO Price" optional="show"/>
+                <field name="price_unit" string="Bill Price" optional="show"/>
+                <field name="quantity" string="Qty" optional="show"/>
+
+                <field name="nova_payment_state" string="Payment Status" widget="badge"
+                       decoration-success="nova_payment_state == 'paid'"
+                       decoration-danger="nova_payment_state in ('not_paid', 'partial')"/>
+
+                <field name="price_subtotal" string="Total Payment" sum="Total"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_dashboard_lines_qty_var_tree_v3" model="ir.ui.view">
+        <field name="name">dashboard.lines.qty.var.tree.v3</field>
+        <field name="model">account.move.line</field>
+        <field name="arch" type="xml">
+            <tree create="0" edit="0" delete="0">
+                <field name="move_name" string="Bill Number"/>
+                <field name="partner_id" string="Vendor Name"/>
+                <field name="product_id" string="Product"/>
+
+                <field name="nova_po_qty" string="PO Qty"/>
+                <field name="quantity" string="Billed Qty"/>
+
+                <field name="nova_qty_variance" string="Qty Variance"
+                       decoration-danger="nova_qty_variance &lt; 0"
+                       decoration-success="nova_qty_variance &gt; 0"/>
 
                 <field name="nova_purchase_price_unit" string="PO Price"/>
-                <field name="price_unit" string="Bill Price"/>
-                <field name="nova_price_variance" string="Price Variance" decoration-danger="nova_price_variance &gt; 0" decoration-success="nova_price_variance &lt; 0"/>
 
-                <field name="tax_ids" string="Tax" widget="many2many_tags"/>
+                <field name="nova_qty_financial_variance" string="Price Variance"
+                       decoration-danger="nova_qty_financial_variance &lt; 0"
+                       decoration-success="nova_qty_financial_variance &gt; 0"
+                       sum="Total Variance"/>
+
+                <field name="nova_payment_state" string="Payment Status" widget="badge"
+                       decoration-success="nova_payment_state == 'paid'"
+                       decoration-danger="nova_payment_state in ('not_paid', 'partial')"/>
+
                 <field name="price_subtotal" string="Total Payment" sum="Total"/>
             </tree>
         </field>
@@ -139,15 +184,21 @@
             <tree create="0" edit="0" delete="0">
                 <field name="name" string="Bill Number"/>
                 <field name="partner_id" string="Vendor Name"/>
-                <field name="invoice_date_due" string="Due Date"/>
-                <field name="nova_payment_lead_time" string="Payment Lead Time" sum="Avg" avg="Average Days"/>
-                <field name="invoice_date" string="Payment Date"/>
-                <field name="invoice_origin" string="PO Date (Ref)"/>
-                <field name="payment_reference" string="Payment Ref"/>
-                <field name="amount_tax" string="Tax"/>
-                <field name="amount_total" string="Total Payment" sum="Total"/>
-                <field name="payment_state" string="Payment Status" widget="badge"/>
-                <field name="state" string="Status" widget="badge"/>
+                <field name="invoice_user_id" string="Purchase Rep" optional="hide" widget="many2one_avatar_user"/>
+
+                <field name="invoice_date_due" string="Due Date" optional="show"/>
+                <field name="nova_payment_lead_time" string="Payment Lead Time" sum="Avg" avg="Average Days" optional="show"/>
+                <field name="invoice_date" string="Payment Date" optional="show"/>
+                <field name="invoice_origin" string="PO Date (Ref)" optional="show"/>
+                <field name="payment_reference" string="Payment Ref" optional="hide"/>
+
+                <field name="amount_untaxed" string="Tax Excluded" sum="Total Untaxed" optional="hide"/>
+                <field name="amount_tax" string="Tax" optional="hide"/>
+                <field name="amount_total" string="Total Payment" sum="Total" optional="show"/>
+                <field name="currency_id" optional="hide"/>
+
+                <field name="payment_state" string="Payment Status" widget="badge" optional="show"/>
+                <field name="state" string="Status" widget="badge" optional="show"/>
             </tree>
         </field>
     </record>

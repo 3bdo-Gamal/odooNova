@@ -165,7 +165,8 @@ class PurchaseBillsDashboard(models.AbstractModel):
             if has_po and not no_po:
                 base_domain.append(('invoice_line_ids.purchase_line_id', '!=', False))
             elif no_po and not has_po:
-                base_domain.append(('invoice_line_ids.purchase_line_id', '=', False))
+                # Use extend to properly append the NOT condition
+                base_domain.extend(['!', ('invoice_line_ids.purchase_line_id', '!=', False)])
 
         if native_domain:
             return expression.AND([base_domain, native_domain])
@@ -193,8 +194,15 @@ class PurchaseBillsDashboard(models.AbstractModel):
         dpo_list = bills.filtered(lambda b: b.nova_payment_lead_time > 0).mapped('nova_payment_lead_time')
         avg_dpo = round(sum(dpo_list) / len(dpo_list)) if dpo_list else 0
 
+        # --- VALUE-BASED LATE BILLS RATIO FIX ---
         late_bills = posted_unpaid.filtered(lambda b: b.nova_overdue_days > 0)
-        late_bills_ratio = round((len(late_bills) / len(posted_unpaid)) * 100) if posted_unpaid else 0
+
+        # Calculate ratio based on residual amount (debt) instead of record count
+        late_bills_amount = sum(late_bills.mapped('amount_residual'))
+        total_unpaid_amount = sum(posted_unpaid.mapped('amount_residual'))
+
+        late_bills_ratio = round((late_bills_amount / total_unpaid_amount) * 100) if total_unpaid_amount > 0 else 0
+        # ----------------------------------------
 
         # Fast No-PO calculation
         if bills:
@@ -241,6 +249,8 @@ class PurchaseBillsDashboard(models.AbstractModel):
         product_variances = {}
         overbilled_data = {}
         underbilled_data = {}
+        price_variance_line_ids = []
+        qty_variance_line_ids = []
 
         trend_dict = {}
         trend_labels = []
@@ -248,34 +258,37 @@ class PurchaseBillsDashboard(models.AbstractModel):
         lead_dict = {}
 
         if bills:
-            # 1. Variance Calculations (In-Memory)
+            # Variance Calculations (In-Memory)
             bill_lines = self.env['account.move.line'].search([
                 ('move_id', 'in', bills.ids),
                 ('purchase_line_id', '!=', False),
                 ('product_id', '!=', False),
-                ('display_type', '=', 'product'),
+                ('display_type', 'in', ('product', False)),
             ])
 
             for line in bill_lines:
                 prod_name = line.product_id.name or 'Unknown'
 
-                if prod_name not in overbilled_data:
-                    overbilled_data[prod_name] = 0
-                if prod_name not in underbilled_data:
-                    underbilled_data[prod_name] = 0
-
-                if line.nova_qty_variance != 0:
+                if abs(line.nova_qty_variance) > 0.01:
+                    qty_variance_line_ids.append(line.id)
                     product_variances[prod_name] = product_variances.get(prod_name, 0) + line.nova_qty_variance
 
-                if line.nova_price_variance > 0:
-                    overbilled_data[prod_name] += line.nova_price_variance
-                elif line.nova_price_variance < 0:
-                    underbilled_data[prod_name] += abs(line.nova_price_variance)
+                if abs(line.nova_price_variance) > 0.01:
+                    price_variance_line_ids.append(line.id)
+
+                    if prod_name not in overbilled_data:
+                        overbilled_data[prod_name] = 0
+                    if prod_name not in underbilled_data:
+                        underbilled_data[prod_name] = 0
+
+                    if line.nova_price_variance > 0:
+                        overbilled_data[prod_name] += line.nova_price_variance
+                    elif line.nova_price_variance < 0:
+                        underbilled_data[prod_name] += abs(line.nova_price_variance)
 
             for product, variance in product_variances.items():
                 qty_pivot.append({'product': product, 'qty_variance': round(variance, 2)})
             qty_pivot = sorted(qty_pivot, key=lambda k: abs(k['qty_variance']), reverse=True)[:10]
-
 
             variance_products = sorted(
                 list(set(list(overbilled_data.keys()) + list(underbilled_data.keys()))),
@@ -285,11 +298,10 @@ class PurchaseBillsDashboard(models.AbstractModel):
 
             overbilled_arr = [round(overbilled_data.get(p, 0), 2) for p in variance_products]
             underbilled_arr = [round(underbilled_data.get(p, 0), 2) for p in variance_products]
-            # 2. Chart In-Memory Calculations
+
+            # Chart In-Memory Calculations
             sorted_bills = bills.sorted(key=lambda b: b.invoice_date or today)
             for bill in sorted_bills:
-
-                # Trend Calculation ONLY for fully paid bills
                 if bill.payment_state == 'paid' and bill.invoice_date:
                     month_key = bill.invoice_date.strftime('%B %Y')
                     if month_key not in trend_dict:
@@ -297,18 +309,15 @@ class PurchaseBillsDashboard(models.AbstractModel):
                         trend_labels.append(month_key)
                     trend_dict[month_key] += bill.amount_total
 
-                # Vendor Calculation
                 v_name = bill.partner_id.name or 'Unknown'
                 vendor_dict[v_name] = vendor_dict.get(v_name, 0) + bill.amount_total
 
-                # Lead Time Calculation (Strictly for paid bills)
                 if bill.payment_state == 'paid':
                     if v_name not in lead_dict:
                         lead_dict[v_name] = {'days': 0, 'count': 0}
                     lead_dict[v_name]['days'] += bill.nova_payment_lead_time
                     lead_dict[v_name]['count'] += 1
 
-        # Format arrays for JS
         trend_values = [trend_dict[l] for l in trend_labels]
 
         sorted_vendors = sorted(vendor_dict.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -325,6 +334,8 @@ class PurchaseBillsDashboard(models.AbstractModel):
         lead_values = [x['avg_days'] for x in lead_arr]
 
         return {
+            'price_variance_line_ids': price_variance_line_ids,
+            'qty_variance_line_ids': qty_variance_line_ids,
             'cards': {
                 'total_bills_count': kpis['total_bills_count'],
                 'total_bills_amount': f"${kpis['total_bills_amount']:,.0f}",
@@ -380,133 +391,161 @@ class PurchaseBillsDashboard(models.AbstractModel):
 
         domain = self._build_combined_domain(kwargs)
         bills = self.env['account.move'].search(domain)
-        today = fields.Date.context_today(self)
-        kpis = self._compute_kpis(bills, today)
+
+        export_group = kwargs.get('export_group', 'partner_id')
+        export_measures = kwargs.get('export_measures', ['amount'])
+        detailed_excel = kwargs.get('detailed_excel', False)
+
+        # Build pivot data structure
+        pivot_data = {}
+        for bill in bills:
+            key = 'Unknown'
+            if export_group == 'partner_id':
+                key = bill.partner_id.name or 'Unknown'
+            elif export_group == 'invoice_user_id':
+                key = bill.invoice_user_id.name or 'Unknown'
+            elif export_group == 'date:month':
+                key = bill.invoice_date.strftime('%B %Y') if bill.invoice_date else 'Unknown'
+
+            # If grouped by line-level items (product, category)
+            if export_group in ['product_id', 'categ_id']:
+                for line in bill.invoice_line_ids:
+                    if line.display_type not in ('product', False):
+                        continue
+
+                    if export_group == 'product_id':
+                        line_key = line.product_id.name or 'Unknown'
+                    else:
+                        raw_cat_name = line.product_id.categ_id.complete_name or 'Uncategorized'
+                        if raw_cat_name.startswith('All / '):
+                            line_key = raw_cat_name.replace('All / ', '', 1)
+                        else:
+                            line_key = raw_cat_name
+
+                    if line_key not in pivot_data:
+                        pivot_data[line_key] = {'amount': 0, 'qty': 0, 'price_var': 0, 'qty_var': 0, 'bills': set(),
+                                                'lines': []}
+
+                    pivot_data[line_key]['amount'] += line.price_subtotal
+                    pivot_data[line_key]['qty'] += line.quantity
+                    pivot_data[line_key]['price_var'] += line.nova_price_variance
+                    pivot_data[line_key]['qty_var'] += line.nova_qty_variance
+                    pivot_data[line_key]['bills'].add(bill.id)
+
+                    if detailed_excel:
+                        pivot_data[line_key]['lines'].append({
+                            'name': bill.name,
+                            'amount': line.price_subtotal,
+                            'qty': line.quantity,
+                            'price_var': line.nova_price_variance,
+                            'qty_var': line.nova_qty_variance,
+                            'date': str(bill.invoice_date)
+                        })
+            else:
+                # Grouped by header-level items (vendor, user, month)
+                if key not in pivot_data:
+                    pivot_data[key] = {'amount': 0, 'qty': 0, 'price_var': 0, 'qty_var': 0, 'bills': set(), 'lines': []}
+
+                pivot_data[key]['amount'] += bill.amount_untaxed
+                pivot_data[key]['bills'].add(bill.id)
+
+                bill_qty, bill_price_var, bill_qty_var = 0, 0, 0
+                for line in bill.invoice_line_ids:
+                    if line.display_type not in ('product', False):
+                        continue
+                    bill_qty += line.quantity
+                    bill_price_var += line.nova_price_variance
+                    bill_qty_var += line.nova_qty_variance
+
+                pivot_data[key]['qty'] += bill_qty
+                pivot_data[key]['price_var'] += bill_price_var
+                pivot_data[key]['qty_var'] += bill_qty_var
+
+                if detailed_excel:
+                    pivot_data[key]['lines'].append({
+                        'name': bill.name,
+                        'amount': bill.amount_untaxed,
+                        'qty': bill_qty,
+                        'price_var': bill_price_var,
+                        'qty_var': bill_qty_var,
+                        'date': str(bill.invoice_date)
+                    })
 
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Bills Analytics')
 
-        title_fmt = workbook.add_format({'bold': True, 'font_size': 16, 'color': '#1e293b'})
-        info_fmt = workbook.add_format({'italic': True, 'color': '#64748b', 'font_size': 10})
-        kpi_hdr_fmt = workbook.add_format({'bold': True, 'bg_color': '#f8fafc', 'border': 1, 'font_color': '#475569'})
-        kpi_val_fmt = workbook.add_format({'bold': True, 'border': 1, 'color': '#0f172a', 'align': 'center'})
-        kpi_money_fmt = workbook.add_format(
-            {'bold': True, 'border': 1, 'color': '#10b981', 'num_format': '#,##0.00', 'align': 'center'})
-        kpi_danger_fmt = workbook.add_format(
-            {'bold': True, 'border': 1, 'color': '#ef4444', 'num_format': '#,##0.00', 'align': 'center'})
-        header_fmt = workbook.add_format(
+        if detailed_excel:
+            sheet.outline_settings(symbols_below=False)
+
+        # Styles
+        header_format = workbook.add_format(
             {'bold': True, 'bg_color': '#1e293b', 'font_color': 'white', 'border': 1, 'align': 'center'})
-        money_fmt = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
-        num_fmt = workbook.add_format({'border': 1, 'align': 'center'})
-        text_fmt = workbook.add_format({'border': 1, 'align': 'center'})
-        warning_fmt = workbook.add_format({'border': 1, 'align': 'center', 'font_color': '#ef4444', 'bold': True})
-        italic_fmt = workbook.add_format({'italic': True, 'color': '#64748b'})
+        money_format = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
+        num_format = workbook.add_format({'border': 1, 'align': 'center'})
+        text_format = workbook.add_format({'border': 1, 'bold': True, 'bg_color': '#f8fafc'})
+        detail_text_format = workbook.add_format({'border': 1, 'indent': 1, 'font_color': '#475569'})
+        detail_money_format = workbook.add_format(
+            {'num_format': '#,##0.00', 'border': 1, 'font_color': '#475569', 'bg_color': '#ffffff'})
 
-        # ── Sheet 1: Bills Overview
-        sheet1 = workbook.add_worksheet('Bills Overview')
-        sheet1.write('A1', 'Purchase Bills Analytical Report', title_fmt)
+        group_titles = {'partner_id': 'Vendor', 'product_id': 'Product', 'categ_id': 'Category',
+                        'invoice_user_id': 'Purchase Rep', 'date:month': 'Month'}
+        headers = [group_titles.get(export_group, 'Group')]
 
-        journal_id = kwargs.get('journal_id', 'all')
-        term_id = kwargs.get('payment_term_id', 'all')
-        vendor_id = kwargs.get('vendor_id', 'all')
-        journal_name = self.env['account.journal'].browse(int(journal_id)).name if journal_id != 'all' else 'All'
-        term_name = self.env['account.payment.term'].browse(int(term_id)).name if term_id != 'all' else 'All'
-        vendor_name = self.env['res.partner'].browse(int(vendor_id)).name if vendor_id != 'all' else 'All'
+        if 'amount' in export_measures: headers.append('Total Amount (EGP)')
+        if 'qty' in export_measures: headers.append('Billed Quantity')
+        if 'price_var' in export_measures: headers.append('Price Variance')
+        if 'qty_var' in export_measures: headers.append('Quantity Variance')
+        if 'bill_count' in export_measures: headers.append('Bills Count')
+        if 'abv' in export_measures: headers.append('Avg Bill Value')
 
-        sheet1.write('A2', f"Filters → Vendor: {vendor_name} | Journal: {journal_name} | Payment Term: {term_name}",
-                     info_fmt)
+        for col_num, header in enumerate(headers):
+            sheet.write(0, col_num, header, header_format)
+            sheet.set_column(col_num, col_num, 35 if col_num == 0 else 18)
 
-        sheet1.write('A4', 'Total Bills Count', kpi_hdr_fmt)
-        sheet1.write('B4', kpis['total_bills_count'], kpi_val_fmt)
-        sheet1.write('A5', 'Total Billed Amount', kpi_hdr_fmt)
-        sheet1.write('B5', kpis['total_bills_amount'], kpi_money_fmt)
-        sheet1.write('A6', 'Average DPO (Days)', kpi_hdr_fmt)
-        sheet1.write('B6', kpis['avg_dpo'], kpi_val_fmt)
+        row = 1
+        for k, data in sorted(pivot_data.items(), key=lambda x: x[1]['amount'], reverse=True):
+            sheet.write(row, 0, str(k), text_format)
+            col = 1
+            if 'amount' in export_measures: sheet.write(row, col, data['amount'], money_format); col += 1
+            if 'qty' in export_measures: sheet.write(row, col, data['qty'], num_format); col += 1
+            if 'price_var' in export_measures: sheet.write(row, col, data['price_var'], money_format); col += 1
+            if 'qty_var' in export_measures: sheet.write(row, col, data['qty_var'], num_format); col += 1
+            if 'bill_count' in export_measures: sheet.write(row, col, len(data['bills']), num_format); col += 1
+            if 'abv' in export_measures:
+                abv_val = data['amount'] / len(data['bills']) if len(data['bills']) > 0 else 0
+                sheet.write(row, col, abv_val, money_format);
+                col += 1
 
-        sheet1.write('D4', 'Upcoming Payables', kpi_hdr_fmt)
-        sheet1.write('E4', kpis['upcoming_payables'], kpi_danger_fmt)
-        sheet1.write('D5', 'Late Bills Ratio', kpi_hdr_fmt)
-        sheet1.write('E5', f"{kpis['late_bills_ratio']}%", kpi_val_fmt)
-        sheet1.write('D6', 'Bills Without PO', kpi_hdr_fmt)
-        sheet1.write('E6', kpis['wo_po_count'], kpi_val_fmt)
+            # Render expanded detailed lines
+            if detailed_excel and 'lines' in data:
+                sheet.set_row(row, None, None, {'collapsed': True})
+                row += 1
+                for line in data['lines']:
+                    sheet.write(row, 0, f"   ↳ {line['name']} ({line['date']})", detail_text_format)
+                    col = 1
+                    if 'amount' in export_measures: sheet.write(row, col, line['amount'], detail_money_format); col += 1
+                    if 'qty' in export_measures: sheet.write(row, col, line['qty'], detail_money_format); col += 1
+                    if 'price_var' in export_measures: sheet.write(row, col, line['price_var'],
+                                                                   detail_money_format); col += 1
+                    if 'qty_var' in export_measures: sheet.write(row, col, line['qty_var'],
+                                                                 detail_money_format); col += 1
+                    if 'bill_count' in export_measures: sheet.write(row, col, 1, detail_money_format); col += 1
+                    if 'abv' in export_measures: sheet.write(row, col, line['amount'], detail_money_format); col += 1
 
-        headers1 = ['Bill Number', 'Vendor', 'Source PO', 'Bill Date', 'Due Date', 'Total Amount', 'Amount Due',
-                    'Lead Time (Days)', 'Overdue Days', 'Status', 'Payment Status']
-        for col, header in enumerate(headers1):
-            sheet1.write(7, col, header, header_fmt)
-            sheet1.set_column(col, col, 18)
-        sheet1.set_column(1, 1, 25)
-
-        row = 8
-        for bill in bills:
-            product_lines = bill.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
-            po_names = ", ".join(set(product_lines.mapped('purchase_line_id.order_id.name')))
-            po_ref = bill.invoice_origin or (po_names if po_names else 'No PO (Maverick)')
-
-            state_label = dict(bill._fields['state'].selection).get(bill.state, '')
-            payment_label = dict(bill._fields['payment_state'].selection).get(bill.payment_state, '')
-
-            sheet1.write(row, 0, bill.name or 'Draft', text_fmt)
-            sheet1.write(row, 1, bill.partner_id.name or '', text_fmt)
-            sheet1.write(row, 2, po_ref, text_fmt)
-            sheet1.write(row, 3, str(bill.invoice_date or ''), text_fmt)
-            sheet1.write(row, 4, str(bill.invoice_date_due or ''), text_fmt)
-            sheet1.write(row, 5, bill.amount_total, money_fmt)
-            sheet1.write(row, 6, bill.amount_residual, money_fmt)
-            sheet1.write(row, 7, bill.nova_payment_lead_time, num_fmt)
-            sheet1.write(row, 8, bill.nova_overdue_days, warning_fmt if bill.nova_overdue_days > 0 else num_fmt)
-            sheet1.write(row, 9, state_label, text_fmt)
-            sheet1.write(row, 10, payment_label, text_fmt)
-            row += 1
-
-        # ── Sheet 2: Invoice Line Variances
-        sheet2 = workbook.add_worksheet('Invoice Line Variances')
-        sheet2.write('A1', 'Detailed Product Variances (PO vs Bill)', title_fmt)
-        sheet2.write('A2', 'Only lines with a price or quantity mismatch vs the linked PO are shown.', italic_fmt)
-
-        headers2 = ['Bill Number', 'Vendor', 'Product', 'PO Price', 'Bill Price', 'Price Variance', 'PO Qty',
-                    'Bill Qty', 'Qty Variance']
-        for col, header in enumerate(headers2):
-            sheet2.write(3, col, header, header_fmt)
-            sheet2.set_column(col, col, 16)
-        sheet2.set_column(2, 2, 35)
-
-        if bills:
-            bill_lines = self.env['account.move.line'].search([
-                ('move_id', 'in', bills.ids),
-                ('purchase_line_id', '!=', False),
-                ('product_id', '!=', False),
-                ('display_type', '=', 'product'),
-            ])
-
-            row2 = 4
-            for line in bill_lines:
-                if line.nova_price_variance != 0 or line.nova_qty_variance != 0:
-                    sheet2.write(row2, 0, line.move_id.name or '', text_fmt)
-                    sheet2.write(row2, 1, line.partner_id.name or '', text_fmt)
-                    sheet2.write(row2, 2, line.product_id.name or '', text_fmt)
-                    sheet2.write(row2, 3, line.nova_purchase_price_unit, money_fmt)
-                    sheet2.write(row2, 4, line.price_unit, money_fmt)
-                    sheet2.write(row2, 5, line.nova_price_variance,
-                                 warning_fmt if line.nova_price_variance > 0 else money_fmt)
-                    sheet2.write(row2, 6, line.purchase_line_id.product_qty, num_fmt)
-                    sheet2.write(row2, 7, line.quantity, num_fmt)
-                    sheet2.write(row2, 8, line.nova_qty_variance,
-                                 warning_fmt if line.nova_qty_variance != 0 else num_fmt)
-                    row2 += 1
+                    sheet.set_row(row, None, None, {'level': 1, 'hidden': True})
+                    row += 1
+            else:
+                row += 1
 
         workbook.close()
         output.seek(0)
-
         attachment = self.env['ir.attachment'].create({
-            'name': f'Purchase_Analytics_{fields.Date.today()}.xlsx',
-            'type': 'binary',
+            'name': f'Bills_Analytics_Export_{fields.Date.today()}.xlsx', 'type': 'binary',
             'datas': base64.b64encode(output.read()).decode('utf-8'),
-            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         })
         return attachment.id
-
-
 # =============================================================================
 # Custom Fields (100% Safe - store=False to prevent DB Crashes)
 # =============================================================================
@@ -564,6 +603,14 @@ class AccountMove(models.Model):
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
+    nova_payment_state = fields.Selection(related='move_id.payment_state', string="Payment Status", store=False)
+
+    nova_qty_financial_variance = fields.Float(
+        compute='_compute_nova_variances',
+        string='Qty Financial Variance',
+        store=False
+    )
+
     nova_purchase_price_unit = fields.Float(
         compute='_compute_nova_variances',
         string='PO Price',
@@ -596,27 +643,30 @@ class AccountMoveLine(models.Model):
                  'display_type')
     def _compute_nova_variances(self):
         for line in self:
-            if not line.purchase_line_id or line.move_id.move_type != 'in_invoice' or line.display_type != 'product':
+            if not line.purchase_line_id or line.move_id.move_type != 'in_invoice' or line.display_type not in (
+                    'product', False):
                 line.nova_purchase_price_unit = 0.0
                 line.nova_price_variance = 0.0
                 line.nova_qty_variance = 0.0
                 line.nova_po_qty = 0.0
+                line.nova_qty_financial_variance = 0.0
                 continue
 
             po_uom = line.purchase_line_id.product_uom
             bill_uom = line.product_uom_id
             po_qty = line.purchase_line_id.product_qty
+            po_price = line.purchase_line_id.price_unit
 
             if po_uom and bill_uom and po_uom != bill_uom:
                 try:
                     po_qty = po_uom._compute_quantity(po_qty, bill_uom)
+                    po_price = po_uom._compute_price(po_price, bill_uom)
                 except Exception:
                     pass
 
             line.nova_qty_variance = line.quantity - po_qty
             line.nova_po_qty = po_qty
 
-            po_price = line.purchase_line_id.price_unit
             po_currency = line.purchase_line_id.currency_id
             bill_currency = line.currency_id or line.move_id.currency_id
 
@@ -624,13 +674,17 @@ class AccountMoveLine(models.Model):
                 company = line.company_id or line.move_id.company_id or self.env.company
                 conversion_date = line.move_id.invoice_date or fields.Date.context_today(line)
                 try:
-                    po_price = po_currency._convert(
-                        po_price, bill_currency, company, conversion_date
-                    )
+                    po_price = po_currency._convert(po_price, bill_currency, company, conversion_date)
                 except Exception:
                     pass
 
             line.nova_purchase_price_unit = po_price
+
+            line.nova_qty_financial_variance = line.nova_qty_variance * po_price
+
+            # Calculate exact financial variance
             expected_cost = po_price * line.quantity
             actual_cost = line.price_subtotal
-            line.nova_price_variance = actual_cost - expected_cost
+            variance = actual_cost - expected_cost
+
+            line.nova_price_variance = variance if abs(variance) > 0.01 else 0.0
