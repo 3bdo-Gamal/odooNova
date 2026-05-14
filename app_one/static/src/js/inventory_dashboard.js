@@ -48,7 +48,7 @@ export class InventoryDashboardClient extends Component {
             top_products:    String(savedState.top_products  || "10"),
             top_locations:   String(savedState.top_locations || "10"),
             top_categories:  String(savedState.top_categories || "10"),
-            dead_stock_days: savedState.dead_stock_days || "90", // <-- Added
+            dead_stock_days: savedState.dead_stock_days || "90",
 
             // ── Filter option lists ────────────────────────────────────
             filter_warehouses: [],
@@ -196,7 +196,7 @@ export class InventoryDashboardClient extends Component {
                 top_products:    parseInt(this.state.top_products)   || 10,
                 top_locations:   parseInt(this.state.top_locations)  || 10,
                 top_categories:  parseInt(this.state.top_categories) || 10,
-                dead_stock_days: parseInt(this.state.dead_stock_days)|| 90, // <-- Added
+                dead_stock_days: parseInt(this.state.dead_stock_days)|| 90,
             };
             const data = await this.orm.call("wb.inventory.dashboard", "get_inventory_kpis", [], kwargs);
             if (data) {
@@ -223,7 +223,7 @@ export class InventoryDashboardClient extends Component {
             top_products: this.state.top_products,
             top_locations: this.state.top_locations,
             top_categories: this.state.top_categories,
-            dead_stock_days: this.state.dead_stock_days, // <-- Added
+            dead_stock_days: this.state.dead_stock_days,
             search_query: this.state.search_query, active_filters: { ...this.state.active_filters },
             custom_domain: [...this.state.custom_domain], group_by_list: [...this.state.group_by_list],
         };

@@ -8,6 +8,7 @@ try:
 except ImportError:
     xlsxwriter = None
 
+
 class InventoryDashboard(models.Model):
     _name = 'wb.inventory.dashboard'
     _description = 'Professional Inventory KPI Dashboard'
@@ -96,16 +97,24 @@ class InventoryDashboard(models.Model):
                            warehouse_id='all', product_id='all',
                            category_id='all', location_id='all',
                            top_products=10, top_locations=10, top_categories=10,
-                           dead_stock_days=90): # <-- Added parameter
+                           dead_stock_days=90):
 
-        try: top_products = int(top_products)
-        except Exception: top_products = 10
-        try: top_locations = int(top_locations)
-        except Exception: top_locations = 10
-        try: top_categories = int(top_categories)
-        except Exception: top_categories = 10
-        try: dead_stock_days = int(dead_stock_days) # <-- Safe casting
-        except Exception: dead_stock_days = 90
+        try:
+            top_products = int(top_products)
+        except Exception:
+            top_products = 10
+        try:
+            top_locations = int(top_locations)
+        except Exception:
+            top_locations = 10
+        try:
+            top_categories = int(top_categories)
+        except Exception:
+            top_categories = 10
+        try:
+            dead_stock_days = int(dead_stock_days)
+        except Exception:
+            dead_stock_days = 90
 
         (dt_from, dt_to, days_count,
          product_domain, quant_domain,
@@ -123,7 +132,7 @@ class InventoryDashboard(models.Model):
         out_moves = self.env['stock.move'].search(move_out_domain)
         in_moves = self.env['stock.move'].search(move_in_domain)
 
-        # Valuation Layers
+        # Prefetching valuation layers for accurate COGS
         vl_out = self.env['stock.valuation.layer'].search([('stock_move_id', 'in', out_moves.ids)])
         out_val_map = {}
         for v in vl_out:
@@ -186,8 +195,6 @@ class InventoryDashboard(models.Model):
             p_name = m.product_id.display_name or 'Unknown'
             product_out[p_name] = product_out.get(p_name, 0.0) + m.quantity
 
-        # --- FIX: Average Inventory Value Calculation ---
-        # Beginning = Ending - Received + COGS (Fast Approximation)
         beginning_stock_value = ending_stock_value - received_value + cogs
         avg_inventory_value = (beginning_stock_value + ending_stock_value) / 2.0
 
@@ -197,7 +204,6 @@ class InventoryDashboard(models.Model):
         else:
             inventory_turnover = 0.0
             dio = 0.0
-        # ------------------------------------------------
 
         op_domain = []
         if warehouse_id != 'all': op_domain.append(('warehouse_id', '=', int(warehouse_id)))
@@ -208,11 +214,8 @@ class InventoryDashboard(models.Model):
             pid = op.product_id.id
             reorder_min_map[pid] = max(reorder_min_map.get(pid, 0.0), op.product_min_qty)
 
-        # --- FIX: Low Stock uses virtual_available (Forecasted) ---
         low_stock_count = sum(1 for p in products if p.virtual_available <= reorder_min_map.get(p.id, 0.0))
-        # ----------------------------------------------------------
 
-        # --- FIX: Dynamic Dead Stock Days ---
         if products:
             dead_cutoff = datetime.now() - timedelta(days=dead_stock_days)
             dead_base_domain = [('state', '=', 'done'), ('date', '>=', dead_cutoff), ('product_id', 'in', products.ids)]
@@ -228,7 +231,6 @@ class InventoryDashboard(models.Model):
             dead_stock_count = len([p for p in products if p.id not in recently_moved_ids and p.qty_available > 0])
         else:
             dead_stock_count = 0
-        # ------------------------------------
 
         sorted_products = sorted(product_out.items(), key=lambda x: x[1], reverse=True)[:top_products]
         sorted_locations = sorted(location_stock.items(), key=lambda x: x[1], reverse=True)[:top_locations]
@@ -241,9 +243,12 @@ class InventoryDashboard(models.Model):
 
         for x in sorted_by_value:
             cumulative += x['value'] / total_stock_value
-            if cumulative <= 0.80: abc['A'].append(x['name'])
-            elif cumulative <= 0.95: abc['B'].append(x['name'])
-            else: abc['C'].append(x['name'])
+            if cumulative <= 0.80:
+                abc['A'].append(x['name'])
+            elif cumulative <= 0.95:
+                abc['B'].append(x['name'])
+            else:
+                abc['C'].append(x['name'])
 
         return {
             'stock_on_hand': round(stock_on_hand, 2),
@@ -278,5 +283,163 @@ class InventoryDashboard(models.Model):
                                warehouse_id='all', product_id='all',
                                category_id='all', location_id='all',
                                export_group='product', export_measures=None, detailed_excel=False):
-        # (This method remains functionally identical to your existing file, I've omitted it to save space, just keep your original export function here)
-        pass
+
+        if not xlsxwriter:
+            return {'error': 'xlsxwriter library is not installed on the server.'}
+
+        export_measures = export_measures or []
+
+        (dt_from, dt_to, days_count, product_domain, quant_domain, move_out_domain,
+         move_in_domain) = self._build_domains(
+            period, date_from, date_to, warehouse_id, product_id, category_id, location_id
+        )
+
+        quants = self.env['stock.quant'].search(quant_domain)
+        out_moves = self.env['stock.move'].search(move_out_domain)
+
+        # Prefetch valuation layers to guarantee exact COGS values
+        vl_out = self.env['stock.valuation.layer'].search([('stock_move_id', 'in', out_moves.ids)])
+        out_val_map = {}
+        for v in vl_out:
+            out_val_map[v.stock_move_id.id] = out_val_map.get(v.stock_move_id.id, 0.0) + abs(v.value)
+
+        pivot_data = {}
+
+        # 1. Map Quants (Qty On Hand & Stock Value)
+        for q in quants:
+            key = 'Unknown'
+            if export_group == 'product':
+                key = q.product_id.display_name or 'Unknown'
+            elif export_group == 'category':
+                key = q.product_id.categ_id.name or 'Unknown'
+            elif export_group == 'location':
+                key = q.location_id.complete_name or 'Unknown'
+            elif export_group == 'warehouse':
+                key = q.location_id.warehouse_id.name or 'Unknown'
+
+            if key not in pivot_data:
+                pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': [],
+                                   'category': q.product_id.categ_id.name or 'Uncategorized'}
+
+            free_qty = max(q.quantity - q.reserved_quantity, 0.0)
+            val = q.value if q.value else (q.quantity * q.product_id.standard_price)
+
+            pivot_data[key]['qty'] += free_qty
+            pivot_data[key]['value'] += val
+
+            if detailed_excel:
+                pivot_data[key]['lines'].append({
+                    'name': f"Quant: {q.product_id.display_name} [{q.location_id.display_name}]",
+                    'qty': free_qty, 'value': val, 'cogs': 0.0
+                })
+
+        # 2. Map Moves (Cost of Goods Sold & Turnover)
+        for m in out_moves:
+            key = 'Unknown'
+            if export_group == 'product':
+                key = m.product_id.display_name or 'Unknown'
+            elif export_group == 'category':
+                key = m.product_id.categ_id.name or 'Unknown'
+            elif export_group == 'location':
+                key = m.location_id.complete_name or 'Unknown'
+            elif export_group == 'warehouse':
+                key = m.warehouse_id.name or 'Unknown'
+
+            if key not in pivot_data:
+                pivot_data[key] = {'qty': 0.0, 'value': 0.0, 'cogs': 0.0, 'lines': [],
+                                   'category': m.product_id.categ_id.name or 'Uncategorized'}
+
+            m_val = out_val_map.get(m.id, 0.0)
+            if m_val == 0.0: m_val = m.quantity * m.product_id.standard_price
+
+            pivot_data[key]['cogs'] += m_val
+
+            if detailed_excel:
+                pivot_data[key]['lines'].append({
+                    'name': f"Delivery: {m.reference} [{m.product_id.display_name}]",
+                    'qty': 0.0, 'value': 0.0, 'cogs': m_val
+                })
+
+        # --- Excel Document Construction ---
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        sheet = workbook.add_worksheet('Inventory Analysis')
+        if detailed_excel:
+            sheet.outline_settings(symbols_below=False)
+
+        # Formatting
+        header_format = workbook.add_format(
+            {'bold': True, 'bg_color': '#4f46e5', 'font_color': 'white', 'border': 1, 'align': 'center'})
+        money_format = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
+        num_format = workbook.add_format({'num_format': '#,##0.00', 'border': 1, 'align': 'center'})
+        text_format = workbook.add_format({'border': 1, 'bold': True, 'bg_color': '#f8fafc'})
+        detail_text_format = workbook.add_format({'border': 1, 'indent': 1, 'font_color': '#475569'})
+        detail_money_format = workbook.add_format(
+            {'num_format': '#,##0.00', 'border': 1, 'font_color': '#475569', 'bg_color': '#ffffff'})
+
+        # Column Management
+        group_titles = {'product': 'Product', 'category': 'Category', 'location': 'Location', 'warehouse': 'Warehouse'}
+        headers = [group_titles.get(export_group, 'Group')]
+
+        if 'category' in export_measures and export_group == 'product': headers.append('Category')
+        if 'qty' in export_measures: headers.append('Qty On Hand')
+        if 'value' in export_measures: headers.append('Stock Value (EGP)')
+        if 'cogs' in export_measures: headers.append('COGS (EGP)')
+        if 'turnover' in export_measures: headers.append('Turnover Rate')
+
+        for col_num, header in enumerate(headers):
+            sheet.write(0, col_num, header, header_format)
+            sheet.set_column(col_num, col_num, 35 if col_num == 0 else 18)
+
+        row = 1
+        for k, data in sorted(pivot_data.items(), key=lambda x: x[1]['value'], reverse=True):
+            sheet.write(row, 0, str(k), text_format)
+            col = 1
+
+            if 'category' in export_measures and export_group == 'product':
+                sheet.write(row, col, data['category'], text_format);
+                col += 1
+            if 'qty' in export_measures:
+                sheet.write(row, col, data['qty'], num_format);
+                col += 1
+            if 'value' in export_measures:
+                sheet.write(row, col, data['value'], money_format);
+                col += 1
+            if 'cogs' in export_measures:
+                sheet.write(row, col, data['cogs'], money_format);
+                col += 1
+            if 'turnover' in export_measures:
+                turnover_val = (data['cogs'] / data['value']) * (365.0 / days_count) if data['value'] > 0 else 0
+                sheet.write(row, col, turnover_val, num_format);
+                col += 1
+
+            if detailed_excel and data['lines']:
+                sheet.set_row(row, None, None, {'collapsed': True})
+                row += 1
+                for line in data['lines']:
+                    sheet.write(row, 0, f"   ↳ {line['name']}", detail_text_format)
+                    col = 1
+                    if 'category' in export_measures and export_group == 'product':
+                        sheet.write(row, col, '', detail_text_format);
+                        col += 1
+                    if 'qty' in export_measures: sheet.write(row, col, line['qty'], detail_money_format); col += 1
+                    if 'value' in export_measures: sheet.write(row, col, line['value'], detail_money_format); col += 1
+                    if 'cogs' in export_measures: sheet.write(row, col, line['cogs'], detail_money_format); col += 1
+                    if 'turnover' in export_measures: sheet.write(row, col, 0, detail_money_format); col += 1
+
+                    sheet.set_row(row, None, None, {'level': 1, 'hidden': True})
+                    row += 1
+            else:
+                row += 1
+
+        workbook.close()
+        output.seek(0)
+
+        attachment = self.env['ir.attachment'].create({
+            'name': f'Inventory_Analysis_Export_{fields.Date.today()}.xlsx',
+            'type': 'binary',
+            'datas': base64.b64encode(output.read()).decode('utf-8'),
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        })
+
+        return attachment.id
