@@ -204,13 +204,13 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-success me-3"><i class="fa fa-usd"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Amount <span class="badge bg-light text-dark ms-1">Posted</span></p>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Bills Amount  </p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></h4>
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Total value of all vendor bills matching the current filters. Click to view the full bills list.</div>
-                            </div>
+                                <div class="wb-info-tooltip">Total monetary value of all vendor bills matching the active filters and reporting criteria. Click to access the detailed bill records.</div>
+                                </div>
                         </div>
                     </div>
 
@@ -218,13 +218,14 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-dark me-3"><i class="fa fa-files-o"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Bills</p>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Vendor Bills</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></h4>
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Number of vendor bills matching the current filters. Click to view the full bills list.</div>
-                            </div>
+                                <div class="wb-info-tooltip">Total number of vendor bills included within the current reporting scope. Click to open the related bill records.
+                                </div>
+                                </div>
                         </div>
                     </div>
 
@@ -232,13 +233,14 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-primary me-3"><i class="fa fa-money"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Upcoming Payables</p>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Outstanding Payables</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.upcoming_payables"/></h4>
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Total residual amount on posted, unpaid bills whose due date is today or in the future. Click to see these bills.</div>
-                            </div>
+                                <div class="wb-info-tooltip">Total unpaid payable amount for posted vendor bills with current or future due dates. Click to review outstanding liabilities.
+                                </div>
+                                </div>
                         </div>
                     </div>
 
@@ -251,8 +253,9 @@
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Average Days Payable Outstanding — average number of days between bill date and due date across all filtered bills.</div>
-                            </div>
+                                <div class="wb-info-tooltip">Average Days Payable Outstanding (DPO), representing the average time taken between bill issuance and payment due date.
+                                </div>
+                                </div>
                         </div>
                     </div>
 
@@ -264,12 +267,13 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-exclamation-triangle"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Late Bills Ratio</p>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Overdue Bills Ratio</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</h4>
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Percentage of unpaid bills that are past their due date. Click to view only the overdue bills.</div>
+                                <div class="wb-info-tooltip">Percentage of unpaid vendor bills that have exceeded their due dates. Click to analyze overdue liabilities.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -278,12 +282,13 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-file-text-o"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">No-PO Ratio</p>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Maverick Spend Ratio</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4>
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Percentage of bills where no product line is linked to a Purchase Order (maverick spend). Click to see those bills.</div>
+                                <div class="wb-info-tooltip">Percentage of vendor bills created without linked Purchase Orders, indicating unmanaged or off-process procurement spending.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -292,12 +297,13 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-purple me-3"><i class="fa fa-link"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">No-PO Count</p>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Bills Without Purchase Orders</p>
                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_count || 0"/></h4>
                             </div>
                             <div class="wb-info-wrapper ms-2">
                                 <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Absolute number of bills with no linked Purchase Order. Click to view the list.</div>
+                                <div class="wb-info-tooltip">Total number of vendor bills not associated with any Purchase Order. Click to review non-compliant procurement transactions.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -306,7 +312,7 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
                     <h5 class="fw-bolder m-0 text-dark">
-                        <i class="fa fa-shield me-2 text-secondary"></i>Invoice Accuracy &amp; Control
+                        <i class="fa fa-shield me-2 text-secondary"></i>Invoice Compliance &amp; Procurement Control
                     </h5>
                 </div>
 
@@ -316,8 +322,8 @@
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
-                                    <i class="fa fa-balance-scale text-danger me-2"></i>Price Variance (PO vs Bill)
-                                    <span class="chart-hint">(Click to view records)</span>
+                                    <i class="fa fa-balance-scale text-danger me-2"></i>Purchase Price Variance Analysis
+
                                 </h6>
                                 <div class="d-flex align-items-center gap-2">
                                     <small class="text-muted fw-bold text-xs">
@@ -325,7 +331,8 @@
                                     </small>
                                     <div class="wb-info-wrapper ms-1">
                                         <span class="wb-info-icon">i</span>
-                                        <div class="wb-info-tooltip">Compares the unit price on each bill line vs the price on the linked PO line. Red = billed more than agreed, Green = billed less. Click to drill into affected bills.</div>
+                                        <div class="wb-info-tooltip">Compares billed unit prices against approved Purchase Order prices to identify overbilling or underbilling variances across vendors and products. (Click to drill down)
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -339,7 +346,7 @@
                         <div class="wb-card h-100 overflow-hidden d-flex flex-column p-0">
                             <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
                                 <h6 class="fw-bold text-dark m-0">
-                                    <i class="fa fa-cubes text-info me-2"></i> Quantity Variance
+                                    <i class="fa fa-cubes text-info me-2"></i> Billed Quantity Variance
                                 </h6>
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-sm btn-white border shadow-sm rounded-pill fw-bold text-xs px-3" t-on-click="() => this.openAction('qty_variance_pivot')">
@@ -347,7 +354,8 @@
                                     </button>
                                     <div class="wb-info-wrapper">
                                         <span class="wb-info-icon">i</span>
-                                        <div class="wb-info-tooltip">Shows products where billed quantity differs from the PO ordered quantity. Positive = more billed than ordered. Click "Pivot View" for full analysis.</div>
+                                        <div class="wb-info-tooltip">Displays discrepancies between ordered quantities and billed quantities for purchased products. Positive variances indicate excess billing quantities.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -382,12 +390,13 @@
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
-                                    <i class="fa fa-line-chart text-primary me-2"></i>Spend Trend Analysis
-                                    <span class="chart-hint">(Click to view records)</span>
+                                    <i class="fa fa-line-chart text-primary me-2"></i>Procurement Spend Trend
+                                    <span class="chart-hint">(Click to drill down)</span>
                                 </h6>
                                 <div class="wb-info-wrapper">
                                     <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Monthly total billed amount across all vendors matching the current filters. Helps spot spending spikes or seasonality. Click to open the bills grouped by month.</div>
+                                    <div class="wb-info-tooltip">Tracks monthly procurement spending trends based on vendor bills, helping identify seasonal patterns, spending spikes, and purchasing behavior changes.
+                                    </div>
                                 </div>
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('trend')">
@@ -400,12 +409,13 @@
                         <div class="wb-card p-4 h-100 d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
-                                    <i class="fa fa-pie-chart text-warning me-2"></i>Paid vs Unpaid
-                                    <span class="chart-hint">(Click slice)</span>
+                                    <i class="fa fa-pie-chart text-warning me-2"></i>Payment Status Distribution
+                                    <span class="chart-hint">(Click segment to view records)</span>
                                 </h6>
                                 <div class="wb-info-wrapper">
                                     <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Breakdown of total billed amounts by payment status. Click the Paid slice to see paid bills, or the Unpaid slice to see outstanding ones.</div>
+                                    <div class="wb-info-tooltip">Distribution of vendor bill amounts by payment status, providing visibility into settled versus outstanding financial obligations.
+                                    </div>
                                 </div>
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('status')">
@@ -422,12 +432,13 @@
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
-                                    <i class="fa fa-users text-success me-2"></i>Top 10 Vendors
-                                    <span class="chart-hint">(Click to view records)</span>
+                                    <i class="fa fa-users text-success me-2"></i>Top Vendors by Spend
+                                    <span class="chart-hint">(Click to drill down)</span>
                                 </h6>
                                 <div class="wb-info-wrapper">
                                     <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Top 10 vendors by total billed amount under the current filters. Click a bar to open all bills for that vendor.</div>
+                                    <div class="wb-info-tooltip">Highlights the highest-spending vendors based on total billed amounts within the selected reporting period and filters.
+                                    </div>
                                 </div>
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('vendor')">
@@ -444,9 +455,10 @@
                                 </h6>
                                 <div class="wb-info-wrapper">
                                     <span class="wb-info-icon">i</span>
-                                    <div class="wb-info-tooltip">Average days between bill date and due date per vendor. Higher values mean longer payment windows. Click to analyse lead time </div>
+                                    <div class="wb-info-tooltip">Measures the average payment period granted by vendors, based on the difference between bill dates and payment due dates.</div>
                                 </div>
                             </div>
+
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('lead_time')">
                                 <canvas t-ref="chart_lead_time"></canvas>
                             </div>
@@ -492,7 +504,7 @@
                     <hr class="text-muted opacity-25"/>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Vendor</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Vendor Filter</label>
                         <select class="form-select wb-input" t-model="state.filters.vendor_id" t-on-change="onApplyFilter">
                             <option value="all">🏢 All Vendors</option>
                             <t t-foreach="state.filter_options?.vendors || []" t-as="vendor" t-key="vendor.id">
@@ -502,7 +514,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Journal</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Accounting Journal</label>
                         <select class="form-select wb-input" t-model="state.filters.journal_id" t-on-change="onApplyFilter">
                             <option value="all">📓 All Journals</option>
                             <t t-foreach="state.filter_options?.journals || []" t-as="journal" t-key="journal.id">
@@ -512,7 +524,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Payment Terms</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Payment Terms Filter </label>
                         <select class="form-select wb-input" t-model="state.filters.payment_term_id" t-on-change="onApplyFilter">
                             <option value="all">⏳ All Payment Terms</option>
                             <t t-foreach="state.filter_options?.payment_terms || []" t-as="pt" t-key="pt.id">
@@ -522,7 +534,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Product Category</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Product Category Filter</label>
                         <select class="form-select wb-input" t-model="state.filters.category_id" t-on-change="onApplyFilter">
                             <option value="all">📁 All Categories</option>
                             <t t-foreach="state.filter_options?.categories || []" t-as="cat" t-key="cat.id">
@@ -532,7 +544,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Location</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-2">Warehouse / Location</label>
                         <select class="form-select wb-input" t-model="state.filters.location_id" t-on-change="onApplyFilter">
                             <option value="all">📍 All Locations</option>
                             <t t-foreach="state.filter_options?.locations || []" t-as="loc" t-key="loc.id">
@@ -544,7 +556,7 @@
                     <hr class="text-muted opacity-25"/>
 
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Quick Filters</label>
+                        <label class="form-label text-muted fw-bold text-xs text-uppercase mb-3">Advanced Filters</label>
 
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
                             <input class="form-check-input ms-0 me-2" type="checkbox" id="f_posted" t-att-checked="state.active_filters.state_posted" t-on-change="() => this.toggleFilter('state_posted')"/>
@@ -560,19 +572,19 @@
                         </div>
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
                             <input class="form-check-input ms-0 me-2" type="checkbox" id="f_not_paid" t-att-checked="state.active_filters.pay_not_paid" t-on-change="() => this.toggleFilter('pay_not_paid')"/>
-                            <label class="form-check-label text-dark fw-bold mb-0" for="f_not_paid">Not Paid</label>
+                            <label class="form-check-label text-dark fw-bold mb-0" for="f_not_paid">Unpaid Bills</label>
                         </div>
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
                             <input class="form-check-input ms-0 me-2" type="checkbox" id="f_overdue" t-att-checked="state.active_filters.is_overdue" t-on-change="() => this.toggleFilter('is_overdue')"/>
-                            <label class="form-check-label text-danger fw-bold mb-0" for="f_overdue">Overdue</label>
+                            <label class="form-check-label text-danger fw-bold mb-0" for="f_overdue">Overdue Bills</label>
                         </div>
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
                             <input class="form-check-input ms-0 me-2" type="checkbox" id="f_has_po" t-att-checked="state.active_filters.has_po" t-on-change="() => this.toggleFilter('has_po')"/>
-                            <label class="form-check-label text-primary fw-bold mb-0" for="f_has_po">With PO</label>
+                            <label class="form-check-label text-primary fw-bold mb-0" for="f_has_po">Bills Linked to PO</label>
                         </div>
                         <div class="form-check form-switch fs-6 mb-3 p-2 bg-light rounded border d-flex align-items-center">
                             <input class="form-check-input ms-0 me-2" type="checkbox" id="f_no_po" t-att-checked="state.active_filters.no_po" t-on-change="() => this.toggleFilter('no_po')"/>
-                            <label class="form-check-label text-warning fw-bold mb-0" for="f_no_po">Without PO (Maverick)</label>
+                            <label class="form-check-label text-warning fw-bold mb-0" for="f_no_po">Bills Without Purchase Orders</label>
                         </div>
                     </div>
 
