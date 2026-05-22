@@ -267,37 +267,40 @@ class PurchaseBillsDashboard(models.AbstractModel):
             ])
 
             for line in bill_lines:
+
+                vendor_name = line.move_id.partner_id.name or 'Unknown Vendor'
                 prod_name = line.product_id.name or 'Unknown'
 
                 if abs(line.nova_qty_variance) > 0.01:
                     qty_variance_line_ids.append(line.id)
                     product_variances[prod_name] = product_variances.get(prod_name, 0) + line.nova_qty_variance
 
+                # 2. التعديل الثاني: تجميع Price Variance بناءً على المورد
                 if abs(line.nova_price_variance) > 0.01:
                     price_variance_line_ids.append(line.id)
 
-                    if prod_name not in overbilled_data:
-                        overbilled_data[prod_name] = 0
-                    if prod_name not in underbilled_data:
-                        underbilled_data[prod_name] = 0
+                    if vendor_name not in overbilled_data:
+                        overbilled_data[vendor_name] = 0
+                    if vendor_name not in underbilled_data:
+                        underbilled_data[vendor_name] = 0
 
                     if line.nova_price_variance > 0:
-                        overbilled_data[prod_name] += line.nova_price_variance
+                        overbilled_data[vendor_name] += line.nova_price_variance
                     elif line.nova_price_variance < 0:
-                        underbilled_data[prod_name] += abs(line.nova_price_variance)
+                        underbilled_data[vendor_name] += abs(line.nova_price_variance)
 
             for product, variance in product_variances.items():
                 qty_pivot.append({'product': product, 'qty_variance': round(variance, 2)})
             qty_pivot = sorted(qty_pivot, key=lambda k: abs(k['qty_variance']), reverse=True)[:10]
 
-            variance_products = sorted(
+            variance_vendors = sorted(
                 list(set(list(overbilled_data.keys()) + list(underbilled_data.keys()))),
-                key=lambda p: overbilled_data.get(p, 0) + underbilled_data.get(p, 0),
+                key=lambda v: overbilled_data.get(v, 0) + underbilled_data.get(v, 0),
                 reverse=True
             )[:10]
 
-            overbilled_arr = [round(overbilled_data.get(p, 0), 2) for p in variance_products]
-            underbilled_arr = [round(underbilled_data.get(p, 0), 2) for p in variance_products]
+            overbilled_arr = [round(overbilled_data.get(v, 0), 2) for v in variance_vendors]
+            underbilled_arr = [round(underbilled_data.get(v, 0), 2) for v in variance_vendors]
 
             # Chart In-Memory Calculations
             sorted_bills = bills.sorted(key=lambda b: b.invoice_date or today)
@@ -369,7 +372,7 @@ class PurchaseBillsDashboard(models.AbstractModel):
                     'datasets': [{'label': 'Avg Days', 'data': lead_values, 'backgroundColor': '#F39C12'}],
                 },
                 'price_var': {
-                    'labels': variance_products if 'variance_products' in locals() else [],
+                    'labels': variance_vendors if 'variance_vendors' in locals() else [],
                     'datasets': [
                         {'label': 'Overbilled (RED)', 'data': overbilled_arr if 'overbilled_arr' in locals() else [],
                          'backgroundColor': '#E74C3C'},

@@ -53,31 +53,58 @@
             @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
             /* ── Info Icon Tooltip ── */
-            .wb-info-wrapper { position: relative; display: inline-flex; align-items: center; }
+            .wb-info-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-left: 3px;
+            vertical-align: super;
+            }
             .wb-info-icon {
-                width: 18px; height: 18px; border-radius: 50%;
-                background: #e2e8f0; color: #64748b;
-                font-size: 11px; font-weight: 700; font-style: normal;
-                display: inline-flex; align-items: center; justify-content: center;
-                cursor: default; flex-shrink: 0;
-                transition: background 0.2s, color 0.2s;
+            color: #38bdf8;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            transition: color 0.2s;
             }
-            .wb-info-icon:hover { background: #3b82f6; color: #fff; }
+            .wb-info-icon:hover {
+            color: #0284c7;
+            }
             .wb-info-tooltip {
-                display: none; position: absolute;
-                top: calc(100% + 8px); right: 0;
-                background: #1e293b; color: #f1f5f9;
-                font-size: 12px; line-height: 1.5; font-weight: 400;
-                padding: 8px 12px; border-radius: 8px;
-                width: 220px; z-index: 999;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-                pointer-events: none;
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000;
+            color: #ffffff;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: max-content;
+            max-width: 250px;
+            z-index: 9999;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            pointer-events: none;
+            text-transform: none;
+            letter-spacing: normal;
+            text-align: center;
             }
+
             .wb-info-tooltip::before {
-                content: ''; position: absolute; bottom: 100%; right: 6px;
-                border: 6px solid transparent; border-bottom-color: #1e293b;
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: #000000;
             }
-            .wb-info-wrapper:hover .wb-info-tooltip { display: block; }
+            .wb-info-wrapper:hover .wb-info-tooltip {
+            display: block;
+            }
+
 
             /* ── Print area ── */
             #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
@@ -203,14 +230,16 @@
                     <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openAction('all')">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-success me-3"><i class="fa fa-usd"></i></div>
-                            <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Bills Amount  </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Total monetary value of all vendor bills matching the active filters and reporting criteria. Click to access the detailed bill records.</div>
-                                </div>
+                           <div class="flex-grow-1">
+    <p class="text-muted text-uppercase text-xs fw-bold mb-1">
+        Total Bills Amount
+        <div class="wb-info-wrapper">
+            <span class="wb-info-icon"> ?</span>
+            <div class="wb-info-tooltip">Total monetary value of all vendor bills matching the active filters and reporting criteria. Click to access the detailed bill records.</div>
+        </div>
+    </p>
+    <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_amount || '$0'"/></h4>
+</div>
                         </div>
                     </div>
 
@@ -218,14 +247,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-dark me-3"><i class="fa fa-files-o"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Vendor Bills</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Vendor Bills
+                                <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon"> ?</span>
                                 <div class="wb-info-tooltip">Total number of vendor bills included within the current reporting scope. Click to open the related bill records.
                                 </div>
                                 </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.total_bills_count || 0"/></h4>
+                            </div>
+
                         </div>
                     </div>
 
@@ -233,14 +264,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-primary me-3"><i class="fa fa-money"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Outstanding Payables</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.upcoming_payables"/></h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Outstanding Payables
+                                <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon"> ?</span>
                                 <div class="wb-info-tooltip">Total unpaid payable amount for posted vendor bills with current or future due dates. Click to review outstanding liabilities.
                                 </div>
                                 </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.upcoming_payables"/></h4>
+                            </div>
+
                         </div>
                     </div>
 
@@ -248,14 +281,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-primary me-3"><i class="fa fa-calendar-check-o"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg DPO</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small></h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg DPO
+                                <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon"> ?</span>
                                 <div class="wb-info-tooltip">Average Days Payable Outstanding (DPO), representing the average time taken between bill issuance and payment due date.
                                 </div>
                                 </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.avg_dpo"/> <small class="fs-6 text-muted">Days</small></h4>
+                            </div>
+
                         </div>
                     </div>
 
@@ -267,14 +302,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-exclamation-triangle"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Overdue Bills Ratio</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Overdue Bills Ratio
+                                <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon"> ?</span>
                                 <div class="wb-info-tooltip">Percentage of unpaid vendor bills that have exceeded their due dates. Click to analyze overdue liabilities.
                                 </div>
                             </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.late_bills_ratio"/>%</h4>
+                            </div>
+
                         </div>
                     </div>
 
@@ -282,14 +319,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-file-text-o"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Maverick Spend Ratio</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Maverick Spend Ratio
+                                <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon"> ?</span>
                                 <div class="wb-info-tooltip">Percentage of vendor bills created without linked Purchase Orders, indicating unmanaged or off-process procurement spending.
                                 </div>
                             </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_ratio"/>%</h4>
+                            </div>
+
                         </div>
                     </div>
 
@@ -297,14 +336,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
                             <div class="wb-icon-box icon-purple me-3"><i class="fa fa-link"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Bills Without Purchase Orders</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_count || 0"/></h4>
-                            </div>
-                            <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Bills Without Purchase Orders
+                                <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon"> ?</span>
                                 <div class="wb-info-tooltip">Total number of vendor bills not associated with any Purchase Order. Click to review non-compliant procurement transactions.
                                 </div>
                             </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.kpi_data.cards.wo_po_count || 0"/></h4>
+                            </div>
+
                         </div>
                     </div>
 
@@ -323,17 +364,18 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
                                     <i class="fa fa-balance-scale text-danger me-2"></i>Purchase Price Variance Analysis
+                                    <div class="wb-info-wrapper ms-1">
+                                        <span class="wb-info-icon"> ?</span>
+                                        <div class="wb-info-tooltip">Compares billed unit prices against approved Purchase Order prices to identify overbilling or underbilling variances across vendors and products. (Click to drill down)
+                                        </div>
+                                    </div>
 
                                 </h6>
                                 <div class="d-flex align-items-center gap-2">
                                     <small class="text-muted fw-bold text-xs">
                                         <span class="text-danger">■</span> Overbilled <span class="text-success ms-2">■</span> Underbilled
                                     </small>
-                                    <div class="wb-info-wrapper ms-1">
-                                        <span class="wb-info-icon">i</span>
-                                        <div class="wb-info-tooltip">Compares billed unit prices against approved Purchase Order prices to identify overbilling or underbilling variances across vendors and products. (Click to drill down)
-                                        </div>
-                                    </div>
+
                                 </div>
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('price_var')">
@@ -347,16 +389,17 @@
                             <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
                                 <h6 class="fw-bold text-dark m-0">
                                     <i class="fa fa-cubes text-info me-2"></i> Billed Quantity Variance
+                                     <div class="wb-info-wrapper">
+                                        <span class="wb-info-icon"> ?</span>
+                                        <div class="wb-info-tooltip">Displays discrepancies between ordered quantities and billed quantities for purchased products. Positive variances indicate excess billing quantities.
+                                        </div>
+                                    </div>
                                 </h6>
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-sm btn-white border shadow-sm rounded-pill fw-bold text-xs px-3" t-on-click="() => this.openAction('qty_variance_pivot')">
                                         <i class="fa fa-table me-1"></i> Pivot View
                                     </button>
-                                    <div class="wb-info-wrapper">
-                                        <span class="wb-info-icon">i</span>
-                                        <div class="wb-info-tooltip">Displays discrepancies between ordered quantities and billed quantities for purchased products. Positive variances indicate excess billing quantities.
-                                        </div>
-                                    </div>
+
                                 </div>
                             </div>
                             <div class="table-responsive flex-grow-1" style="max-height:280px; cursor:pointer;" t-on-click="() => this.openAction('qty_variance_pivot')">
@@ -391,13 +434,15 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
                                     <i class="fa fa-line-chart text-primary me-2"></i>Procurement Spend Trend
-                                    <span class="chart-hint">(Click to drill down)</span>
-                                </h6>
-                                <div class="wb-info-wrapper">
-                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon"> ?</span>
                                     <div class="wb-info-tooltip">Tracks monthly procurement spending trends based on vendor bills, helping identify seasonal patterns, spending spikes, and purchasing behavior changes.
                                     </div>
                                 </div>
+                                    <br/>
+                                    <span class="chart-hint">(Click to drill down)</span>
+                                </h6>
+
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('trend')">
                                 <canvas t-ref="chart_trend"></canvas>
@@ -410,13 +455,14 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
                                     <i class="fa fa-pie-chart text-warning me-2"></i>Payment Status Distribution
-                                    <span class="chart-hint">(Click segment to view records)</span>
-                                </h6>
-                                <div class="wb-info-wrapper">
-                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon"> ?</span>
                                     <div class="wb-info-tooltip">Distribution of vendor bill amounts by payment status, providing visibility into settled versus outstanding financial obligations.
                                     </div>
-                                </div>
+                                </div> <br/>
+                                    <span class="chart-hint">(Click segment to view records)</span>
+                                </h6>
+
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('status')">
                                 <canvas t-ref="chart_status"></canvas>
@@ -433,13 +479,15 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
                                     <i class="fa fa-users text-success me-2"></i>Top Vendors by Spend
-                                    <span class="chart-hint">(Click to drill down)</span>
-                                </h6>
-                                <div class="wb-info-wrapper">
-                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon"> ?</span>
                                     <div class="wb-info-tooltip">Highlights the highest-spending vendors based on total billed amounts within the selected reporting period and filters.
                                     </div>
                                 </div>
+                                    <br/>
+                                    <span class="chart-hint">(Click to drill down)</span>
+                                </h6>
+
                             </div>
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('vendor')">
                                 <canvas t-ref="chart_vendor"></canvas>
@@ -452,11 +500,12 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-dark m-0">
                                     <i class="fa fa-clock-o text-info me-2"></i>Vendor Payment Lead Time
-                                </h6>
-                                <div class="wb-info-wrapper">
-                                    <span class="wb-info-icon">i</span>
+                                    <div class="wb-info-wrapper">
+                                    <span class="wb-info-icon"> ?</span>
                                     <div class="wb-info-tooltip">Measures the average payment period granted by vendors, based on the difference between bill dates and payment due dates.</div>
                                 </div>
+                                </h6>
+
                             </div>
 
                             <div style="height:280px; position:relative; cursor:pointer;" t-on-click="() => this.openAction('lead_time')">

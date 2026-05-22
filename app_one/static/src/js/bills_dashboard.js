@@ -320,11 +320,11 @@ async openAction(actionType, subType = null) {
                 const var_ids = (this.state.kpi_data && this.state.kpi_data.price_variance_line_ids) ? this.state.kpi_data.price_variance_line_ids : [];
                 domain = [['id', 'in', var_ids.length > 0 ? var_ids : [0]]];
                 if (subType) {
-                    // Use ilike to ensure product name match even with slight spacing differences
-                    domain.push(['product_id.name', 'ilike', subType]);
+
+                    domain.push(['move_id.partner_id.name', 'ilike', subType]);
                     name = "Price Variance Details (" + subType + ")";
                 } else {
-                    name = "Price Variance Details (Product Level)";
+                    name = "Price Variance Details (Vendor Level)";
                 }
                 target_view_name = 'dashboard.lines.price.var.tree.v3';
                 break;
