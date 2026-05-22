@@ -371,9 +371,11 @@ showEmployees() {
 showWorkloadTasks() {
     let domain = [
         ['state', 'not in', ['1_done', '1_canceled']],
-        ['create_date', '>=', this.state.start_date],
         ['create_date', '<=', this.state.end_date]
     ];
+    if (this.state.filters.department_id) {
+        domain.push(['user_ids.employee_ids.department_id', '=', parseInt(this.state.filters.department_id)]);
+    }
     this.action.doAction({
         type: "ir.actions.act_window",
         name: "Workload (Pending Tasks)",
