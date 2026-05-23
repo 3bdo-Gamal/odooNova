@@ -263,99 +263,116 @@ onSearchKeyUp(ev) {
     }
 //     //////////////////////////////////////////////////////////////
 
-    openKpiAction(type,vendorName = null) {
-        let actionData = {
-            type: 'ir.actions.act_window',
-            res_model: 'purchase.order',
-            views: [[false, 'list'], [false, 'pivot'], [false, 'form']],
-            view_mode: 'tree,pivot,form',
-            target: 'current',
-            context: {}
-        };
-        let activeDomain = [
+    openKpiAction(actionType,vendorName = null) {
+      let domain = [];
+      let name = "Purchase Analysis";
+    let res_model = 'purchase.order';
+    let view_mode = 'tree,form';
+    let context = {};
+    let target_view_name = '';
 
-            ['date_order', '>=', this.state.stats.start_date],
-            ['date_order', '<=', this.state.stats.end_date]
-        ];
-        switch (type||vendorName) {
-            case 'savings':
-                actionData.name = 'Saving Analysis';
-                actionData.res_model = 'purchase.requisition';
-                actionData.view_mode = 'tree,form';
-                actionData.views = [[false, 'list'], [false, 'form']];
-                actionData.context = {
-                    'search_default_ongoing': 1,
-                    'pivot_row_groupby': ['product_id'], // تجميع بالمنتج
-                    'pivot_measures': ['price_variance'],
-                };
-                actionData.domain = [
-                    ['state', '!=', 'cancel'],
-                    ['type_id.exclusive', '=', 'exclusive']
-                ];
-                break;
+    const startDate = this.state.stats.start_date || false
+    const endDate = this.state.stats.end_date || false
 
+        const offset = new Date().getTimezoneOffset() * 60000;
+    const localTodayStr = (new Date(Date.now() - offset)).toISOString().split('T')[0];
+        switch (actionType||vendorName) {
 
-            case 'emergency':
-                actionData.name = 'Uragant Orders';
-                actionData.view_mode = 'tree,form';
-                actionData.context = {'pivot_measures': ['is_emergency'],};
-                actionData.domain = [...activeDomain, ['is_emergency', '=', true], ['state', '!=', 'cancel']];
-                break;
+          case 'savings':
 
-            case 'lead_time':
-                actionData.name = 'Avg Lead Time';
-                actionData.view_mode = 'pivot,tree';
-                actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']], ['date_approve', '!=', false]];
-                actionData.context = {
-                    'pivot_row_groupby': ['user_id'],
-                    'pivot_measures': ['po_lead_time'],
-                };
-                break;
+            view_mode = 'list,pivot,graph';
+            name = "Price Variance & Savings Analysis";
+            domain.push(
+                ['requisition_id', '!=', false],
+                ['price_variance', '>', 0]
+            );
 
-            case 'delay':
-                actionData.name = 'Vendor Delivery Delay';
-                actionData.view_mode = 'pivot,tree';
-                actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']]];
-                actionData.context = {
-                    'pivot_row_groupby': ['partner_id'],
-                    'pivot_measures': ['vendor_delays'],
-                };
-                break;
+            context = {
+                'group_by': 'partner_id',
+            };
+            break;
 
-            case 'vendor_max_risk':
-                const targetVendor = vendorName || this.state.top_vendor_name;
-                actionData.name = 'Top Concentrated Vendor: ' + (targetVendor || '');
-                actionData.view_mode = 'pivot,tree,form';
-                if (targetVendor) {
-                    actionData.domain = [...activeDomain,
-                                        ['partner_id', '=', targetVendor],
-                                        ['state', 'in', ['purchase', 'done']]];
-                } else {
-                    actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']]];
-                }
+         case 'emergency':
 
-                actionData.context = {
-                  'pivot_row_groupby': ['partner_id'],
-                    'pivot_measures': ['amount_total'],
-                };
-                break;
+            view_mode = 'list,form';
+            name = "Urgent Procurement Requests";
+            domain.push(['is_emergency', '=', true]);
+            break;
 
-            case 'automation_rate':
-                actionData.name = 'PO Automation Rate';
-                actionData.view_mode = 'pivot,tree';
-                actionData.domain = [...activeDomain, ['state', 'in', ['purchase', 'done']]];
-                break;
+           case 'lead_time':
+            view_mode = 'list,pivot';
+            name = "Purchase Order Lead Time Analysis";
+            context = {
+                'pivot_row_groupby': ['partner_id'],
+            };
+            break;
 
+case 'delay':
+    view_mode = 'list,pivot,form';
 
-            default:
-                actionData.views = [[false, 'tree'], [false, 'form']];
-                actionData.view_mode = 'tree,form';
-                actionData.name = 'Purchase Orders';
-        }
+    domain.push(
+        ['state', 'in', ['purchase', 'done']],
+        ['date_planned', '!=', false],
+        ['date_planned', '<', localTodayStr] // مقارنة الحقل بمتغير تاريخ اليوم النصي المجهز فوق
+    );
+    name = "Vendor Delivery Delays";
+    context = {
+        'group_by': 'partner_id'
+    };
+    break;
 
-        this.actionService.doAction(actionData);
+case 'vendor_max_risk':
+            view_mode = 'list,form';
+            name = `Orders for Top Vendor: ${vendorName || 'Max Spend'}`;
+            domain.push(['state', 'in', ['purchase', 'done']]);
+            if (vendorName) {
+                domain.push(['partner_id.name', 'ilike', vendorName]);
+            }
+            break;
+
+        case 'automation_rate':
+            view_mode = 'list,pivot,form';
+            name = "PO Automation & Creation Source";
+            domain.push(['state', 'in', ['purchase', 'done']]);
+            context = {
+                'group_by': 'origin'
+            };
+            break;
     }
 
+if (actionType !== 'savings') {
+        if (res_model === 'purchase.order') {
+            if (this.state.stats.period && this.state.stats.period !== "0") {
+                const today = new Date();
+                const pastDate = new Date(today.getTime() - (parseInt(this.state.period) * 24 * 60 * 60 * 1000));
+                const localPastStr = (new Date(pastDate - offset)).toISOString().split('T')[0];
+                domain.push(['date_order', '>=', localPastStr], ['date_order', '<=', localTodayStr]);
+            } else {
+                if (startDate) domain.push(['date_order', '>=', startDate]);
+                if (endDate) domain.push(['date_order', '<=', endDate]);
+            }
+
+            // تصفية إضافية لو المستخدم اختار مورد معين من الفلتر الرئيسي للـ Dashboard
+            if (this.state.stats.filters && this.state.stats.filters.vendor_id !== "all") {
+                domain.push(['partner_id', '=', parseInt(this.state.stats.filters.vendor_id)]);
+            }
+        }
+    }
+
+let views_array = view_mode.split(',').map(v => [false, v === 'list' ? 'tree' : v]);
+    // 5. إطلاق الـ Action لفتح الشاشة المستهدفة بناءً على الخصائص المحددة أعلاه
+    this.actionService.doAction({
+        type: 'ir.actions.act_window',
+        name: name,
+        res_model: res_model,
+        view_mode: view_mode,
+        views: views_array,
+        domain: domain,
+        context: context,
+         target: 'current'
+    });
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
     async downloaddata(standardDomain = null) {
         if (this.state.stats.period === "0" || this.state.stats.period === 0) {

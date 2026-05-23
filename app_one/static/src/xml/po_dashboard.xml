@@ -39,32 +39,59 @@
             .print-title { font-size: 16px; font-weight: bold; color: #334155; }
             .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
 
-            /* ── Info Icon Tooltip ── */
-            .wb-info-wrapper { position: relative; display: inline-flex; align-items: center;}
+             /* ── Info Icon Tooltip ── */
+            .wb-info-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-left: 3px;
+            vertical-align: super;
+            }
             .wb-info-icon {
-                width: 18px; height: 18px; border-radius: 50%;
-                background: #e2e8f0; color: #64748b;
-                font-size: 11px; font-weight: 700; font-style: normal;
-                display: inline-flex; align-items: center; justify-content: center;
-                cursor: default; flex-shrink: 0;
-                transition: background 0.2s, color 0.2s;
+            color: #38bdf8;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            transition: color 0.2s;
             }
-            .wb-info-icon:hover { background: #3b82f6; color: #fff; }
+            .wb-info-icon:hover {
+            color: #0284c7;
+            }
             .wb-info-tooltip {
-                display: none; position: absolute;
-                top: calc(100% + 8px); right: 0;
-                background: #1e293b; color: #f1f5f9;
-                font-size: 12px; line-height: 1.5; font-weight: 400;
-                padding: 8px 12px; border-radius: 8px;
-                width: 220px; z-index: 999;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-                pointer-events: none;
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000;
+            color: #ffffff;
+            font-size: 12px;
+            line-height: 1.4;
+            font-weight: normal;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: max-content;
+            max-width: 250px;
+            z-index: 9999;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            pointer-events: none;
+            text-transform: none;
+            letter-spacing: normal;
+            text-align: center;
             }
+
             .wb-info-tooltip::before {
-                content: ''; position: absolute; bottom: 100%; right: 6px;
-                border: 6px solid transparent; border-bottom-color: #1e293b;
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-bottom-color: #000000;
             }
-            .wb-info-wrapper:hover .wb-info-tooltip { display: block; }
+            .wb-info-wrapper:hover .wb-info-tooltip {
+            display: block;
+            }
+
              /* ── Print area ── */
             #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
           .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-card {
@@ -239,65 +266,7 @@
                         </div>
                     </div>
 
-                    <!-- البحث المطور (نفس شكل صورة image_daf2be.png) -->
-<!--    <div class="flex-grow-1 d-flex justify-content-center px-4">-->
-<!--        <div class="wb-search-pill-container shadow-sm d-flex align-items-center bg-white border rounded-pill" style="width: 100%; max-width: 450px; height: 40px; position: relative;">-->
-<!--            <i class="fa fa-search text-muted ms-3 me-2"></i>-->
-<!--            <input type="text" class="form-control border-0 shadow-none p-0 flex-grow-1"-->
-<!--                   placeholder="Search Order or Vendor..."-->
-<!--                   t-model="state.search_query"-->
-<!--                   t-on-change="this.downloaddata"-->
-<!--                   style="font-size: 14px; background: transparent;"/>-->
 
-<!--            <div class="dropdown border-start ms-2 h-100 d-flex align-items-center">-->
-<!--                <button class="btn btn-link dropdown-toggle text-muted shadow-none py-0 px-3"-->
-<!--                        type="button" data-bs-toggle="dropdown" aria-expanded="false" style="text-decoration: none;">-->
-<!--                </button>-->
-
-<!--                &lt;!&ndash; القائمة الثلاثية الكبيرة &ndash;&gt;-->
-<!--                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-0" style="min-width: 650px; border-radius: 12px; margin-top: 10px !important;">-->
-<!--                    <div class="row g-0">-->
-<!--                        &lt;!&ndash; Filters &ndash;&gt;-->
-<!--                        <div class="col-4 border-end p-3">-->
-<!--                            <h6 class="fw-bold text-primary mb-3 small"><i class="fa fa-filter me-2"></i>Filters</h6>-->
-<!--                            <div class="list-group list-group-flush">-->
-<!--                                <t t-foreach="state.purchase_standard_filters" t-as="f" t-key="f.id">-->
-<!--                                    <button class="list-group-item list-group-item-action border-0 px-0 py-1 text-muted small" t-on-click="() => this.applyStandardFilter(f)">-->
-<!--                                        <t t-esc="f.string"/>-->
-<!--                                    </button>-->
-<!--                                </t>-->
-<!--                                <button class="btn btn-link btn-sm text-primary p-0 mt-2 text-start small fw-bold text-decoration-none" t-on-click="addCustomFilter">-->
-<!--                                    + Add Custom Filter-->
-<!--                                </button>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                        &lt;!&ndash; Group By &ndash;&gt;-->
-<!--                        <div class="col-4 border-end p-3 bg-light-subtle">-->
-<!--                            <h6 class="fw-bold text-secondary mb-3 small"><i class="fa fa-bars me-2"></i>Group By</h6>-->
-<!--                            <div class="list-group list-group-flush bg-transparent">-->
-<!--                                <button class="list-group-item list-group-item-action border-0 px-0 py-1 text-muted small bg-transparent">Vendor</button>-->
-<!--                                <button class="list-group-item list-group-item-action border-0 px-0 py-1 text-muted small bg-transparent">Order Date</button>-->
-<!--                                <button class="btn btn-link btn-sm text-secondary p-0 mt-2 text-start small fw-bold text-decoration-none">-->
-<!--                                    + Add Custom Group-->
-<!--                                </button>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                        &lt;!&ndash; Favorites &ndash;&gt;-->
-<!--                        <div class="col-4 p-3">-->
-<!--                            <h6 class="fw-bold text-warning mb-3 small"><i class="fa fa-star me-2"></i>Favorites</h6>-->
-<!--                            <button class="btn btn-outline-warning btn-sm w-100 mb-3 small" t-on-click="saveToFavorites">Save Current Search</button>-->
-<!--                            <t t-foreach="state.favorites" t-as="fav" t-key="fav.id">-->
-<!--                                <div class="small text-muted py-1 border-bottom d-flex justify-content-between align-items-center">-->
-<!--                                    <t t-esc="fav.name"/>-->
-<!--                                    <i class="fa fa-times text-danger cursor-pointer opacity-50" style="font-size: 10px;"></i>-->
-<!--                                </div>-->
-<!--                            </t>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
 
                     <div class="d-flex gap-2">
                         <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-bold text-success bg-white" t-on-click="downloadCustomExcel">
@@ -325,21 +294,23 @@
                                 </t>
                             </div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Price Variance Status</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_savings"/>%</h4>
-                                <small t-attf-class="fw-bold {{ state.stats.avg_savings > 0 ? 'text-primary' : 'text-danger' }}">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Price Variance Status
+
+                             <div class="wb-info-wrapper ms-2">
+                                <span class="wb-info-icon">?</span>
+                                <div class="wb-info-tooltip">Compares the actual purchase price against the Blanket Order price to measure savings or budget deviations.</div>
+                             </div>
+                                </p>
+                                 <small t-attf-class="fw-bold {{ state.stats.avg_savings > 0 ? 'text-primary' : 'text-danger' }}">
                                     <t t-if="state.stats.avg_savings > 0">Saving:
                                         <t t-esc="state.stats.avg_savings"/>%
                                     </t>
                                     <t t-else="">No Saving</t>
                                 </small>
-                            </div>
 
-                             <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
-                                <div class="wb-info-tooltip">Compares the actual purchase price against the Blanket Order price to measure savings or budget deviations.</div>
-                             </div>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_savings"/>%</h4>
 
+                           </div>
                         </div>
                     </div>
 
@@ -347,14 +318,16 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-bolt"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Urgent Requests</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.emergency_count"/></h4>
-                            </div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Urgent Requests
 
                              <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <span class="wb-info-icon">?</span>
                                 <div class="wb-info-tooltip">The number of orders approved less than two days before the scheduled delivery date.</div>
                              </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.emergency_count"/></h4>
+
+                           </div>
 
                         </div>
                     </div>
@@ -363,14 +336,15 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-edit"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Lead Time</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_lead_time"/> Days</h4>
-                            </div>
-
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Lead Time
                              <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <span class="wb-info-icon">?</span>
                                 <div class="wb-info-tooltip">The average number of days taken from the moment a Purchase Order is created until it is officially approved.</div>
                              </div>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.avg_lead_time"/> Days</h4>
+
+                           </div>
 
                         </div>
                     </div>
@@ -379,30 +353,31 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer"  style="cursor: pointer;">
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-clock-o"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Delivery Delay</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.total_delay_days"/> Days</h4>
-                            </div>
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Delivery Delay
 
                              <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <span class="wb-info-icon">?</span>
                                 <div class="wb-info-tooltip">Measures the average difference in days between the expected delivery date and the actual effective date from the vendor.</div>
                              </div>
+                                </p>
+                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.total_delay_days"/> Days</h4>
+                        </div>
 
                         </div>
                     </div>
 
-                     <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('vendor_max_risk')">
+                     <div class="col-md-4 mb-3" t-on-click="() => this.openKpiAction('vendor_max_risk',state.stats.top_vendor_name)">
                         <div class="wb-card p-4 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-pie-chart"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Max Vendor Concentration</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.max_risk"/>%</h4>
-                            </div>
-
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">Max Vendor Concentration
                              <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <span class="wb-info-icon">?</span>
                                 <div class="wb-info-tooltip">Shows the percentage of total spend attributed to the top vendor to monitor dependency and mitigate supply chain risks.</div>
                              </div>
+                                </p>
+                                 <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.max_risk"/>%</h4>
+                        </div>
 
                         </div>
                     </div>
@@ -411,19 +386,17 @@
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer" style="cursor: pointer;">
                             <div class="wb-icon-box icon-primary me-3"><i class="fa fa-cogs"></i></div>
                             <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">PO Automation Rate</p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.automation_rate"/>%</h4>
-                            </div>
-
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1">PO Automation Rate
                              <div class="wb-info-wrapper ms-2">
-                                <span class="wb-info-icon">i</span>
+                                <span class="wb-info-icon">?</span>
                                 <div class="wb-info-tooltip">The percentage of purchase orders generated automatically by the system compared to those created manually.</div>
                              </div>
+                                </p>
+                                      <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.stats.automation_rate"/>%</h4>
+                              </div>
 
                         </div>
                     </div>
-
-
 
                 </div>
 <!--/////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
