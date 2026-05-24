@@ -22,7 +22,7 @@ export class SalesDashboardClient extends Component {
         this.trendChartRef = useRef("trend_chart");
         this.salespersonChartRef = useRef("salesperson_chart");
         this.categoryChartRef = useRef("category_chart");
-        this.teamChartRef = useRef("team_chart"); // New Chart Ref
+        this.teamChartRef = useRef("team_chart");
         this.dynamicChartRef = useRef("dynamic_chart");
 
         const savedState = JSON.parse(localStorage.getItem('wb_sales_dashboard_state_v2')) || {};
@@ -30,7 +30,6 @@ export class SalesDashboardClient extends Component {
         const defaultFav = savedFavorites.find(f => f.is_default === true);
 
         this.state = useState({
-            show_kpi_info: false, // <-- التعديل هنا (تهيئة الزرار ليكون مغلق افتراضياً)
             showSidebar: true,
             top_products: String(savedState.top_products || "5"),
             top_customers: String(savedState.top_customers || "5"),
@@ -100,11 +99,6 @@ export class SalesDashboardClient extends Component {
             if (this.teamChartRef.el && this.teamChartRef.el.chartInstance) this.teamChartRef.el.chartInstance.destroy();
             if (this.dynamicChartRef.el && this.dynamicChartRef.el.chartInstance) this.dynamicChartRef.el.chartInstance.destroy();
         });
-    }
-
-    // <-- التعديل هنا (دالة لتغيير حالة الإظهار والإخفاء)
-    toggleKpiInfo() {
-        this.state.show_kpi_info = !this.state.show_kpi_info;
     }
 
     async loadFilters() {
@@ -378,7 +372,6 @@ export class SalesDashboardClient extends Component {
         this._renderChart(this.customerChartRef, 'bar', this.state.customer_labels, this.state.customer_data, '#06b6d4', 'Revenue', 'customer');
         this._renderDoughnut(this.productChartRef, this.state.product_labels, this.state.product_data, ['#4f46e5', '#10b981', '#06b6d4', '#f59e0b', '#ef4444'], 'product');
 
-        // Render New Team Chart
         this._renderDoughnut(this.teamChartRef, this.state.team_labels, this.state.team_data, ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'], 'team');
 
         this._renderHorizontalBar(this.salespersonChartRef, this.state.salesperson_labels, this.state.salesperson_data, 'salesperson');

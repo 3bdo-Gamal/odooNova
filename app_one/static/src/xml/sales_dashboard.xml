@@ -1,63 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="SalesDashboardClientTemplate">
-    <style>
-            .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
-            .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
-            .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
-            .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
-            .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); position: relative; z-index: 8 !important; }
-            .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; z-index: 1 !important; }
-            .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); z-index: 15 !important; }
-            .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
-            .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-            .icon-primary { background: #eff6ff; color: #3b82f6; }
-            .icon-success { background: #f0fdf4; color: #22c55e; }
-            .icon-info { background: #ecfeff; color: #06b6d4; }
-            .icon-warning { background: #fefce8; color: #eab308; }
-            .icon-danger { background: #fef2f2; color: #ef4444; }
-            .icon-dark { background: #f1f5f9; color: #334155; }
-            .icon-purple { background: #faf5ff; color: #a855f7; }
-            .icon-teal { background: #f0fdfa; color: #14b8a6; }
+        <div class="wb-dashboard-wrapper">
+            <style>
+                .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
+                .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
+                .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+                .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
+                .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); position: relative; z-index: 8 !important; }
+                .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; z-index: 1 !important; }
+                .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); z-index: 15 !important; }
+                .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
+                .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+                .icon-primary { background: #eff6ff; color: #3b82f6; }
+                .icon-success { background: #f0fdf4; color: #22c55e; }
+                .icon-info { background: #ecfeff; color: #06b6d4; }
+                .icon-warning { background: #fefce8; color: #eab308; }
+                .icon-danger { background: #fef2f2; color: #ef4444; }
+                .icon-dark { background: #f1f5f9; color: #334155; }
+                .icon-purple { background: #faf5ff; color: #a855f7; }
+                .icon-teal { background: #f0fdfa; color: #14b8a6; }
 
-            .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
-            .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
+                .wb-input { border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02); transition: all 0.2s; }
+                .wb-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); outline: none; }
 
-            .wb-search-dropdown-btn { background-color: transparent; border-color: #ccc !important; width: 40px; margin: -2px -5px -2px 0; border-top-right-radius: 4px !important; border-bottom-right-radius: 4px !important; box-shadow: none; transition: background-color 0.2s ease-in-out; }
-            .wb-search-dropdown-btn:hover, .wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
+                .wb-search-dropdown-btn { background-color: transparent; border-color: #ccc !important; width: 40px; margin: -2px -5px -2px 0; border-top-right-radius: 4px !important; border-bottom-right-radius: 4px !important; box-shadow: none; transition: background-color 0.2s ease-in-out; }
+                .wb-search-dropdown-btn:hover, .wb-search-dropdown-btn[aria-expanded="true"] { background-color: #eef2f6 !important; }
 
-            .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
-            .custom-submenu { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 5px; }
+                .chart-hint { font-size: 0.75rem; color: #94a3b8; font-weight: normal; margin-left: 8px; }
+                .custom-submenu { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 5px; }
 
-            .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
-            .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
-            @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+                .wb-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 1040; display: flex; align-items: center; justify-content: center; }
+                .wb-modal-content { background: white; border-radius: 20px; width: 100%; max-width: 650px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); animation: modalFadeIn 0.3s ease-out; }
+                @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-            #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
-            .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 10px; }
-            .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
-            .print-title { font-size: 16px; font-weight: bold; color: #334155; }
-            .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
-
-            .wb-tooltip-text { visibility: hidden; width: max-content; max-width: 250px; background-color: #1e293b; color: #f8fafc; text-align: left; border-radius: 8px; padding: 10px 14px; position: absolute; z-index: 9999 !important; bottom: calc(100% + 10px); right: 15px; opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.8rem; font-weight: 500; font-family: sans-serif; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); transform: translateY(10px); pointer-events: none; }
-            .wb-tooltip-text::after { content: ""; position: absolute; top: 100%; right: 20px; border-width: 6px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+                #print_report_area { background: white; padding: 40px; color: #000; font-family: Arial, sans-serif; }
+                .print-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 10px; }
+                .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
+                .print-title { font-size: 16px; font-weight: bold; color: #334155; }
+                .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
 
 
-            .show-tooltips .wb-card:hover .wb-tooltip-text { visibility: visible; opacity: 1; transform: translateY(0); }
+                .kpi-info-icon {
+                    position: relative;
+                    display: inline-block;
+                    color: #0ea5e9; /* Light blue matching the image */
+                    font-size: 12px;
+                    font-weight: 800;
+                    margin-left: 4px;
+                    cursor: help;
+                    z-index: 20;
+                    vertical-align: super; /* Superscript style positioning */
+                    line-height: 1;
+                    transition: color 0.2s ease;
+                }
+                .kpi-info-icon:hover {
+                    color: #0284c7;
+                }
 
-            .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-tooltip-text {
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-            }
+                .wb-tooltip-text {
+                    visibility: hidden;
+                    width: max-content;
+                    max-width: 250px;
+                    background-color: #000000; /* True black background */
+                    color: #ffffff;
+                    text-align: left; /* Left aligned text to match image */
+                    border-radius: 6px;
+                    padding: 10px 14px;
+                    position: absolute;
+                    z-index: 9999 !important;
+                    bottom: calc(100% + 8px);
+                    left: 50%;
+                    opacity: 0;
+                    transition: opacity 0.2s ease-in-out;
+                    font-size: 0.75rem;
+                    font-weight: 500;
+                    text-transform: none;
+                    line-height: 1.4;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+                    transform: translateX(-50%);
+                    pointer-events: none;
+                }
+                .wb-tooltip-text::after {
+                    content: "";
+                    position: absolute;
+                    top: 100%;
+                    left: 50%;
+                    margin-left: -6px;
+                    border-width: 6px;
+                    border-style: solid;
+                    border-color: #000000 transparent transparent transparent;
+                }
 
-            .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-card {
-                pointer-events: none !important;
-            }
-        </style>
+                .kpi-info-icon:hover .wb-tooltip-text {
+                    visibility: visible;
+                    opacity: 1;
+                }
 
-
-        <div t-attf-class="wb-dashboard-wrapper {{ state.show_kpi_info ? 'show-tooltips' : '' }}">
+                .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-tooltip-text {
+                    visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;
+                }
+                .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-card {
+                    pointer-events: none !important;
+                }
+            </style>
 
             <t t-if="state.showExportModal">
                 <div class="wb-modal-overlay">
@@ -151,17 +197,9 @@
             <div class="wb-main-content">
                 <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 d-print-none gap-4">
 
-
                     <div class="flex-shrink-0">
                         <div class="d-flex align-items-center gap-2 mb-1">
                             <h3 class="fw-bolder m-0 text-dark" style="letter-spacing: -0.5px;"><i class="fa fa-line-chart text-primary me-2"></i>Sales Analytics</h3>
-                            <button class="btn btn-sm rounded-circle shadow-sm border"
-                                    t-attf-class="{{ state.show_kpi_info ? 'btn-primary' : 'btn-light' }}"
-                                    style="width: 24px; height: 24px; padding: 0;"
-                                    t-on-click="toggleKpiInfo"
-                                    title="Toggle KPI Info">
-                                <i class="fa fa-info" style="font-size: 12px;"></i>
-                            </button>
                         </div>
                         <p class="text-muted text-sm mb-0">Track performance, analyze trends, and monitor growth.</p>
                     </div>
@@ -327,30 +365,62 @@
                 <div class="row mb-4">
                     <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('revenue')">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                            <span class="wb-tooltip-text">Total untaxed revenue from all non-cancelled orders within the selected period.</span>
                             <div class="wb-icon-box icon-primary me-3"><i class="fa fa-usd"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Total Revenue</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_revenue"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Total Revenue
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Total untaxed revenue from all non-cancelled orders within the selected period.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_revenue"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('orders')">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                            <span class="wb-tooltip-text">Total number of sales orders (excluding cancelled) within the selected period.</span>
                             <div class="wb-icon-box icon-info me-3"><i class="fa fa-shopping-bag"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Orders Count</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_orders"/></h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Orders Count
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Total number of sales orders (excluding cancelled) within the selected period.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_orders"/></h4>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('to_invoice')">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                            <span class="wb-tooltip-text">Total untaxed amount of confirmed sales orders that are ready to be invoiced.</span>
                             <div class="wb-icon-box icon-purple me-3"><i class="fa fa-file-text-o"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">To Invoice Amount</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_invoiced"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    To Invoice Amount
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Total untaxed amount of confirmed sales orders that are ready to be invoiced.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_invoiced"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xl-3 col-md-6 mb-3" t-on-click="() => this.openRecords('outstanding')">
                         <div class="wb-card p-3 h-100 d-flex align-items-center cursor-pointer">
-                            <span class="wb-tooltip-text">Total residual amount of unpaid or partially paid posted customer invoices across the entire company.</span>
                             <div class="wb-icon-box icon-danger me-3"><i class="fa fa-exclamation-circle"></i></div>
-                            <div class="flex-grow-1"><p class="text-danger text-uppercase text-xs fw-bold mb-1">Outstanding (Debt)</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.outstanding_receivables"/> <span class="text-sm text-muted fw-normal">EGP</span></h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-danger text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Outstanding (Debt)
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Total residual amount of unpaid or partially paid posted customer invoices across the entire company.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.outstanding_receivables"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -358,30 +428,62 @@
                 <div class="row mb-4">
                     <div class="col-xl-3 col-md-6 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center">
-                            <span class="wb-tooltip-text">Percentage change in total untaxed revenue compared to the previous equivalent period.</span>
                             <div class="wb-icon-box icon-success me-3"><i class="fa fa-line-chart"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Growth</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_growth"/>% </h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Growth
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Percentage change in total untaxed revenue compared to the previous equivalent period.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_growth"/>% </h4>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xl-3 col-md-6 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center">
-                            <span class="wb-tooltip-text">Average untaxed revenue per order (Total Revenue divided by Orders Count).</span>
                             <div class="wb-icon-box icon-warning me-3"><i class="fa fa-calculator"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Avg Order Value</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.aov"/></h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Avg Order Value
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Average untaxed revenue per order (Total Revenue divided by Orders Count).</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.aov"/></h4>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xl-3 col-md-6 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center">
-                            <span class="wb-tooltip-text">Total untaxed revenue minus the total historical cost of goods sold.</span>
                             <div class="wb-icon-box icon-teal me-3"><i class="fa fa-diamond"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Gross Profit</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.gross_profit"/></h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Gross Profit
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Total untaxed revenue minus the total historical cost of goods sold.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.gross_profit"/></h4>
+                            </div>
                         </div>
                     </div>
                     <div class="col-xl-3 col-md-6 mb-3">
                         <div class="wb-card p-3 h-100 d-flex align-items-center">
-                            <span class="wb-tooltip-text">Gross profit expressed as a percentage of total untaxed revenue.</span>
                             <div class="wb-icon-box icon-dark me-3"><i class="fa fa-pie-chart"></i></div>
-                            <div class="flex-grow-1"><p class="text-muted text-uppercase text-xs fw-bold mb-1">Profit Margin</p><h4 class="fw-bold mb-0 text-dark"><t t-esc="state.profit_margin"/>%</h4></div>
+                            <div class="flex-grow-1">
+                                <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
+                                    Profit Margin
+                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                        ?
+                                        <span class="wb-tooltip-text">Gross profit expressed as a percentage of total untaxed revenue.</span>
+                                    </span>
+                                </p>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.profit_margin"/>%</h4>
+                            </div>
                         </div>
                     </div>
                 </div>
