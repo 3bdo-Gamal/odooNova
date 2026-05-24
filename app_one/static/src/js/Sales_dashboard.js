@@ -277,61 +277,145 @@ export class SalesDashboardClient extends Component {
     }
 
     openRecords(type) {
+        let domain = [...(this.state.nav_domain || [])];
+
         if (type === 'orders' || type === 'revenue') {
-            this.action.doAction({ name: "Sales Orders", type: "ir.actions.act_window", res_model: "sale.order", view_mode: "list,form", views: [[false, "list"], [false, "form"]], domain: this.state.nav_domain });
-        } else if (type === 'to_invoice') {
-            this.action.doAction({ name: "Orders To Invoice", type: "ir.actions.act_window", res_model: "sale.order", view_mode: "list,form", views: [[false, "list"], [false, "form"]], domain: this.state.to_invoice_domain });
-        }else if (type === 'outstanding') {
+            this.action.doAction({
+                name: "Filtered Sales Orders",
+                type: "ir.actions.act_window",
+                res_model: "sale.order",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: domain
+            });
+        }
+        else if (type === 'to_invoice') {
+            this.action.doAction({
+                name: "Orders To Invoice",
+                type: "ir.actions.act_window",
+                res_model: "sale.order",
+                view_mode: "list,form",
+                views: [[false, "list"], [false, "form"]],
+                domain: this.state.to_invoice_domain
+            });
+        }
+        else if (type === 'outstanding') {
+            let unpaid_domain = [
+                ['move_type', '=', 'out_invoice'],
+                ['state', '=', 'posted'],
+                ['payment_state', 'in', ['not_paid', 'partial']]
+            ];
+
+            if (this.state.company_id !== 'all') unpaid_domain.push(['company_id', '=', parseInt(this.state.company_id)]);
+            if (this.state.user_id !== 'all') unpaid_domain.push(['invoice_user_id', '=', parseInt(this.state.user_id)]);
+            if (this.state.team_id !== 'all') unpaid_domain.push(['team_id', '=', parseInt(this.state.team_id)]);
+
             this.action.doAction({
                 name: "Outstanding Invoices",
                 type: "ir.actions.act_window",
                 res_model: "account.move",
                 view_mode: "list,form",
                 views: [[false, "list"], [false, "form"]],
-                domain: [['move_type', '=', 'out_invoice'], ['state', '=', 'posted'], ['payment_state', 'in', ['not_paid', 'partial']]]
+                domain: unpaid_domain
             });
         }
     }
 
-    openChartRecords(type, label) {
-        let res_model = "sale.order";
-        let views = [[false, "list"], [false, "form"]];
-        let name = "All Records";
-        let domain = [];
+    openChartRecords(type, label = null) {
+        let domain = [...(this.state.nav_domain || [])];
+        let name = "Filtered Records";
+        let context = {};
 
         if (type === 'product') {
-            res_model = "product.template";
-            views = [[false, "kanban"], [false, "list"], [false, "form"]];
-            name = "All Products";
+            if (label) {
+                domain.push(['order_line.product_id.name', '=', label]);
+                name = `Sales for Product: ${label}`;
+            } else {
+                if (this.state.product_labels.length > 0) {
+                    domain.push(['order_line.product_id.name', 'in', this.state.product_labels]);
+                }
+                name = `Top ${this.state.top_products} Products`;
+            }
         }
         else if (type === 'customer') {
-            res_model = "res.partner";
-            views = [[false, "kanban"], [false, "list"], [false, "form"]];
-            name = "All Customers";
+            if (label) {
+                domain.push(['partner_id.name', '=', label]);
+                name = `Sales for Customer: ${label}`;
+            } else {
+                if (this.state.customer_labels.length > 0) {
+                    domain.push(['partner_id.name', 'in', this.state.customer_labels]);
+                }
+                name = `Top ${this.state.top_customers} Customers Sales`;
+                // شيلنا الـ search_default وسبنا الـ group_by بس
+                context = { group_by: ['partner_id'] };
+            }
         }
         else if (type === 'category') {
-            res_model = "product.category";
-            name = "All Product Categories";
+            if (label) {
+                domain.push(['order_line.product_id.categ_id.complete_name', 'ilike', label]);
+                name = `Sales for Category: ${label}`;
+            } else {
+                if (this.state.category_labels.length > 0) {
+                    let cat_domain = [];
+                    for (let i = 0; i < this.state.category_labels.length - 1; i++) {
+                        cat_domain.push('|');
+                    }
+                    this.state.category_labels.forEach(l => {
+                        cat_domain.push(['order_line.product_id.categ_id.complete_name', 'ilike', l]);
+                    });
+                    if (cat_domain.length > 0) domain.push(...cat_domain);
+                }
+                name = `Top ${this.state.top_categories} Categories`;
+            }
         }
         else if (type === 'salesperson') {
-            res_model = "res.users";
-            name = "All Salespersons";
+            if (label) {
+                domain.push(['user_id.name', '=', label]);
+                name = `Sales by: ${label}`;
+            } else {
+                if (this.state.salesperson_labels.length > 0) {
+                    domain.push(['user_id.name', 'in', this.state.salesperson_labels]);
+                }
+                name = `Top ${this.state.top_salespeople} Salespeople`;
+                // شيلنا الـ search_default وسبنا الـ group_by بس
+                context = { group_by: ['user_id'] };
+            }
         }
         else if (type === 'team') {
-            res_model = "crm.team";
-            name = "All Sales Teams";
+            if (label) {
+                domain.push(['team_id.name', '=', label]);
+                name = `Sales for Team: ${label}`;
+            } else {
+                if (this.state.team_labels.length > 0) {
+                    domain.push(['team_id.name', 'in', this.state.team_labels]);
+                }
+                name = `Sales by Top Teams`;
+                // شيلنا الـ search_default وسبنا الـ group_by بس
+                context = { group_by: ['team_id'] };
+            }
         }
         else if (type === 'trend') {
-            name = "All Sales Orders";
+            if (label) {
+                domain.push(['date_order', '>=', `${label} 00:00:00`]);
+                domain.push(['date_order', '<=', `${label} 23:59:59`]);
+                name = `Sales on ${label}`;
+            } else {
+                name = `Sales Trend Records`;
+                context = { group_by: ['date_order:day'] };
+            }
+        }
+        else if (type === 'dynamic') {
+            name = label ? `Grouped Sales: ${label}` : `Custom Grouped Sales`;
         }
 
         this.action.doAction({
             name: name,
             type: "ir.actions.act_window",
-            res_model: res_model,
-            view_mode: views.map(v => v[1]).join(","),
-            views: views,
-            domain: domain
+            res_model: "sale.order",
+            view_mode: "list,form",
+            views: [[false, "list"], [false, "form"]],
+            domain: domain,
+            context: context
         });
     }
 
@@ -386,24 +470,81 @@ export class SalesDashboardClient extends Component {
 
     _renderChart(ref, type, labels, data, color, label, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
-        ref.el.chartInstance = new window.Chart(ref.el, { type: type, data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: color, borderColor: color, fill: type === 'line', tension: 0.4, borderRadius: type === 'bar' ? 4 : 0 }] }, options: { responsive: true, maintainAspectRatio: false, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
+        ref.el.chartInstance = new window.Chart(ref.el, {
+            type: type,
+            data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: color, borderColor: color, fill: type === 'line', tension: 0.4, borderRadius: type === 'bar' ? 4 : 0 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                onClick: (e, activeEls) => {
+                    if (activeEls.length > 0) {
+                        this.openChartRecords(clickType, labels[activeEls[0].index]);
+                    } else {
+                        // النقر على الخلفية يفتح كل التوب N
+                        this.openChartRecords(clickType, null);
+                    }
+                },
+                onHover: (e) => { e.native.target.style.cursor = 'pointer'; }
+            }
+        });
     }
 
     _renderDoughnut(ref, labels, data, colors, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
         const extendedColors = ['#4f46e5', '#10b981', '#06b6d4', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#0ea5e9', '#6366f1', '#d946ef', '#f97316', '#22c55e'];
-        ref.el.chartInstance = new window.Chart(ref.el, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: extendedColors, borderWidth: 2, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
+        ref.el.chartInstance = new window.Chart(ref.el, {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: extendedColors, borderWidth: 2, hoverOffset: 4 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } },
+                onClick: (e, activeEls) => {
+                    if (activeEls.length > 0) {
+                        this.openChartRecords(clickType, labels[activeEls[0].index]);
+                    } else {
+                        this.openChartRecords(clickType, null);
+                    }
+                },
+                onHover: (e) => { e.native.target.style.cursor = 'pointer'; }
+            }
+        });
     }
 
     _renderHorizontalBar(ref, labels, data, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
-        ref.el.chartInstance = new window.Chart(ref.el, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Revenue', data: data, backgroundColor: '#f59e0b', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
+        ref.el.chartInstance = new window.Chart(ref.el, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ label: 'Revenue', data: data, backgroundColor: '#f59e0b', borderRadius: 4 }] },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                onClick: (e, activeEls) => {
+                    if (activeEls.length > 0) {
+                        this.openChartRecords(clickType, labels[activeEls[0].index]);
+                    } else {
+                        this.openChartRecords(clickType, null);
+                    }
+                },
+                onHover: (e) => { e.native.target.style.cursor = 'pointer'; }
+            }
+        });
     }
 
     _renderPie(ref, labels, data, clickType) {
         if (!ref.el) return; if (ref.el.chartInstance) ref.el.chartInstance.destroy();
         const extendedColors = ['#ef4444', '#4f46e5', '#10b981', '#06b6d4', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e', '#84cc16', '#0ea5e9', '#6366f1', '#d946ef', '#f97316', '#22c55e'];
-        ref.el.chartInstance = new window.Chart(ref.el, { type: 'pie', data: { labels: labels, datasets: [{ data: data, backgroundColor: extendedColors, borderWidth: 2, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }, onClick: (e, activeEls) => { if (activeEls.length > 0) this.openChartRecords(clickType, labels[activeEls[0].index]); }, onHover: (e, activeEls) => { e.native.target.style.cursor = activeEls.length > 0 ? 'pointer' : 'default'; } } });
+        ref.el.chartInstance = new window.Chart(ref.el, {
+            type: 'pie',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: extendedColors, borderWidth: 2, hoverOffset: 4 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } },
+                onClick: (e, activeEls) => {
+                    if (activeEls.length > 0) {
+                        this.openChartRecords(clickType, labels[activeEls[0].index]);
+                    } else {
+                        this.openChartRecords(clickType, null);
+                    }
+                },
+                onHover: (e) => { e.native.target.style.cursor = 'pointer'; }
+            }
+        });
     }
 }
 registry.category("actions").add("sales_dashboard_client_tag", SalesDashboardClient);

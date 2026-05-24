@@ -4,11 +4,10 @@
         <div class="wb-dashboard-wrapper">
             <style>
                 .wb-dashboard-wrapper { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100%; width: 100%; display: flex; overflow: hidden; background-color: #f4f6f9; }
-                .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; }
-                .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
+                .wb-main-content { flex-grow: 1; overflow-y: auto; padding: 2rem; position: relative; z-index: 20; }                .wb-sidebar { width: 350px; flex-shrink: 0; display: flex; flex-direction: column; background: #ffffff; border-left: 1px solid #e2e8f0; box-shadow: -4px 0 15px rgba(0,0,0,0.03); z-index: 10; height: 100%; transition: margin-right 0.3s ease;}
                 .wb-sidebar-scroll { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding: 1.5rem; }
                 .wb-glassy-header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 1.25rem; padding: 1rem 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); position: relative; z-index: 8 !important; }
-                .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; z-index: 1 !important; }
+                .wb-card { background: #fff; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: all 0.3s ease; position: relative; z-index: 1 !important; overflow: visible !important;}
                 .wb-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); z-index: 15 !important; }
                 .wb-card.cursor-pointer:hover { border-color: #3b82f6; cursor: pointer; }
                 .wb-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
@@ -39,7 +38,6 @@
                 .print-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
                 .print-title { font-size: 16px; font-weight: bold; color: #334155; }
                 .print-value { font-size: 18px; font-weight: bold; color: #0f172a; }
-
 
                 .kpi-info-icon {
                     position: relative;
@@ -77,7 +75,8 @@
                     font-weight: 500;
                     text-transform: none;
                     line-height: 1.4;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
                     transform: translateX(-50%);
                     pointer-events: none;
                 }
@@ -91,7 +90,14 @@
                     border-style: solid;
                     border-color: #000000 transparent transparent transparent;
                 }
-
+                .kpi-info-icon.open-left .wb-tooltip-text {
+                  right: 100%;
+                  left: auto;
+                  transform: translateX(-8px);
+                 }
+                .kpi-info-icon.open-left .wb-tooltip-text {
+                     right: 0;
+                }
                 .kpi-info-icon:hover .wb-tooltip-text {
                     visibility: visible;
                     opacity: 1;
@@ -103,6 +109,7 @@
                 .wb-dashboard-wrapper:has(.wb-search-dropdown-btn[aria-expanded="true"]) .wb-card {
                     pointer-events: none !important;
                 }
+
             </style>
 
             <t t-if="state.showExportModal">
@@ -183,14 +190,14 @@
                     <h1 style="margin: 0;">Sales Performance Report</h1>
                     <p style="color: #64748b; margin-top: 5px;">Generated on: <t t-esc="new Date().toLocaleDateString()"/></p>
                 </div>
-                <div t-if="state.pdf_revenue" class="print-row"><span class="print-title">Total Revenue</span><span class="print-value"><t t-esc="state.total_revenue"/> EGP</span></div>
-                <div t-if="state.pdf_growth" class="print-row"><span class="print-title">Sales Growth (vs previous period)</span><span class="print-value"><t t-esc="state.sales_growth"/> %</span></div>
-                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">Total Orders</span><span class="print-value"><t t-esc="state.total_orders"/></span></div>
-                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">Average Order Value (AOV)</span><span class="print-value"><t t-esc="state.aov"/> EGP</span></div>
-                <div t-if="state.pdf_profit" class="print-row"><span class="print-title">Gross Profit</span><span class="print-value"><t t-esc="state.gross_profit"/> EGP</span></div>
-                <div t-if="state.pdf_profit" class="print-row"><span class="print-title">Profit Margin</span><span class="print-value"><t t-esc="state.profit_margin"/> %</span></div>
-                <div class="print-row"><span class="print-title">Total Invoiced Amount</span><span class="print-value"><t t-esc="state.total_invoiced"/> EGP</span></div>
-                <div t-if="state.pdf_outstanding" class="print-row"><span class="print-title">Outstanding Receivables (Debt)</span><span class="print-value" style="color: #dc2626;"><t t-esc="state.outstanding_receivables"/> EGP</span></div>
+                <div t-if="state.pdf_revenue" class="print-row"><span class="print-title">Total Revenue</span><span class="print-value"><t t-esc="state.total_revenue.toLocaleString()"/> EGP</span></div>
+                <div t-if="state.pdf_growth" class="print-row"><span class="print-title">Sales Growth (vs previous period)</span><span class="print-value"><t t-esc="state.sales_growth.toLocaleString()"/> %</span></div>
+                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">Total Orders</span><span class="print-value"><t t-esc="state.total_orders.toLocaleString()"/></span></div>
+                <div t-if="state.pdf_orders" class="print-row"><span class="print-title">Average Order Value (AOV)</span><span class="print-value"><t t-esc="state.aov.toLocaleString()"/> EGP</span></div>
+                <div t-if="state.pdf_profit" class="print-row"><span class="print-title">Gross Profit</span><span class="print-value"><t t-esc="state.gross_profit.toLocaleString()"/> EGP</span></div>
+                <div t-if="state.pdf_profit" class="print-row"><span class="print-title">Profit Margin</span><span class="print-value"><t t-esc="state.profit_margin.toLocaleString()"/> %</span></div>
+                <div class="print-row"><span class="print-title">Total Invoiced Amount</span><span class="print-value"><t t-esc="state.total_invoiced.toLocaleString()"/> EGP</span></div>
+                <div t-if="state.pdf_outstanding" class="print-row"><span class="print-title">Outstanding Receivables (Debt)</span><span class="print-value" style="color: #dc2626;"><t t-esc="state.outstanding_receivables.toLocaleString()"/> EGP</span></div>
                 <div style="margin-top: 40px; text-align: center; color: #94a3b8; font-size: 12px;">* Report generated automatically from Odoo Sales Dashboard.</div>
             </div>
 
@@ -374,7 +381,7 @@
                                         <span class="wb-tooltip-text">Total untaxed revenue from all non-cancelled orders within the selected period.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_revenue"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_revenue.toLocaleString()"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
                             </div>
                         </div>
                     </div>
@@ -389,7 +396,7 @@
                                         <span class="wb-tooltip-text">Total number of sales orders (excluding cancelled) within the selected period.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_orders"/></h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_orders.toLocaleString()"/></h4>
                             </div>
                         </div>
                     </div>
@@ -404,7 +411,7 @@
                                         <span class="wb-tooltip-text">Total untaxed amount of confirmed sales orders that are ready to be invoiced.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_invoiced"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_invoiced.toLocaleString()"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
                             </div>
                         </div>
                     </div>
@@ -414,12 +421,12 @@
                             <div class="flex-grow-1">
                                 <p class="text-danger text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
                                     Outstanding (Debt)
-                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                    <span class="kpi-info-icon open-left" t-on-click.stop="">
                                         ?
                                         <span class="wb-tooltip-text">Total residual amount of unpaid or partially paid posted customer invoices across the entire company.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.outstanding_receivables"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.outstanding_receivables.toLocaleString()"/> <span class="text-sm text-muted fw-normal">EGP</span></h4>
                             </div>
                         </div>
                     </div>
@@ -437,7 +444,7 @@
                                         <span class="wb-tooltip-text">Percentage change in total untaxed revenue compared to the previous equivalent period.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_growth"/>% </h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.sales_growth.toLocaleString()"/>% </h4>
                             </div>
                         </div>
                     </div>
@@ -452,7 +459,7 @@
                                         <span class="wb-tooltip-text">Average untaxed revenue per order (Total Revenue divided by Orders Count).</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.aov"/></h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.aov.toLocaleString()"/></h4>
                             </div>
                         </div>
                     </div>
@@ -467,7 +474,7 @@
                                         <span class="wb-tooltip-text">Total untaxed revenue minus the total historical cost of goods sold.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.gross_profit"/></h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.gross_profit.toLocaleString()"/></h4>
                             </div>
                         </div>
                     </div>
@@ -477,12 +484,12 @@
                             <div class="flex-grow-1">
                                 <p class="text-muted text-uppercase text-xs fw-bold mb-1 d-flex align-items-center">
                                     Profit Margin
-                                    <span class="kpi-info-icon" t-on-click.stop="">
+                                    <span class="kpi-info-icon open-left" t-on-click.stop="">
                                         ?
                                         <span class="wb-tooltip-text">Gross profit expressed as a percentage of total untaxed revenue.</span>
                                     </span>
                                 </p>
-                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.profit_margin"/>%</h4>
+                                <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.profit_margin.toLocaleString()"/>%</h4>
                             </div>
                         </div>
                     </div>
@@ -492,7 +499,7 @@
                     <div class="row mb-4">
                         <div class="col-lg-12">
                             <div class="wb-card p-4">
-                                <h6 class="fw-bold text-dark mb-4">Custom Grouped Analysis <span class="chart-hint fw-normal text-muted">(Based on active Group By)</span></h6>
+                                <h6 class="fw-bold text-dark mb-4 cursor-pointer" t-on-click="() => this.openChartRecords('dynamic', null)">Custom Grouped Analysis <span class="chart-hint fw-normal text-muted">(Based on active Group By)</span></h6>
                                 <div style="height: 330px; position: relative;"><canvas t-ref="dynamic_chart"></canvas></div>
                             </div>
                         </div>
@@ -503,7 +510,7 @@
                     <div class="col-lg-8 mb-4">
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h6 class="fw-bold text-dark m-0">Top Customers (Revenue)<span class="chart-hint fw-normal text-muted">(Click bar to view records)</span></h6>
+                                <h6 class="fw-bold text-dark m-0 cursor-pointer" t-on-click="() => this.openChartRecords('customer', null)">Top Customers (Revenue) <span class="chart-hint fw-normal text-muted">(Click bar for detail, or title for all)</span></h6>
                                 <select class="form-select form-select-sm w-auto wb-input rounded-pill" style="padding-right: 32px !important; padding-left: 12px;" t-model="state.top_customers" t-on-change="onChangeFilter">
                                     <option value="5">Top 5</option>
                                     <option value="10">Top 10</option>
@@ -516,7 +523,7 @@
                     <div class="col-lg-4 mb-4">
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h6 class="fw-bold text-dark m-0">Top Products (Qty)<span class="chart-hint fw-normal text-muted">(Click to drill)</span></h6>
+                                <h6 class="fw-bold text-dark m-0 cursor-pointer" t-on-click="() => this.openChartRecords('product', null)">Top Products (Qty) <span class="chart-hint fw-normal text-muted">(Click bar for detail, or title for all)</span></h6>
                                 <select class="form-select form-select-sm w-auto wb-input rounded-pill" style="padding-right: 32px !important; padding-left: 12px;" t-model="state.top_products" t-on-change="onChangeFilter">
                                     <option value="5">Top 5</option>
                                     <option value="10">Top 10</option>
@@ -531,13 +538,13 @@
                 <div class="row mb-4">
                     <div class="col-lg-8 mb-4">
                         <div class="wb-card p-4 h-100">
-                            <h6 class="fw-bold text-dark mb-4">Sales Trend (Time Series)</h6>
+                            <h6 class="fw-bold text-dark mb-4 cursor-pointer" t-on-click="() => this.openChartRecords('trend', null)">Sales Trend (Time Series)</h6>
                             <div style="height: 330px; position: relative;"><canvas t-ref="trend_chart"></canvas></div>
                         </div>
                     </div>
                     <div class="col-lg-4 mb-4">
                         <div class="wb-card p-4 h-100 d-flex flex-column">
-                            <h6 class="fw-bold text-dark mb-4">Sales by Team <span class="chart-hint fw-normal text-muted">(Click slice to view records)</span></h6>
+                            <h6 class="fw-bold text-dark mb-4 cursor-pointer" t-on-click="() => this.openChartRecords('team', null)">Sales by Team <span class="chart-hint fw-normal text-muted">(Click slice for detail, or title for all)</span></h6>
                             <div style="height: 330px; position: relative;"><canvas t-ref="team_chart"></canvas></div>
                         </div>
                     </div>
@@ -547,7 +554,7 @@
                     <div class="col-lg-6 mb-4">
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h6 class="fw-bold text-dark m-0">Top Salespeople <span class="chart-hint fw-normal text-muted">(Click bar to view records)</span></h6>
+                                <h6 class="fw-bold text-dark m-0 cursor-pointer" t-on-click="() => this.openChartRecords('salesperson', null)">Top Salespeople <span class="chart-hint fw-normal text-muted">(Click bar for detail, or title for all)</span></h6>
                                 <select class="form-select form-select-sm w-auto wb-input rounded-pill" style="padding-right: 32px !important; padding-left: 12px;" t-model="state.top_salespeople" t-on-change="onChangeFilter">
                                     <option value="5">Top 5</option>
                                     <option value="10">Top 10</option>
@@ -560,7 +567,7 @@
                     <div class="col-lg-6 mb-4">
                         <div class="wb-card p-4 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h6 class="fw-bold text-dark m-0">Sales by Category <span class="chart-hint fw-normal text-muted">(Click slice to view records)</span></h6>
+                                <h6 class="fw-bold text-dark m-0 cursor-pointer" t-on-click="() => this.openChartRecords('category', null)">Sales by Category <span class="chart-hint fw-normal text-muted">(Click slice for detail, or title for all)</span></h6>
                                 <select class="form-select form-select-sm w-auto wb-input rounded-pill" style="padding-right: 32px !important; padding-left: 12px;" t-model="state.top_categories" t-on-change="onChangeFilter">
                                     <option value="5">Top 5</option>
                                     <option value="10">Top 10</option>
