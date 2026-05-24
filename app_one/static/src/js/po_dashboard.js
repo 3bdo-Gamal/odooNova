@@ -344,7 +344,7 @@ if (actionType !== 'savings') {
         if (res_model === 'purchase.order') {
             if (this.state.stats.period && this.state.stats.period !== "0") {
                 const today = new Date();
-                const pastDate = new Date(today.getTime() - (parseInt(this.state.period) * 24 * 60 * 60 * 1000));
+                const pastDate = new Date(today.getTime() - (parseInt(this.state.stats.period) * 24 * 60 * 60 * 1000));
                 const localPastStr = (new Date(pastDate - offset)).toISOString().split('T')[0];
                 domain.push(['date_order', '>=', localPastStr], ['date_order', '<=', localTodayStr]);
             } else {
@@ -360,7 +360,7 @@ if (actionType !== 'savings') {
     }
 
 let views_array = view_mode.split(',').map(v => [false, v === 'list' ? 'tree' : v]);
-    // 5. إطلاق الـ Action لفتح الشاشة المستهدفة بناءً على الخصائص المحددة أعلاه
+
     this.actionService.doAction({
         type: 'ir.actions.act_window',
         name: name,
