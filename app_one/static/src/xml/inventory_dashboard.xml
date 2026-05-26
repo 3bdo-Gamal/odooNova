@@ -35,32 +35,58 @@
 .wb-kpi-card.clickable { cursor: pointer; }
 .wb-kpi-card.clickable:hover { border-color: #4f46e5; }
 
-/* ── Info Icon Tooltip ──────────────────────────────────────────────────── */
-.wb-info-wrapper { position: relative; display: inline-flex; align-items: center; }
-.wb-info-icon {
-    width: 18px; height: 18px; border-radius: 50%;
-    background: #e2e8f0; color: #64748b;
-    font-size: 11px; font-weight: 700; font-style: normal;
-    display: inline-flex; align-items: center; justify-content: center;
-    cursor: default; flex-shrink: 0;
-    transition: background 0.2s, color 0.2s;
+/* ── KPI Info Icon (? superscript style — matches Sales Dashboard) ───────── */
+.kpi-info-icon {
+    position: relative;
+    display: inline-block;
+    color: #0ea5e9;
+    font-size: 12px;
+    font-weight: 800;
+    margin-left: 4px;
+    cursor: help;
+    z-index: 20;
+    vertical-align: super;
+    line-height: 1;
+    transition: color 0.2s ease;
 }
-.wb-info-icon:hover { background: #4f46e5; color: #fff; }
-.wb-info-tooltip {
-    display: none; position: absolute;
-    top: calc(100% + 8px); right: 0;
-    background: #1e293b; color: #f1f5f9;
-    font-size: 12px; line-height: 1.5; font-weight: 400;
-    padding: 8px 12px; border-radius: 8px;
-    width: 220px; z-index: 9999;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+.kpi-info-icon:hover { color: #0284c7; }
+
+.wb-tooltip-text {
+    visibility: hidden;
+    width: max-content;
+    max-width: 250px;
+    background-color: #1e293b;
+    color: #ffffff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 10px 14px;
+    position: absolute;
+    z-index: 9999 !important;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.5;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    transform: translateX(-50%);
     pointer-events: none;
 }
-.wb-info-tooltip::before {
-    content: ''; position: absolute; bottom: 100%; right: 6px;
-    border: 6px solid transparent; border-bottom-color: #1e293b;
+.wb-tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
 }
-.wb-info-wrapper:hover .wb-info-tooltip { display: block; }
+.kpi-info-icon:hover .wb-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
 
 /* ── ICON BOXES ─────────────────────────────────────────────────────────── */
 .wb-icon-box {
@@ -272,6 +298,7 @@
         </div>
     </t>
 
+    <!-- ── HEADER ───────────────────────────────────────────────────────── -->
     <div class="wb-glassy-header d-flex justify-content-between align-items-center mb-4 gap-4">
 
         <div class="flex-shrink-0">
@@ -487,25 +514,30 @@
             </button>
         </div>
 
-    </div><div class="row g-3 mb-4">
+    </div>
+
+    <!-- ── KPI ROW 1: Stock / Value / COGS / Received ───────────────────── -->
+    <div class="row g-3 mb-4">
 
         <div class="col-xl-3 col-md-6">
             <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openStockDetails">
                 <div class="wb-icon-box icon-indigo me-3"><i class="fa fa-cubes"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Free Stock (Available)</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Free Stock (Available)
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Total free (unreserved) quantity across all internal locations.
+                                Formula: Sum(quantity - reserved_quantity) per quant.
+                                Click to view the full stock quant list.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-dark">
                         <t t-esc="state.stock_on_hand"/>
                         <span class="text-muted fw-normal" style="font-size:0.8rem;"> Units</span>
                     </h4>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Total free (unreserved) quantity across all internal locations.<br/>
-                        Formula: &#8721;(quantity &#8722; reserved_quantity) per quant.<br/>
-                        Click to view the full stock quant list.
-                    </div>
                 </div>
             </div>
         </div>
@@ -514,20 +546,22 @@
             <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openProductList">
                 <div class="wb-icon-box icon-emerald me-3"><i class="fa fa-money"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Stock Value</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Total Stock Value
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Ending inventory value across all internal locations.
+                                Automated costing uses valuation layer values.
+                                Manual costing: quantity x standard price.
+                                Click to browse all storable products.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-dark">
                         <t t-esc="state.stock_value_fmt"/>
                         <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
                     </h4>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Ending inventory value across all internal locations.<br/>
-                        Automated costing: uses valuation layer values.<br/>
-                        Manual costing: quantity &#215; standard price.<br/>
-                        Click to browse all storable products.
-                    </div>
                 </div>
             </div>
         </div>
@@ -536,19 +570,21 @@
             <div class="wb-kpi-card d-flex align-items-center h-100">
                 <div class="wb-icon-box icon-amber me-3"><i class="fa fa-shopping-cart"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">COGS (Period)</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        COGS (Period)
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Cost of Goods Sold: total cost of items delivered to customers in the selected period.
+                                Uses stock valuation layers (AVCO/FIFO) where available.
+                                Fallback: quantity x standard price.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-dark">
                         <t t-esc="state.cogs_fmt"/>
                         <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
                     </h4>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Cost of Goods Sold: total cost of items delivered to customers in the selected period.<br/>
-                        Uses stock valuation layers (AVCO/FIFO) where available.<br/>
-                        Fallback: quantity &#215; standard price.
-                    </div>
                 </div>
             </div>
         </div>
@@ -557,40 +593,47 @@
             <div class="wb-kpi-card d-flex align-items-center h-100">
                 <div class="wb-icon-box icon-green me-3"><i class="fa fa-truck"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Received Value (Period)</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Received Value (Period)
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Total cost of items received from suppliers in the selected period.
+                                Uses stock valuation layers where available.
+                                Fallback: quantity x standard price.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-dark">
                         <t t-esc="state.received_value_fmt"/>
                         <span class="text-muted fw-normal" style="font-size:0.8rem;"> EGP</span>
                     </h4>
                 </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Total cost of items received from suppliers in the selected period.<br/>
-                        Uses stock valuation layers where available.<br/>
-                        Fallback: quantity &#215; standard price.
-                    </div>
-                </div>
             </div>
         </div>
 
-    </div><div class="row g-3 mb-4">
+    </div>
+
+    <!-- ── KPI ROW 2: Turnover / DIO / Low Stock / Dead Stock ───────────── -->
+    <div class="row g-3 mb-4">
 
         <div class="col-xl-3 col-md-6">
             <div class="wb-kpi-card d-flex align-items-center h-100">
                 <div class="wb-icon-box icon-violet me-3"><i class="fa fa-refresh"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Inventory Turnover</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Inventory Turnover
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Annualized rate at which inventory is sold and replaced.
+                                Formula: (COGS / Average Inventory Value) x (365 / period days).
+                                Higher values indicate faster-moving stock.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0" style="color:#7c3aed;"><t t-esc="state.inventory_turnover"/></h4>
-                    <small class="text-muted" style="font-size:0.7rem;">COGS &#247; Avg Stock Value (annualized)</small>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Annualized rate at which inventory is sold and replaced.<br/>
-                        Formula: (COGS &#247; Average Inventory Value) &#215; (365 &#247; period days).<br/>
-                        Higher values indicate faster-moving stock.
-                    </div>
+                    <small class="text-muted" style="font-size:0.7rem;">COGS / Avg Stock Value (annualized)</small>
                 </div>
             </div>
         </div>
@@ -599,17 +642,19 @@
             <div class="wb-kpi-card d-flex align-items-center h-100">
                 <div class="wb-icon-box icon-teal me-3"><i class="fa fa-calendar"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">DIO (Days in Stock)</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        DIO (Days in Stock)
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Days Inventory Outstanding: average days inventory sits before being sold.
+                                Formula: (Average Inventory Value / COGS) x period days.
+                                Lower values mean faster inventory conversion.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0" style="color:#14b8a6;"><t t-esc="state.dio"/></h4>
-                    <small class="text-muted" style="font-size:0.7rem;">Avg Inv &#247; COGS &#215; Period Days</small>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Days Inventory Outstanding: average days inventory sits before being sold.<br/>
-                        Formula: (Average Inventory Value &#247; COGS) &#215; period days.<br/>
-                        Lower values mean faster inventory conversion.
-                    </div>
+                    <small class="text-muted" style="font-size:0.7rem;">Avg Inv / COGS x Period Days</small>
                 </div>
             </div>
         </div>
@@ -618,20 +663,22 @@
             <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openLowStock">
                 <div class="wb-icon-box icon-red me-3"><i class="fa fa-exclamation-triangle"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Low Stock Alerts</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Low Stock Alerts
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Count of storable products whose Forecasted Quantity is at or below their configured reorder point.
+                                Reorder points are defined in Inventory &gt; Reorder Rules.
+                                Click to view all reorder rules.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-danger">
                         <t t-esc="state.low_stock_count"/>
                         <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
                     </h4>
                     <small class="text-muted" style="font-size:0.7rem;">Below reorder point</small>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Count of storable products whose Forecasted Quantity (Virtual Available) is at or below their configured reorder point.<br/>
-                        Reorder points are defined in Inventory &#8250; Reorder Rules.<br/>
-                        Click to view all reorder rules.
-                    </div>
                 </div>
             </div>
         </div>
@@ -640,7 +687,18 @@
             <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openDeadStock">
                 <div class="wb-icon-box icon-slate me-3"><i class="fa fa-archive"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Dead Stock</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Dead Stock
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Products with stock on hand but zero inbound or outbound movement in the last
+                                <t t-esc="state.dead_stock_days || 90"/> days.
+                                Threshold is configured from the sidebar.
+                                Click to view stock quants for investigation.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-secondary">
                         <t t-esc="state.dead_stock_count"/>
                         <span class="fw-normal text-muted" style="font-size:0.8rem;"> Items</span>
@@ -649,37 +707,35 @@
                         No movement in <t t-esc="state.dead_stock_days || 90"/> days
                     </small>
                 </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Products with stock on hand but zero inbound or outbound movement in the last <t t-esc="state.dead_stock_days || 90"/> days.<br/>
-                        This threshold is dynamically configured from the sidebar.<br/>
-                        Click to view stock quants for investigation.
-                    </div>
-                </div>
             </div>
         </div>
 
-    </div><div class="row g-3 mb-4">
+    </div>
+
+    <!-- ── KPI ROW 3: Total Products ─────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="wb-kpi-card clickable d-flex align-items-center h-100" t-on-click="openProductList">
                 <div class="wb-icon-box icon-cyan me-3"><i class="fa fa-tags"/></div>
                 <div class="flex-grow-1">
-                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">Total Products</p>
+                    <p class="text-muted text-uppercase mb-1" style="font-size:0.7rem;font-weight:700;">
+                        Total Products
+                        <span class="kpi-info-icon" t-on-click.stop="">
+                            ?
+                            <span class="wb-tooltip-text">
+                                Total count of storable products (detailed_type = 'product') matching the current filters.
+                                Service and consumable products are excluded.
+                                Click to browse all matching products.
+                            </span>
+                        </span>
+                    </p>
                     <h4 class="fw-bold mb-0 text-dark"><t t-esc="state.total_products"/></h4>
-                </div>
-                <div class="wb-info-wrapper ms-2 flex-shrink-0">
-                    <span class="wb-info-icon">i</span>
-                    <div class="wb-info-tooltip">
-                        Total count of storable products (detailed_type = 'product') matching the current filters.<br/>
-                        Service and consumable products are excluded.<br/>
-                        Click to browse all matching products.
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ── CHART: Stock Movement Trend ──────────────────────────────────── -->
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="wb-chart-card">
@@ -695,6 +751,7 @@
         </div>
     </div>
 
+    <!-- ── CHARTS: Category Doughnut + Top Products Bar ─────────────────── -->
     <div class="row g-3 mb-4">
         <div class="col-lg-5">
             <div class="wb-chart-card h-100">
@@ -726,6 +783,7 @@
         </div>
     </div>
 
+    <!-- ── CHART: Location Distribution ─────────────────────────────────── -->
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="wb-chart-card">
@@ -741,7 +799,10 @@
         </div>
     </div>
 
-</div><div class="wb-inv-sidebar" t-if="state.showSidebar">
+</div>
+
+<!-- ── SIDEBAR ───────────────────────────────────────────────────────────── -->
+<div class="wb-inv-sidebar" t-if="state.showSidebar">
     <div class="p-4 border-bottom bg-light d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center">
             <i class="fa fa-sliders me-2 fs-5" style="color:#4f46e5;"/>
@@ -898,5 +959,8 @@
         </div>
 
     </div>
-</div></div></t>
+</div>
+
+</div>
+</t>
 </templates>
